@@ -8,6 +8,9 @@ import androidx.activity.ComponentActivity
 
 class SettingsActivity : ComponentActivity() {
 
+    private lateinit var sleepLabel: TextView
+    private lateinit var exerciseLabel: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -59,7 +62,10 @@ class SettingsActivity : ComponentActivity() {
         // ── Sleep sources ──────────────────────────────────────────────────
 
         sectionLabel("Sleep — source priority", root)
-        sourceSubLabel(Prefs.getSleepSourcePriority(this), root)
+        sleepLabel = TextView(this).apply {
+            textSize = 13f
+            setPadding(0, 0, 0, 8)
+        }.also { root.addView(it) }
 
         Button(this).apply {
             text = "Reorder sleep sources…"
@@ -75,7 +81,10 @@ class SettingsActivity : ComponentActivity() {
         // ── Exercise sources ───────────────────────────────────────────────
 
         sectionLabel("Exercise — source priority", root)
-        sourceSubLabel(Prefs.getExerciseSourcePriority(this), root)
+        exerciseLabel = TextView(this).apply {
+            textSize = 13f
+            setPadding(0, 0, 0, 8)
+        }.also { root.addView(it) }
 
         Button(this).apply {
             text = "Reorder exercise sources…"
@@ -91,24 +100,22 @@ class SettingsActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Recreate to refresh source labels after returning from ReorderActivity
-        recreate()
+        refreshSourceLabels()
     }
+
+    private fun refreshSourceLabels() {
+        sleepLabel.text    = sourceSummary(Prefs.getSleepSourcePriority(this))
+        exerciseLabel.text = sourceSummary(Prefs.getExerciseSourcePriority(this))
+    }
+
+    private fun sourceSummary(sources: List<String>): String =
+        if (sources.isEmpty()) "Run a sync first to discover sources."
+        else sources.mapIndexed { i, pkg -> "${i + 1}. ${friendlySource(pkg)}" }.joinToString("\n")
 
     private fun sectionLabel(text: String, parent: LinearLayout) {
         TextView(this).apply {
             this.text = text
             textSize = 16f
-            setPadding(0, 0, 0, 8)
-        }.also { parent.addView(it) }
-    }
-
-    private fun sourceSubLabel(sources: List<String>, parent: LinearLayout) {
-        val text = if (sources.isEmpty()) "Run a sync first to discover sources."
-                   else sources.mapIndexed { i, pkg -> "${i + 1}. ${friendlySource(pkg)}" }.joinToString("\n")
-        TextView(this).apply {
-            this.text = text
-            textSize = 13f
             setPadding(0, 0, 0, 8)
         }.also { parent.addView(it) }
     }
