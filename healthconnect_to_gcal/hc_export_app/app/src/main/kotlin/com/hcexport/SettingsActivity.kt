@@ -1,5 +1,6 @@
 package com.hcexport
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -10,6 +11,11 @@ class SettingsActivity : ComponentActivity() {
 
     private lateinit var sleepLabel: TextView
     private lateinit var exerciseLabel: TextView
+
+    // Mutable so we can refresh after calendar creation
+    private var calendars = mutableListOf<Triple<Long, String, String>>() // id, displayName, accountName+type
+    private lateinit var calSpinner: Spinner
+    private lateinit var calAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,33 +35,20 @@ class SettingsActivity : ComponentActivity() {
 
         sectionLabel("Calendar", root)
 
-        val calendars = loadCalendars()
-        if (calendars.isEmpty()) {
-            TextView(this).apply {
-                text = "No Google calendars found on this device."
-                textSize = 14f
-            }.also { root.addView(it) }
-        } else {
-            val spinner = Spinner(this).apply {
-                adapter = ArrayAdapter(
-                    this@SettingsActivity,
-                    android.R.layout.simple_spinner_dropdown_item,
-                    calendars.map { it.second },
-                )
+        calAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mutableListOf<String>())
+        calSpinner = Spinner(this).apply { adapter = calAdapter }
+        calSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                if (pos < calendars.size) Prefs.setCalendarId(this@SettingsActivity, calendars[pos].first)
             }
-            val savedId = Prefs.getCalendarId(this)
-            val idx = calendars.indexOfFirst { it.first == savedId }.takeIf { it >= 0 } ?: 0
-            spinner.setSelection(idx)
-            if (savedId == null && calendars.isNotEmpty()) Prefs.setCalendarId(this, calendars[0].first)
-
-            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                    Prefs.setCalendarId(this@SettingsActivity, calendars[pos].first)
-                }
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
-            }
-            root.addView(spinner)
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+        root.addView(calSpinner)
+
+        Button(this).apply {
+            text = "Create new calendar…"
+            setOnClickListener { showCreateCalendarDialog() }
+        }.also { root.addView(it) }
 
         root.addView(spacer(32))
 
@@ -100,8 +93,88 @@ class SettingsActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        refreshCalendarSpinner()
         refreshSourceLabels()
     }
+
+    // ── Calendar helpers ───────────────────────────────────────────────────
+
+    private fun refreshCalendarSpinner() {
+        val loaded = loadCalendars()
+        calendars.clear()
+        calendars.addAll(loaded)
+        calAdapter.clear()
+        calAdapter.addAll(calendars.map { it.second })
+        calAdapter.notifyDataSetChanged()
+
+        val savedId = Prefs.getCalendarId(this)
+        val idx = calendars.indexOfFirst { it.first == savedId }.takeIf { it >= 0 } ?: 0
+        if (calendars.isNotEmpty()) {
+            calSpinner.setSelection(idx)
+            if (savedId == null) Prefs.setCalendarId(this, calendars[0].first)
+        }
+    }
+
+    private fun showCreateCalendarDialog() {
+        val input = EditText(this).apply {
+            hint = "Calendar name"
+            setText("Health Connect")
+            setPadding(48, 32, 48, 32)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Create new calendar")
+            .setView(input)
+            .setPositiveButton("Create") { _, _ ->
+                val name = input.text.toString().trim().ifBlank { "Health Connect" }
+                // Use the account of the currently selected calendar
+                val selected = calendars.getOrNull(calSpinner.selectedItemPosition)
+                val (accountName, accountType) = if (selected != null) {
+                    val parts = selected.third.split("|")
+                    (parts.getOrNull(0) ?: "") to (parts.getOrNull(1) ?: "com.google")
+                } else "" to "com.google"
+
+                val newId = CalendarHelper.createCalendar(this, name, accountName, accountType)
+                if (newId != null) {
+                    Prefs.setCalendarId(this, newId)
+                    refreshCalendarSpinner()
+                    Toast.makeText(this, "Calendar \"$name\" created", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Failed to create calendar", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun loadCalendars(): List<Triple<Long, String, String>> {
+        val projection = arrayOf(
+            android.provider.CalendarContract.Calendars._ID,
+            android.provider.CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+            android.provider.CalendarContract.Calendars.ACCOUNT_NAME,
+            android.provider.CalendarContract.Calendars.ACCOUNT_TYPE,
+        )
+        val result = mutableListOf<Triple<Long, String, String>>()
+        contentResolver.query(
+            android.provider.CalendarContract.Calendars.CONTENT_URI,
+            projection, null, null, null,
+        )?.use { cursor ->
+            val idCol   = cursor.getColumnIndex(android.provider.CalendarContract.Calendars._ID)
+            val nameCol = cursor.getColumnIndex(android.provider.CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
+            val acctCol = cursor.getColumnIndex(android.provider.CalendarContract.Calendars.ACCOUNT_NAME)
+            val typeCol = cursor.getColumnIndex(android.provider.CalendarContract.Calendars.ACCOUNT_TYPE)
+            while (cursor.moveToNext()) {
+                val type = cursor.getString(typeCol) ?: ""
+                if (type != "com.google") continue
+                val id      = cursor.getLong(idCol)
+                val calName = cursor.getString(nameCol) ?: ""
+                val acct    = cursor.getString(acctCol) ?: ""
+                result.add(Triple(id, "$calName ($acct)", "$acct|$type"))
+            }
+        }
+        return result
+    }
+
+    // ── Source helpers ─────────────────────────────────────────────────────
 
     private fun refreshSourceLabels() {
         sleepLabel.text    = sourceSummary(Prefs.getSleepSourcePriority(this))
@@ -122,34 +195,6 @@ class SettingsActivity : ComponentActivity() {
 
     private fun spacer(dp: Int) = View(this).apply {
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp)
-    }
-
-    private fun loadCalendars(): List<Pair<Long, String>> {
-        val projection = arrayOf(
-            android.provider.CalendarContract.Calendars._ID,
-            android.provider.CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
-            android.provider.CalendarContract.Calendars.ACCOUNT_NAME,
-            android.provider.CalendarContract.Calendars.ACCOUNT_TYPE,
-        )
-        val result = mutableListOf<Pair<Long, String>>()
-        contentResolver.query(
-            android.provider.CalendarContract.Calendars.CONTENT_URI,
-            projection, null, null, null,
-        )?.use { cursor ->
-            val idCol   = cursor.getColumnIndex(android.provider.CalendarContract.Calendars._ID)
-            val nameCol = cursor.getColumnIndex(android.provider.CalendarContract.Calendars.CALENDAR_DISPLAY_NAME)
-            val acctCol = cursor.getColumnIndex(android.provider.CalendarContract.Calendars.ACCOUNT_NAME)
-            val typeCol = cursor.getColumnIndex(android.provider.CalendarContract.Calendars.ACCOUNT_TYPE)
-            while (cursor.moveToNext()) {
-                val type = cursor.getString(typeCol) ?: ""
-                if (type != "com.google") continue
-                val id   = cursor.getLong(idCol)
-                val name = cursor.getString(nameCol) ?: ""
-                val acct = cursor.getString(acctCol) ?: ""
-                result.add(id to "$name ($acct)")
-            }
-        }
-        return result
     }
 
     private fun friendlySource(pkg: String): String = when {

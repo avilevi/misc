@@ -106,6 +106,30 @@ object CalendarHelper {
         return null
     }
 
+    // ── Calendar creation ──────────────────────────────────────────────────
+
+    fun createCalendar(context: Context, name: String, accountName: String, accountType: String): Long? {
+        val values = ContentValues().apply {
+            put(CalendarContract.Calendars.ACCOUNT_NAME,          accountName)
+            put(CalendarContract.Calendars.ACCOUNT_TYPE,          accountType)
+            put(CalendarContract.Calendars.NAME,                  name)
+            put(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME, name)
+            put(CalendarContract.Calendars.CALENDAR_COLOR,        0xFF4CAF50.toInt())
+            put(CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL, CalendarContract.Calendars.CAL_ACCESS_OWNER)
+            put(CalendarContract.Calendars.OWNER_ACCOUNT,         accountName)
+            put(CalendarContract.Calendars.VISIBLE,               1)
+            put(CalendarContract.Calendars.SYNC_EVENTS,           1)
+        }
+        val uri = CalendarContract.Calendars.CONTENT_URI.buildUpon()
+            .appendQueryParameter(CalendarContract.CALLER_IS_SYNCADAPTER, "true")
+            .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_NAME, accountName)
+            .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_TYPE, accountType)
+            .build()
+        return try {
+            context.contentResolver.insert(uri, values)?.lastPathSegment?.toLongOrNull()
+        } catch (_: Exception) { null }
+    }
+
     // ── Deduplication ──────────────────────────────────────────────────────
 
     fun eventExists(context: Context, calendarId: Long, title: String, startMs: Long): Boolean {
