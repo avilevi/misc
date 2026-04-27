@@ -4,7 +4,10 @@ on:
   push:
     paths:
       - 'healthconnect_to_gcal/hc_export_app/**'
-  workflow_dispatch:   # also allows manual trigger from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -28,9 +31,10 @@ jobs:
         working-directory: healthconnect_to_gcal/hc_export_app
         run: ./gradlew assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
         with:
-          name: hc-export-debug
-          path: healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          tag_name: latest
+          name: HC Sync (latest build)
+          files: healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/debug/app-debug.apk
+          prerelease: true
