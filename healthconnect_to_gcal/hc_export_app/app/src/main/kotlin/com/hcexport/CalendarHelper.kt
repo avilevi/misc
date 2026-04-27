@@ -11,7 +11,6 @@ object CalendarHelper {
     private val timeFmt = SimpleDateFormat("h:mm a", Locale.getDefault())
     private val tz get() = TimeZone.getDefault().id
 
-    // Exercise type code → (emoji, label)
     private val EXERCISE_TYPES = mapOf(
         0  to ("💪" to "Other Workout"),
         2  to ("🏸" to "Badminton"),
@@ -99,11 +98,8 @@ object CalendarHelper {
                 val type    = cursor.getString(typeCol) ?: ""
                 val primary = cursor.getInt(primaryCol) == 1
 
-                if (name.equals(preferredName, ignoreCase = true))
-                    return id   // exact match — use it
-
-                if (type == "com.google" && primary && primaryGoogleId == null)
-                    primaryGoogleId = id
+                if (name.equals(preferredName, ignoreCase = true)) return id
+                if (type == "com.google" && primary && primaryGoogleId == null) primaryGoogleId = id
             }
             return primaryGoogleId
         }
@@ -113,13 +109,15 @@ object CalendarHelper {
     // ── Deduplication ──────────────────────────────────────────────────────
 
     fun eventExists(context: Context, calendarId: Long, title: String, startMs: Long): Boolean {
-        val projection = arrayOf(CalendarContract.Events._ID)
-        val selection  = "${CalendarContract.Events.CALENDAR_ID} = ? " +
-                         "AND ${CalendarContract.Events.TITLE} = ? " +
-                         "AND ${CalendarContract.Events.DTSTART} = ?"
-        val args = arrayOf(calendarId.toString(), title, startMs.toString())
+        val selection = "${CalendarContract.Events.CALENDAR_ID} = ? " +
+                        "AND ${CalendarContract.Events.TITLE} = ? " +
+                        "AND ${CalendarContract.Events.DTSTART} = ?"
         context.contentResolver.query(
-            CalendarContract.Events.CONTENT_URI, projection, selection, args, null
+            CalendarContract.Events.CONTENT_URI,
+            arrayOf(CalendarContract.Events._ID),
+            selection,
+            arrayOf(calendarId.toString(), title, startMs.toString()),
+            null,
         )?.use { return it.count > 0 }
         return false
     }
@@ -129,11 +127,11 @@ object CalendarHelper {
     fun insertEvent(context: Context, calendarId: Long, title: String,
                     description: String, startMs: Long, endMs: Long) {
         val values = ContentValues().apply {
-            put(CalendarContract.Events.CALENDAR_ID,  calendarId)
-            put(CalendarContract.Events.TITLE,        title)
-            put(CalendarContract.Events.DESCRIPTION,  description)
-            put(CalendarContract.Events.DTSTART,      startMs)
-            put(CalendarContract.Events.DTEND,        endMs)
+            put(CalendarContract.Events.CALENDAR_ID,   calendarId)
+            put(CalendarContract.Events.TITLE,         title)
+            put(CalendarContract.Events.DESCRIPTION,   description)
+            put(CalendarContract.Events.DTSTART,       startMs)
+            put(CalendarContract.Events.DTEND,         endMs)
             put(CalendarContract.Events.EVENT_TIMEZONE, tz)
         }
         context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
@@ -143,18 +141,33 @@ object CalendarHelper {
 
     fun exerciseTitle(event: ExerciseEvent): String {
         val (emoji, label) = EXERCISE_TYPES[event.typeCode] ?: ("🏃" to "Exercise (${event.typeCode})")
-        val name     = event.title.takeIf { it.isNotBlank() } ?: label
+        val name = event.title.takeIf { it.isNotBlank() } ?: label
         return "$emoji $name – ${fmtDur((event.endMs - event.startMs) / 60_000)}"
     }
 
     fun exerciseDescription(event: ExerciseEvent): String = buildString {
-        if (event.distanceM != null)    appendLine("Distance:   %.2f km".format(event.distanceM / 1000))
-        if (event.caloriesKcal != null) appendLine("Calories:   ${event.caloriesKcal.toInt()} kcal")
-        if (event.avgHrBpm != null)     appendLine("Avg HR:     ${event.avgHrBpm.toInt()} bpm")
-        if (event.maxHrBpm != null)     appendLine("Max HR:     ${event.maxHrBpm.toInt()} bpm")
-        appendLine()
         appendLine("${timeFmt.format(Date(event.startMs))}  →  ${timeFmt.format(Date(event.endMs))}")
-        if (event.notes.isNotBlank()) { appendLine(); append("Notes: ${event.notes}") }
+        appendLine()
+
+        if (event.distanceM    != null) appendLine("Distance:   %.2f km".format(event.distanceM / 1000))
+        if (event.paceSecPerKm != null) appendLine("Avg pace:   ${fmtPace(event.paceSecPerKm)} /km")
+        if (event.stepsCount   != null) appendLine("Steps:      ${event.stepsCount}")
+        if (event.caloriesKcal != null) appendLine("Calories:   ${event.caloriesKcal.toInt()} kcal")
+        if (event.avgHrBpm     != null) appendLine("Avg HR:     ${event.avgHrBpm.toInt()} bpm")
+        if (event.maxHrBpm     != null) appendLine("Max HR:     ${event.maxHrBpm.toInt()} bpm")
+
+        if (event.hrSamples.isNotEmpty()) {
+            appendLine()
+            appendLine("HR over time:")
+            for (s in event.hrSamples) {
+                appendLine("  %3dm → %d bpm".format(s.offsetMin, s.bpm))
+            }
+        }
+
+        if (event.notes.isNotBlank()) { appendLine(); appendLine("Notes: ${event.notes}") }
+
+        appendLine()
+        append("Source: ${friendlySource(event.sourcePkg)}")
     }.trimEnd()
 
     fun sleepTitle(event: SleepEvent): String =
@@ -176,8 +189,13 @@ object CalendarHelper {
             for (name in order) {
                 totals[name]?.let { appendLine("  %-14s %s".format(name, fmtDur(it))); shown += name }
             }
-            totals.keys.filter { it !in shown }.forEach { appendLine("  %-14s %s".format(it, fmtDur(totals[it]!!))) }
+            totals.keys.filter { it !in shown }.forEach {
+                appendLine("  %-14s %s".format(it, fmtDur(totals[it]!!)))
+            }
         }
+
+        appendLine()
+        append("Source: ${friendlySource(event.sourcePkg)}")
     }.trimEnd()
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -188,5 +206,23 @@ object CalendarHelper {
             if (m > 0) "${h}h ${m}m" else "${h}h"
         }
         else -> "${totalMinutes}m"
+    }
+
+    private fun fmtPace(secPerKm: Double): String {
+        val total = secPerKm.toInt()
+        return "%d:%02d".format(total / 60, total % 60)
+    }
+
+    private fun friendlySource(pkg: String): String = when {
+        pkg.contains("samsung") -> "Samsung Health"
+        pkg.contains("fitbit")  -> "Fitbit"
+        pkg.contains("garmin")  -> "Garmin Connect"
+        pkg.contains("google.android.apps.fitness") -> "Google Fit"
+        pkg.contains("huawei")  -> "Huawei Health"
+        pkg.contains("polar")   -> "Polar Flow"
+        pkg.contains("strava")  -> "Strava"
+        pkg.contains("withings")-> "Withings"
+        pkg.contains("whoop")   -> "WHOOP"
+        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
     }
 }

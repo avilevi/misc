@@ -41,6 +41,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ReorderActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

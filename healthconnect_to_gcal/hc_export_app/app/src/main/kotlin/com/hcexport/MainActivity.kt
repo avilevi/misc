@@ -1,5 +1,6 @@
 package com.hcexport
 
+import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -27,6 +28,8 @@ class MainActivity : ComponentActivity() {
         HealthPermission.getReadPermission(DistanceRecord::class),
         HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
         HealthPermission.getReadPermission(HeartRateRecord::class),
+        HealthPermission.getReadPermission(SpeedRecord::class),
+        HealthPermission.getReadPermission(StepsRecord::class),
     )
 
     private val calendarPermissions = arrayOf(
@@ -86,6 +89,13 @@ class MainActivity : ComponentActivity() {
             }
         }.also { root.addView(it) }
 
+        Button(this).apply {
+            text = "Settings"
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+            }
+        }.also { root.addView(it) }
+
         setContentView(ScrollView(this).also { it.addView(root) })
         checkAndSetup()
     }
@@ -96,20 +106,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndSetup() {
-        // 1. Calendar permission
-        if (calendarPermissions.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
+        if (calendarPermissions.any {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }) {
             status("Step 1 of 2: Requesting calendar permission…")
             requestCalendarPermissions.launch(calendarPermissions)
             return
         }
 
-        // 2. Health Connect availability
         if (HealthConnectClient.getSdkStatus(this) != HealthConnectClient.SDK_AVAILABLE) {
             status("⚠ Health Connect is not available on this device.\nRequires Android 9+ with Health Connect installed.")
             return
         }
 
-        // 3. Health Connect permissions
         lifecycleScope.launch {
             try {
                 val client  = HealthConnectClient.getOrCreate(this@MainActivity)
@@ -132,13 +141,14 @@ class MainActivity : ComponentActivity() {
                 return@launch
             }
 
-            // 4. All good — show which calendar will be used
-            val calId   = CalendarHelper.findCalendarId(this@MainActivity)
-            val calName = calId?.let { resolveCalendarName(it) } ?: "none found"
+            val calId = Prefs.getCalendarId(this@MainActivity)
+                ?: CalendarHelper.findCalendarId(this@MainActivity)
             if (calId == null) {
                 status("⚠ No Google calendar found on this device.\nMake sure a Google account is set up.")
             } else {
-                status("✓ Ready\n\nCalendar: $calName\nSyncs every 6 hours automatically.\nLast run: check Android logcat (tag HcSyncWorker)")
+                if (Prefs.getCalendarId(this@MainActivity) == null) Prefs.setCalendarId(this@MainActivity, calId)
+                val calName = resolveCalendarName(calId)
+                status("✓ Ready\n\nCalendar: $calName\nSyncs every 6 hours automatically.\n\nTap Settings to choose calendar or set source priority.")
                 schedulePeriodicSync()
             }
         }
@@ -152,7 +162,8 @@ class MainActivity : ComponentActivity() {
             when (info?.state) {
                 WorkInfo.State.SUCCEEDED -> {
                     lifecycleScope.launch {
-                        val calId   = CalendarHelper.findCalendarId(this@MainActivity)
+                        val calId   = Prefs.getCalendarId(this@MainActivity)
+                            ?: CalendarHelper.findCalendarId(this@MainActivity)
                         val calName = calId?.let { resolveCalendarName(it) } ?: "?"
                         status("✓ Sync complete.\nEvents written to: $calName")
                     }
@@ -176,10 +187,12 @@ class MainActivity : ComponentActivity() {
             android.provider.CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
             android.provider.CalendarContract.Calendars.ACCOUNT_NAME,
         )
-        val selection = "${android.provider.CalendarContract.Calendars._ID} = ?"
         contentResolver.query(
             android.provider.CalendarContract.Calendars.CONTENT_URI,
-            projection, selection, arrayOf(calendarId.toString()), null
+            projection,
+            "${android.provider.CalendarContract.Calendars._ID} = ?",
+            arrayOf(calendarId.toString()),
+            null,
         )?.use { cursor ->
             if (cursor.moveToFirst()) {
                 val name    = cursor.getString(0) ?: ""
