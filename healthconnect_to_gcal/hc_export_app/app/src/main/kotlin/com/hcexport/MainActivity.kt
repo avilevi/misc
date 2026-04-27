@@ -111,14 +111,24 @@ class MainActivity : ComponentActivity() {
 
         // 3. Health Connect permissions
         lifecycleScope.launch {
-            val client  = HealthConnectClient.getOrCreate(this@MainActivity)
-            val granted = client.permissionController.getGrantedPermissions()
-            if (!granted.containsAll(hcPermissions)) {
-                if (!hcPermissionsLaunched) {
-                    hcPermissionsLaunched = true
-                    status("Step 2 of 2: Requesting Health Connect permissions…")
-                    requestHcPermissions.launch(hcPermissions)
+            try {
+                val client  = HealthConnectClient.getOrCreate(this@MainActivity)
+                val granted = client.permissionController.getGrantedPermissions()
+                if (!granted.containsAll(hcPermissions)) {
+                    if (!hcPermissionsLaunched) {
+                        hcPermissionsLaunched = true
+                        status("Step 2 of 2: Requesting Health Connect permissions…")
+                        try {
+                            requestHcPermissions.launch(hcPermissions)
+                        } catch (e: Exception) {
+                            hcPermissionsLaunched = false
+                            status("⚠ Could not open Health Connect permissions.\n\nOpen the Health Connect app → App permissions → HC Sync → allow all. Then tap Refresh.")
+                        }
+                    }
+                    return@launch
                 }
+            } catch (e: Exception) {
+                status("⚠ Health Connect error: ${e.message}\n\nMake sure Health Connect is installed and up to date, then tap Refresh.")
                 return@launch
             }
 
