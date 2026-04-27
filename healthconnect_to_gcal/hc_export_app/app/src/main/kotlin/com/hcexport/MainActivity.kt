@@ -40,11 +40,14 @@ class MainActivity : ComponentActivity() {
     private val requestHcPermissions = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) { granted ->
-        hcPermissionsLaunched = false
-        if (granted.containsAll(hcPermissions))
+        if (granted.containsAll(hcPermissions)) {
+            hcPermissionsLaunched = false
             checkAndSetup()
-        else
+        } else {
+            // Leave hcPermissionsLaunched = true so onResume doesn't re-trigger the loop.
+            // The user must tap Refresh to try again.
             status("⚠ Some Health Connect permissions denied.\n\nOpen the Health Connect app → App permissions → HC Sync, and allow all permissions. Then tap Refresh.")
+        }
     }
 
     private val requestCalendarPermissions = registerForActivityResult(

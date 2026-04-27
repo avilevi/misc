@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_SPEED" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
 
     <!-- Calendar read/write — no OAuth needed, uses the on-device account -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
