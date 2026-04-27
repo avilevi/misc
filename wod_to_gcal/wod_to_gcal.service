@@ -1,0 +1,12 @@
+[Unit]
+Description=Populate WOD events in Google Calendar from hypr-workouts.pages.dev
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=avil
+WorkingDirectory=/home/avil/git/misc/wod_to_gcal
+ExecStart=/usr/bin/python3 /home/avil/git/misc/wod_to_gcal/wod_to_gcal.py
+StandardOutput=journal
+StandardError=journal

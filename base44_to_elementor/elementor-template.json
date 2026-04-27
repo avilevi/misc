@@ -1,0 +1,3301 @@
+{
+  "version": "0.4",
+  "title": "NovaLife — מדריך לשיפור איכות וכמות הביציות",
+  "type": "page",
+  "content": [
+    {
+      "id": "bd644884",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 1200
+        },
+        "background_background": "classic",
+        "background_color": "#DBF0F3",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "24",
+          "bottom": "80",
+          "left": "24",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "e52e7d25",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50,
+            "vertical_alignment": "center"
+          },
+          "elements": [
+            {
+              "id": "82528cfc",
+              "elType": "widget",
+              "widgetType": "image",
+              "settings": {
+                "image": {
+                  "url": "https://media.base44.com/images/public/69cbc1e08a7336e77fee4a13/692092b15_horizontaltagline2x.png",
+                  "alt": "NovaLife — פוריות האישה והגבר"
+                },
+                "image_size": "full",
+                "align": "right",
+                "width": {
+                  "unit": "px",
+                  "size": 137
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "a80ff96b",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 24
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "1f9465d9",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "מדריך לשיפור<br><span style=\"color:#00A2B8\">איכות וכמות</span><br>הביציות",
+                "header_size": "h1",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "900",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 56
+                },
+                "typography_line_height": {
+                  "unit": "em",
+                  "size": 1.15
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "b46ee2e8",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "302c7f96",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">איכות הביציות היא קריטית להצלחת קליטה להריון ולחוויית הריון בריא. שינויים בתזונה, בתוספים ובאורח החיים יכולים להשפיע כבר בחודשים הקרובים.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "135f183e",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 24
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "4b9b82b2",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "gap": "12px",
+                "padding": {
+                  "unit": "px",
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0,
+                  "isLinked": true
+                }
+              },
+              "elements": [
+                {
+                  "id": "c3c94560",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 50
+                  },
+                  "elements": [
+                    {
+                      "id": "76c4c6bc",
+                      "elType": "widget",
+                      "widgetType": "button",
+                      "settings": {
+                        "text": "קראי את המדריך",
+                        "link": {
+                          "url": "https://novalife-egg-quality.base44.app/#nutrition",
+                          "is_external": false,
+                          "nofollow": false
+                        },
+                        "align": "right",
+                        "background_color": "#00A2B8",
+                        "button_text_color": "#FFFFFF",
+                        "border_color": "#00A2B8",
+                        "typography_font_family": "Heebo",
+                        "typography_font_weight": "700",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 8,
+                          "right": 8,
+                          "bottom": 8,
+                          "left": 8
+                        }
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "id": "0d1ec5fa",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 50
+                  },
+                  "elements": [
+                    {
+                      "id": "f0be2feb",
+                      "elType": "widget",
+                      "widgetType": "button",
+                      "settings": {
+                        "text": "לתוספי התזונה",
+                        "link": {
+                          "url": "https://novalife-egg-quality.base44.app/#supplements",
+                          "is_external": false,
+                          "nofollow": false
+                        },
+                        "align": "right",
+                        "background_color": "transparent",
+                        "button_text_color": "#1A717D",
+                        "border_color": "#00A2B8",
+                        "typography_font_family": "Heebo",
+                        "typography_font_weight": "700",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 8,
+                          "right": 8,
+                          "bottom": 8,
+                          "left": 8
+                        },
+                        "background_background": "classic",
+                        "button_border_border": "solid",
+                        "button_border_width": {
+                          "unit": "px",
+                          "top": 2,
+                          "right": 2,
+                          "bottom": 2,
+                          "left": 2
+                        },
+                        "button_border_color": "#00A2B8"
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "7de19c81",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 32
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "40880d3f",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "gap": "12px",
+                "padding": {
+                  "unit": "px",
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0,
+                  "isLinked": true
+                }
+              },
+              "elements": [
+                {
+                  "id": "0209775c",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33,
+                    "background_background": "classic",
+                    "background_color": "rgba(255,255,255,0.6)",
+                    "border_radius": {
+                      "unit": "px",
+                      "top": 12,
+                      "right": 12,
+                      "bottom": 12,
+                      "left": 12
+                    },
+                    "padding": {
+                      "unit": "px",
+                      "top": 12,
+                      "right": 12,
+                      "bottom": 12,
+                      "left": 12,
+                      "isLinked": false
+                    }
+                  },
+                  "elements": [
+                    {
+                      "id": "d02b5854",
+                      "elType": "widget",
+                      "widgetType": "heading",
+                      "settings": {
+                        "title": "<span style=\"font-size:1.6em;font-weight:900;color:#1A717D\">90</span><span style=\"font-size:0.9em;font-weight:500;color:#00A2B8;margin-right:4px\"> יום</span>",
+                        "header_size": "div",
+                        "align": "right",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "aeb2705c",
+                      "elType": "widget",
+                      "widgetType": "text-editor",
+                      "settings": {
+                        "editor": "<p style=\"font-size:12px;color:rgba(56,63,81,0.7);margin-top:4px\">לפני הביוץ מתחיל התהליך</p>",
+                        "align": "right",
+                        "text_color": "#383F51",
+                        "typography_typography": "custom",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "id": "a08959c7",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33,
+                    "background_background": "classic",
+                    "background_color": "rgba(255,255,255,0.6)",
+                    "border_radius": {
+                      "unit": "px",
+                      "top": 12,
+                      "right": 12,
+                      "bottom": 12,
+                      "left": 12
+                    },
+                    "padding": {
+                      "unit": "px",
+                      "top": 12,
+                      "right": 12,
+                      "bottom": 12,
+                      "left": 12,
+                      "isLinked": false
+                    }
+                  },
+                  "elements": [
+                    {
+                      "id": "51170a00",
+                      "elType": "widget",
+                      "widgetType": "heading",
+                      "settings": {
+                        "title": "<span style=\"font-size:1.6em;font-weight:900;color:#1A717D\">3</span><span style=\"font-size:0.9em;font-weight:500;color:#00A2B8;margin-right:4px\"> חלקים</span>",
+                        "header_size": "div",
+                        "align": "right",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "b4b8a3a1",
+                      "elType": "widget",
+                      "widgetType": "text-editor",
+                      "settings": {
+                        "editor": "<p style=\"font-size:12px;color:rgba(56,63,81,0.7);margin-top:4px\">תזונה, תוספים, אורח חיים</p>",
+                        "align": "right",
+                        "text_color": "#383F51",
+                        "typography_typography": "custom",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    }
+                  ]
+                },
+                {
+                  "id": "ff2d94a5",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33,
+                    "background_background": "classic",
+                    "background_color": "rgba(255,255,255,0.6)",
+                    "border_radius": {
+                      "unit": "px",
+                      "top": 12,
+                      "right": 12,
+                      "bottom": 12,
+                      "left": 12
+                    },
+                    "padding": {
+                      "unit": "px",
+                      "top": 12,
+                      "right": 12,
+                      "bottom": 12,
+                      "left": 12,
+                      "isLinked": false
+                    }
+                  },
+                  "elements": [
+                    {
+                      "id": "0d9257b9",
+                      "elType": "widget",
+                      "widgetType": "heading",
+                      "settings": {
+                        "title": "<span style=\"font-size:1.6em;font-weight:900;color:#1A717D\">100%</span><span style=\"font-size:0.9em;font-weight:500;color:#00A2B8;margin-right:4px\"> </span>",
+                        "header_size": "div",
+                        "align": "right",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "9fe04531",
+                      "elType": "widget",
+                      "widgetType": "text-editor",
+                      "settings": {
+                        "editor": "<p style=\"font-size:12px;color:rgba(56,63,81,0.7);margin-top:4px\">ידע ישים ביומיום</p>",
+                        "align": "right",
+                        "text_color": "#383F51",
+                        "typography_typography": "custom",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "4dbdf059",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50,
+            "vertical_alignment": "middle"
+          },
+          "elements": [
+            {
+              "id": "bd835d4d",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"text-align:center;padding:40px;background:rgba(219,240,243,0.5);border-radius:50%;max-width:320px;margin:0 auto\">\n          <p style=\"font-size:120px;line-height:1\">🥚</p>\n          <p style=\"font-size:14px;color:#1A717D;font-weight:600;font-family:Heebo,sans-serif\">הכניסי כאן את האיור המקורי</p>\n        </div>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "632e5773",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 800
+        },
+        "background_background": "classic",
+        "background_color": "#FFFFFF",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "24",
+          "bottom": "80",
+          "left": "24",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "82d064d9",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "110d7a04",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "מבוא",
+                "header_size": "p",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "700",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_css_classes": "nv-pill-label",
+                "custom_css": "selector { display: inline-block; background: #DBF0F3; color: #1A717D; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }"
+              },
+              "elements": []
+            },
+            {
+              "id": "c0c139c6",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "1065cd3e",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "למה איכות הביציות חשובה כל כך?",
+                "header_size": "h2",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "900",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 44
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "fe58e1fc",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "2f5fbec7",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">איכות הביציות היא קריטית להצלחת קליטה להריון ולחוויית הריון בריא. איכות ביציות טובה יותר מגבירה משמעותית את הסיכוי להריון באופן טבעי, וגם מגדילה את הסיכוי לשאוב כמות גדולה יותר של ביציות איכותיות בזמן טיפולי פוריות ושימור פוריות.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "67f1c5dd",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 8
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "3164a2af",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">לסביבה יש השפעה על איכות הביצית כבר כ-<strong style=\"color:#1A717D\">90 יום</strong> לפני הביוץ או השאיבה. לכן שינויים בתזונה, בתוספי תזונה ובאורח החיים יכולים להשפיע על הביציות שיבשילו בחודשים הקרובים.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "82702226",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 24
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "10df94d2",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#DBF0F3",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 24,
+                  "right": 24,
+                  "bottom": 24,
+                  "left": 24,
+                  "isLinked": false
+                }
+              },
+              "elements": [
+                {
+                  "id": "cb8e135f",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "e40163ac",
+                      "elType": "widget",
+                      "widgetType": "text-editor",
+                      "settings": {
+                        "editor": "<p style=\"font-size:16px;font-weight:500;color:#1A717D;font-family:Heebo,sans-serif\">המדריך מחולק ל־3 חלקים עיקריים:</p>",
+                        "align": "right",
+                        "text_color": "#383F51",
+                        "typography_typography": "custom",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "ec39397d",
+                      "elType": "widget",
+                      "widgetType": "spacer",
+                      "settings": {
+                        "space": {
+                          "unit": "px",
+                          "size": 12
+                        }
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "a3a03ec3",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "12px",
+                        "padding": {
+                          "unit": "px",
+                          "top": 0,
+                          "right": 0,
+                          "bottom": 0,
+                          "left": 0,
+                          "isLinked": true
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "9d21c2ec",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 33
+                          },
+                          "elements": [
+                            {
+                              "id": "fb3f868f",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<span style=\"display:inline-flex;align-items:center;gap:8px;background:white;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;color:#1A717D;font-family:Heebo,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,0.08)\"><span style=\"width:20px;height:20px;border-radius:50%;background:#00A2B8;color:white;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center\">1</span>תזונה</span>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "c20fc079",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 33
+                          },
+                          "elements": [
+                            {
+                              "id": "08df69cb",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<span style=\"display:inline-flex;align-items:center;gap:8px;background:white;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;color:#1A717D;font-family:Heebo,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,0.08)\"><span style=\"width:20px;height:20px;border-radius:50%;background:#00A2B8;color:white;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center\">2</span>תוספי תזונה חשובים</span>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "6ad6f48e",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 33
+                          },
+                          "elements": [
+                            {
+                              "id": "9cd3a69c",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<span style=\"display:inline-flex;align-items:center;gap:8px;background:white;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;color:#1A717D;font-family:Heebo,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,0.08)\"><span style=\"width:20px;height:20px;border-radius:50%;background:#00A2B8;color:white;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center\">3</span>אורח חיים</span>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c23dbf05",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 900
+        },
+        "background_background": "classic",
+        "background_color": "#EBF5F7",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "24",
+          "bottom": "80",
+          "left": "24",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "01bb5d97",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "1b22764a",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "חלק ראשון",
+                "header_size": "p",
+                "align": "right",
+                "title_color": "#FFFFFF",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "700",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_css_classes": "nv-pill-label",
+                "custom_css": "selector { display: inline-block; background: #00A2B8; color: #FFFFFF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }"
+              },
+              "elements": []
+            },
+            {
+              "id": "dfc43ece",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "778178a8",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "תזונה",
+                "header_size": "h2",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "900",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 48
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "3f46345a",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">תזונה נכונה מהווה את הבסיס לתמיכה בסביבה האופטימלית להבשלת ביציות איכותיות.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "75b0a575",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 32
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "6c3132a4",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#FFFFFF",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": false
+                },
+                "box_shadow_box_shadow_type": "yes",
+                "box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 2,
+                  "blur": 8,
+                  "spread": 0,
+                  "color": "rgba(0,162,184,0.08)"
+                }
+              },
+              "elements": [
+                {
+                  "id": "68ffbf92",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "b47bece8",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "16px"
+                      },
+                      "elements": [
+                        {
+                          "id": "1c891063",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 5,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "be5731b4",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#DBF0F3;color:#1A717D;font-size:11px;font-weight:900\">01</span>",
+                                "header_size": "div",
+                                "align": "center"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "79bab579",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 95,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "0333f886",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "ירקות",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "435e0e6b",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:rgba(56,63,81,0.6)\">הבסיס של תזונת פוריות</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "dd537992",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 12
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "1eff9b8e",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#FFFFFF",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": false
+                },
+                "box_shadow_box_shadow_type": "yes",
+                "box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 2,
+                  "blur": 8,
+                  "spread": 0,
+                  "color": "rgba(0,162,184,0.08)"
+                }
+              },
+              "elements": [
+                {
+                  "id": "27074cfe",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "b0629ec6",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "16px"
+                      },
+                      "elements": [
+                        {
+                          "id": "b8eefbca",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 5,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "9686c00f",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#E6F3EC;color:#1A717D;font-size:11px;font-weight:900\">02</span>",
+                                "header_size": "div",
+                                "align": "center"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "08fe5a9c",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 95,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "01a826ab",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "חלבון איכותי",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "04120906",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:rgba(56,63,81,0.6)\">חיוני להבשלת ביציות</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "a38c3cfe",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 12
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "347c7a20",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#FFFFFF",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": false
+                },
+                "box_shadow_box_shadow_type": "yes",
+                "box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 2,
+                  "blur": 8,
+                  "spread": 0,
+                  "color": "rgba(0,162,184,0.08)"
+                }
+              },
+              "elements": [
+                {
+                  "id": "4562db51",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "78d34e1a",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "16px"
+                      },
+                      "elements": [
+                        {
+                          "id": "b75b64a2",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 5,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "38195fc0",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#DBF0F3;color:#1A717D;font-size:11px;font-weight:900\">03</span>",
+                                "header_size": "div",
+                                "align": "center"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "4ca7cd48",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 95,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "1ba859ef",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "שומנים טובים",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "0ad99912",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:rgba(56,63,81,0.6)\">חשובים לייצור הורמונים</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "6efe08db",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 12
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "9c6b168a",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#FFFFFF",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": false
+                },
+                "box_shadow_box_shadow_type": "yes",
+                "box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 2,
+                  "blur": 8,
+                  "spread": 0,
+                  "color": "rgba(0,162,184,0.08)"
+                }
+              },
+              "elements": [
+                {
+                  "id": "d11b5a35",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "fa443302",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "16px"
+                      },
+                      "elements": [
+                        {
+                          "id": "98253989",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 5,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "9afe7776",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#E6F3EC;color:#1A717D;font-size:11px;font-weight:900\">04</span>",
+                                "header_size": "div",
+                                "align": "center"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "73738b33",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 95,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "6e4b3f46",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "פחמימות",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "585e443e",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:rgba(56,63,81,0.6)\">לבחור נכון</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "7ead66b5",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 12
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "02d2849e",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#FFFFFF",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": false
+                },
+                "box_shadow_box_shadow_type": "yes",
+                "box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 2,
+                  "blur": 8,
+                  "spread": 0,
+                  "color": "rgba(0,162,184,0.08)"
+                }
+              },
+              "elements": [
+                {
+                  "id": "3ba5abb2",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "ad6fc7f7",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "16px"
+                      },
+                      "elements": [
+                        {
+                          "id": "b8d6a57b",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 5,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "a8d1dbfb",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#DBF0F3;color:#1A717D;font-size:11px;font-weight:900\">05</span>",
+                                "header_size": "div",
+                                "align": "center"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "70ce44fe",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 95,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "5645cb4d",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "נוגדי חמצון",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "a1a7f1c3",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:rgba(56,63,81,0.6)\">הגנה על הביציות</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "1e1aecae",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 12
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "e0993720",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#FFFFFF",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 16,
+                  "right": 16,
+                  "bottom": 16,
+                  "left": 16
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": false
+                },
+                "box_shadow_box_shadow_type": "yes",
+                "box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 2,
+                  "blur": 8,
+                  "spread": 0,
+                  "color": "rgba(0,162,184,0.08)"
+                }
+              },
+              "elements": [
+                {
+                  "id": "ad0778c1",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "ee86fa10",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "gap": "16px"
+                      },
+                      "elements": [
+                        {
+                          "id": "7bc16a8e",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 5,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "b5e19a0e",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "<span style=\"display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#E6F3EC;color:#1A717D;font-size:11px;font-weight:900\">06</span>",
+                                "header_size": "div",
+                                "align": "center"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        },
+                        {
+                          "id": "ac2270cb",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 95,
+                            "vertical_alignment": "middle"
+                          },
+                          "elements": [
+                            {
+                              "id": "b861d3df",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "מזונות להפחתה",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "9a0f040e",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:rgba(56,63,81,0.6)\">מה כדאי להוריד</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "54aea3a9",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 1100
+        },
+        "background_background": "classic",
+        "background_color": "#FFFFFF",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "24",
+          "bottom": "80",
+          "left": "24",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "f9f55a7b",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "9f62d3ea",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "חלק שני",
+                "header_size": "p",
+                "align": "right",
+                "title_color": "#FFFFFF",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "700",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_css_classes": "nv-pill-label",
+                "custom_css": "selector { display: inline-block; background: #00A2B8; color: #FFFFFF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }"
+              },
+              "elements": []
+            },
+            {
+              "id": "552f1c57",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "365219be",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "תוספי תזונה",
+                "header_size": "h2",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "900",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 48
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "6eb9b014",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">פורמולות מבוססות מחקר שפיתחנו במיוחד לתמיכה בפוריות הנשית — שני תוספים שפועלים בסינרגיה.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "47cf91a0",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 40
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "8db3cee6",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "gap": "24px",
+                "padding": {
+                  "unit": "px",
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0,
+                  "isLinked": true
+                }
+              },
+              "elements": [
+                {
+                  "id": "18e95074",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 50
+                  },
+                  "elements": [
+                    {
+                      "id": "a8f54ebf",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#DBF0F3",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 20,
+                          "right": 20,
+                          "bottom": 20,
+                          "left": 20
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "3f7d1eea",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "04d34a9f",
+                              "elType": "widget",
+                              "widgetType": "image",
+                              "settings": {
+                                "image": {
+                                  "url": "https://media.base44.com/images/public/69cbc1e08a7336e77fee4a13/9e0b36ff5_ForYou.png",
+                                  "alt": "ForYou"
+                                },
+                                "image_size": "full",
+                                "align": "center",
+                                "width": {
+                                  "unit": "px",
+                                  "size": 180
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "f494e40e",
+                              "elType": "widget",
+                              "widgetType": "spacer",
+                              "settings": {
+                                "space": {
+                                  "unit": "px",
+                                  "size": 16
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "60cafd27",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "הכנת הגוף להריון",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 16
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "6bbaa178",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">פורמולת \"חובה\" המשלבת את רכיבי המפתח להכנת הגוף להריון: חומצה פולית טבעית, קו-אנזים Q10, כולין ויוד. השילוב המדויק התומך ביצירת הסביבה האופטימלית להריון בריא.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "57c6b45c",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 50
+                  },
+                  "elements": [
+                    {
+                      "id": "57f456db",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#DBF0F3",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 20,
+                          "right": 20,
+                          "bottom": 20,
+                          "left": 20
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "932fa3d2",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "5c5365d8",
+                              "elType": "widget",
+                              "widgetType": "image",
+                              "settings": {
+                                "image": {
+                                  "url": "https://media.base44.com/images/public/69cbc1e08a7336e77fee4a13/215799d64_OvaLife.png",
+                                  "alt": "OvaLife"
+                                },
+                                "image_size": "full",
+                                "align": "center",
+                                "width": {
+                                  "unit": "px",
+                                  "size": 180
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "33aad497",
+                              "elType": "widget",
+                              "widgetType": "spacer",
+                              "settings": {
+                                "space": {
+                                  "unit": "px",
+                                  "size": 16
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "1e9c154e",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "תמיכה ברזרבה השחלתית",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 16
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "7afb1eb0",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">פורמולה מתקדמת המשלבת רכיבים מבוססי מחקר בתחום Ovary Antiaging, הפועלים בסינרגיה לתמיכה ברזרבה השחלתית. השילוב תומך באיכות הביציות ובמאגרי הגוף לקראת ההפריה.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "45d29a69",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 40
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "000695a4",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "background_background": "classic",
+                "background_color": "#DBF0F3",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20
+                },
+                "padding": {
+                  "unit": "px",
+                  "top": 32,
+                  "right": 32,
+                  "bottom": 32,
+                  "left": 32,
+                  "isLinked": false
+                }
+              },
+              "elements": [
+                {
+                  "id": "0f0c06f8",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 100
+                  },
+                  "elements": [
+                    {
+                      "id": "c5f9ea0d",
+                      "elType": "widget",
+                      "widgetType": "heading",
+                      "settings": {
+                        "title": "מארז תמיכה ברזרבה השחלתית",
+                        "header_size": "h3",
+                        "align": "right",
+                        "title_color": "#1A717D",
+                        "typography_font_family": "Heebo",
+                        "typography_font_weight": "900",
+                        "typography_font_size": {
+                          "unit": "px",
+                          "size": 24
+                        }
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "597a779d",
+                      "elType": "widget",
+                      "widgetType": "text-editor",
+                      "settings": {
+                        "editor": "<p style=\"font-size:16px;color:#383F51\">שני התוספים יחד — ForYou + OvaLife — במארז מיוחד</p>",
+                        "align": "right",
+                        "text_color": "#383F51",
+                        "typography_typography": "custom",
+                        "typography_font_family": "Heebo"
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "ed54df62",
+                      "elType": "widget",
+                      "widgetType": "spacer",
+                      "settings": {
+                        "space": {
+                          "unit": "px",
+                          "size": 16
+                        }
+                      },
+                      "elements": []
+                    },
+                    {
+                      "id": "8e46f449",
+                      "elType": "widget",
+                      "widgetType": "button",
+                      "settings": {
+                        "text": "לרכישת המארז לתמיכה ברזרבה",
+                        "link": {
+                          "url": "https://novalife.co.il/product/%d7%9e%d7%90%d7%a8%d7%96-%d7%aa%d7%9e%d7%99%d7%9b%d7%94-%d7%91%d7%a8%d7%96%d7%a8%d7%91%d7%94/",
+                          "is_external": false,
+                          "nofollow": false
+                        },
+                        "align": "right",
+                        "background_color": "#1A717D",
+                        "button_text_color": "#FFFFFF",
+                        "border_color": "#1A717D",
+                        "typography_font_family": "Heebo",
+                        "typography_font_weight": "700",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 8,
+                          "right": 8,
+                          "bottom": 8,
+                          "left": 8
+                        }
+                      },
+                      "elements": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "75bbb218",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 1100
+        },
+        "background_background": "classic",
+        "background_color": "#EDF7F0",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "24",
+          "bottom": "80",
+          "left": "24",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "0c68c26a",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "5681f109",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "חלק שלישי",
+                "header_size": "p",
+                "align": "right",
+                "title_color": "#FFFFFF",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "700",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_css_classes": "nv-pill-label",
+                "custom_css": "selector { display: inline-block; background: #00A2B8; color: #FFFFFF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }"
+              },
+              "elements": []
+            },
+            {
+              "id": "7005e90b",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "e0362143",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "אורח חיים",
+                "header_size": "h2",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "900",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 48
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "7d861a33",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">גורמי אורח חיים המשפיעים על איכות הביציות — שינויים קטנים ועקביים שיכולים לעשות הבדל משמעותי.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "b5d1c1dc",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 40
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "a00da7de",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "gap": "24px",
+                "padding": {
+                  "unit": "px",
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0,
+                  "isLinked": true
+                }
+              },
+              "elements": [
+                {
+                  "id": "59897a73",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33
+                  },
+                  "elements": [
+                    {
+                      "id": "b9e3f2ab",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#FFFFFF",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 16,
+                          "right": 16,
+                          "bottom": 16,
+                          "left": 16
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        },
+                        "box_shadow_box_shadow_type": "yes",
+                        "box_shadow_box_shadow": {
+                          "horizontal": 0,
+                          "vertical": 2,
+                          "blur": 8,
+                          "spread": 0,
+                          "color": "rgba(0,0,0,0.06)"
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "53464054",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "9b04fcfe",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:32px;text-align:right\">🌙</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "4ce90d2e",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "7–8 שעות בלילה",
+                                "header_size": "p",
+                                "align": "right",
+                                "title_color": "#00A2B8",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 12
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "7d1cbf08",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "שינה",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "1e7715fb",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">שינה מספקת חשובה לתהליכים הורמונליים בגוף. במהלך השינה מתרחשים תהליכי תיקון והתחדשות של תאים ומערכות בגוף. חוסר שינה כרוני עלול להשפיע על האיזון ההורמונלי.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "4486fc80",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33
+                  },
+                  "elements": [
+                    {
+                      "id": "4bf43252",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#FFFFFF",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 16,
+                          "right": 16,
+                          "bottom": 16,
+                          "left": 16
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        },
+                        "box_shadow_box_shadow_type": "yes",
+                        "box_shadow_box_shadow": {
+                          "horizontal": 0,
+                          "vertical": 2,
+                          "blur": 8,
+                          "spread": 0,
+                          "color": "rgba(0,0,0,0.06)"
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "ae80a74e",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "978b660f",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:32px;text-align:right\">🧘‍♀️</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "cd4d8bf8",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "הפחתת מתח מתמשך",
+                                "header_size": "p",
+                                "align": "right",
+                                "title_color": "#00A2B8",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 12
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "f95465fb",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "סטרס",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "2565d6a3",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">סטרס ממושך משפיע על מערכת העצבים ועל הציר ההורמונלי בגוף. כאשר הגוף נמצא במצב של מתח מתמשך משתחררים הורמוני סטרס כגון קורטיזול, אשר עשויים להשפיע על מערכות שונות.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "a7b6fc58",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33
+                  },
+                  "elements": [
+                    {
+                      "id": "8eb5bd6d",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#FFFFFF",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 16,
+                          "right": 16,
+                          "bottom": 16,
+                          "left": 16
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        },
+                        "box_shadow_box_shadow_type": "yes",
+                        "box_shadow_box_shadow": {
+                          "horizontal": 0,
+                          "vertical": 2,
+                          "blur": 8,
+                          "spread": 0,
+                          "color": "rgba(0,0,0,0.06)"
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "0c943b6e",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "0a2dd87a",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:32px;text-align:right\">🏃‍♀️</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "d4bbc072",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "פעילות מתונה ועקבית",
+                                "header_size": "p",
+                                "align": "right",
+                                "title_color": "#00A2B8",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 12
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "41a54f6e",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "פעילות גופנית",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "13b9907d",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">פעילות גופנית מתונה יכולה לתרום לבריאות הכללית, לשיפור זרימת הדם ולתמיכה במטבוליזם. היא יכולה גם לסייע באיזון רמות סוכר ובהפחתת סטרס.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "467e1aa4",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 24
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "ebe35d51",
+              "elType": "section",
+              "isInner": true,
+              "settings": {
+                "gap": "24px",
+                "padding": {
+                  "unit": "px",
+                  "top": 0,
+                  "right": 0,
+                  "bottom": 0,
+                  "left": 0,
+                  "isLinked": true
+                }
+              },
+              "elements": [
+                {
+                  "id": "fc896b5a",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33
+                  },
+                  "elements": [
+                    {
+                      "id": "9a935d9f",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#FFFFFF",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 16,
+                          "right": 16,
+                          "bottom": 16,
+                          "left": 16
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        },
+                        "box_shadow_box_shadow_type": "yes",
+                        "box_shadow_box_shadow": {
+                          "horizontal": 0,
+                          "vertical": 2,
+                          "blur": 8,
+                          "spread": 0,
+                          "color": "rgba(0,0,0,0.06)"
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "a29c1a4a",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "9cda224b",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:32px;text-align:right\">🚭</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "efba80a3",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "גורם משמעותי לפגיעה בפוריות",
+                                "header_size": "p",
+                                "align": "right",
+                                "title_color": "#00A2B8",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 12
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "5a4b6cbc",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "עישון",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "c2808b8a",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">עישון הוא אחד הגורמים הידועים ביותר המשפיעים לרעה על פוריות. חומרים המצויים בעשן הסיגריות עלולים להגביר סטרס חמצוני ולפגוע בתאי הגוף, כולל תאי הביצית.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "db54ffc9",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33
+                  },
+                  "elements": [
+                    {
+                      "id": "36fb437b",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#FFFFFF",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 16,
+                          "right": 16,
+                          "bottom": 16,
+                          "left": 16
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        },
+                        "box_shadow_box_shadow_type": "yes",
+                        "box_shadow_box_shadow": {
+                          "horizontal": 0,
+                          "vertical": 2,
+                          "blur": 8,
+                          "spread": 0,
+                          "color": "rgba(0,0,0,0.06)"
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "57cb5a24",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "753767af",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:32px;text-align:right\">⚖️</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "e9f8bad9",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "איזון תומך פוריות",
+                                "header_size": "p",
+                                "align": "right",
+                                "title_color": "#00A2B8",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 12
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "1b944204",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "משקל גוף ואיזון מטבולי",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "400ff32d",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">משקל גוף נמוך מאוד או עודף משקל משמעותי יכולים להשפיע על האיזון ההורמונלי. שמירה על תזונה מאוזנת ופעילות גופנית מתונה יכולה לסייע באיזון מטבולי התומך בפוריות.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "8bbec7f1",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 33
+                  },
+                  "elements": [
+                    {
+                      "id": "04bb1303",
+                      "elType": "section",
+                      "isInner": true,
+                      "settings": {
+                        "background_background": "classic",
+                        "background_color": "#FFFFFF",
+                        "border_radius": {
+                          "unit": "px",
+                          "top": 16,
+                          "right": 16,
+                          "bottom": 16,
+                          "left": 16
+                        },
+                        "padding": {
+                          "unit": "px",
+                          "top": 24,
+                          "right": 24,
+                          "bottom": 24,
+                          "left": 24,
+                          "isLinked": false
+                        },
+                        "box_shadow_box_shadow_type": "yes",
+                        "box_shadow_box_shadow": {
+                          "horizontal": 0,
+                          "vertical": 2,
+                          "blur": 8,
+                          "spread": 0,
+                          "color": "rgba(0,0,0,0.06)"
+                        }
+                      },
+                      "elements": [
+                        {
+                          "id": "889c5d1a",
+                          "elType": "column",
+                          "settings": {
+                            "_column_size": 100
+                          },
+                          "elements": [
+                            {
+                              "id": "e7e7f6f1",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:32px;text-align:right\">🌿</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "cb34cab0",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "הפחתת חשיפה סביבתית",
+                                "header_size": "p",
+                                "align": "right",
+                                "title_color": "#00A2B8",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 12
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "8c38cc70",
+                              "elType": "widget",
+                              "widgetType": "heading",
+                              "settings": {
+                                "title": "חשיפה למשבשים הורמונליים",
+                                "header_size": "h3",
+                                "align": "right",
+                                "title_color": "#1A717D",
+                                "typography_font_family": "Heebo",
+                                "typography_font_weight": "700",
+                                "typography_font_size": {
+                                  "unit": "px",
+                                  "size": 18
+                                }
+                              },
+                              "elements": []
+                            },
+                            {
+                              "id": "714eb450",
+                              "elType": "widget",
+                              "widgetType": "text-editor",
+                              "settings": {
+                                "editor": "<p style=\"font-size:14px;color:#383F51;line-height:1.6\">ישנם חומרים סביבתיים הנקראים משבשים הורמונליים, אשר יכולים להשפיע על פעילות ההורמונים בגוף. מומלץ להפחית חשיפה לחומרים אלו.</p>",
+                                "align": "right",
+                                "text_color": "#383F51",
+                                "typography_typography": "custom",
+                                "typography_font_family": "Heebo"
+                              },
+                              "elements": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1f9e45c0",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 900
+        },
+        "background_background": "classic",
+        "background_color": "#FFFFFF",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "24",
+          "bottom": "80",
+          "left": "24",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "3d77919d",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "5bd07c7c",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "לסיכום",
+                "header_size": "p",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "700",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_css_classes": "nv-pill-label",
+                "custom_css": "selector { display: inline-block; background: #DBF0F3; color: #1A717D; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }"
+              },
+              "elements": []
+            },
+            {
+              "id": "b69febe1",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "20047ed1",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "אנחנו כאן עבורכן 🤍",
+                "header_size": "h2",
+                "align": "right",
+                "title_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "900",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 48
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "51ee6ec9",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "e4d2312b",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">איכות הביציות מושפעת משילוב של תזונה, תוספי תזונה ואורח חיים. במדריך הזה ניסינו לשתף אתכן בכלים ובעקרונות שאנחנו משתמשות בהם בקליניקה כדי לתמוך בפוריות ובבריאות הגוף.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "1ac06e38",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 8
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "50c9e205",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">המטרה שלנו הייתה לתת לכן ידע וכלים שתוכלו להתחיל ליישם כבר ביומיום, בקצב שמתאים לכן. לעיתים דווקא השינויים הקטנים והעקביים הם אלו שיכולים לעשות הבדל לאורך זמן.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "3846157d",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 8
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "cd3a83af",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:18px;color:#383F51;line-height:1.7\">יחד עם זאת, חשוב לומר בכנות — הדרך להריון לא תמיד פשוטה. לכל אישה יש גוף שונה, שגרת חיים שונה והעדפות שונות, ולכן פעמים רבות ההתאמה האישית היא חלק חשוב מהתהליך.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "8985284d",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "61659c44",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:16px;font-weight:500;color:#383F51;line-height:1.7\">אם תרגישו שתרצו ליווי, הכוונה או התאמה מדויקת יותר עבורכן — אנחנו כאן. נשמח לעזור לכן לבנות תוכנית שתשתלב בשגרת החיים שלכן ותתמוך בגוף שלכן בצורה הטובה ביותר.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "dfbea52a",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 8
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "45708511",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:16px;font-weight:700;color:#383F51\">מאחלות לכן בריאות, איזון והצלחה בדרך להריון. 🤍</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            },
+            {
+              "id": "413bf109",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 32
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "845a66fe",
+              "elType": "widget",
+              "widgetType": "button",
+              "settings": {
+                "text": "לרכישת המארז לתמיכה ברזרבה",
+                "link": {
+                  "url": "https://novalife.co.il/product/%d7%9e%d7%90%d7%a8%d7%96-%d7%aa%d7%9e%d7%99%d7%9b%d7%94-%d7%91%d7%a8%d7%96%d7%a8%d7%91%d7%94/",
+                  "is_external": false,
+                  "nofollow": false
+                },
+                "align": "right",
+                "background_color": "#1A717D",
+                "button_text_color": "#FFFFFF",
+                "border_color": "#1A717D",
+                "typography_font_family": "Heebo",
+                "typography_font_weight": "700",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 8,
+                  "right": 8,
+                  "bottom": 8,
+                  "left": 8
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "ee80351d",
+              "elType": "widget",
+              "widgetType": "spacer",
+              "settings": {
+                "space": {
+                  "unit": "px",
+                  "size": 16
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "a4c923d6",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:14px;color:#383F51;text-align:right\" dir=\"rtl\">לפרטים נוספים צרו קשר בווטסאפ: <strong>+972 55-775-7669</strong></p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "94084802",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 1100
+        },
+        "background_background": "classic",
+        "background_color": "#1A717D",
+        "padding": {
+          "unit": "px",
+          "top": "48",
+          "right": "24",
+          "bottom": "48",
+          "left": "24",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "289cc22b",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50,
+            "vertical_alignment": "middle"
+          },
+          "elements": [
+            {
+              "id": "13ee8dcb",
+              "elType": "widget",
+              "widgetType": "image",
+              "settings": {
+                "image": {
+                  "url": "https://media.base44.com/images/public/69cbc1e08a7336e77fee4a13/692092b15_horizontaltagline2x.png",
+                  "alt": "NovaLife"
+                },
+                "image_size": "full",
+                "align": "right",
+                "width": {
+                  "unit": "px",
+                  "size": 114
+                }
+              },
+              "elements": []
+            },
+            {
+              "id": "19ace350",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:14px;color:rgba(255,255,255,0.6);text-align:right\">ליווי מקצועי ורגשי בדרך להריון</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            }
+          ]
+        },
+        {
+          "id": "0a854043",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50,
+            "vertical_alignment": "middle"
+          },
+          "elements": [
+            {
+              "id": "9fa56efc",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "<a href=\"https://novalife.co.il\" target=\"_blank\" rel=\"noopener\" style=\"color:rgba(255,255,255,0.8);text-decoration:underline\">novalife.co.il</a>",
+                "header_size": "p",
+                "align": "left",
+                "title_color": "#FFFFFF",
+                "typography_font_family": "Heebo",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 14
+                }
+              },
+              "elements": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "e0b77ced",
+      "elType": "section",
+      "isInner": false,
+      "settings": {
+        "layout": "full_width",
+        "content_width": {
+          "unit": "px",
+          "size": 1100
+        },
+        "background_background": "classic",
+        "background_color": "#1A717D",
+        "padding": {
+          "unit": "px",
+          "top": "16",
+          "right": "24",
+          "bottom": "16",
+          "left": "24",
+          "isLinked": false
+        },
+        "border_border": "solid",
+        "border_width": {
+          "unit": "px",
+          "top": "1",
+          "right": "0",
+          "bottom": "0",
+          "left": "0",
+          "isLinked": false
+        },
+        "border_color": "rgba(255,255,255,0.2)"
+      },
+      "elements": [
+        {
+          "id": "7915e9f3",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "cc236c69",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"font-size:12px;color:rgba(255,255,255,0.5);text-align:center\">© 2026 NovaLife. כל הזכויות שמורות. · המידע במדריך זה הוא לצורכי מידע כללי ואינו מהווה ייעוץ רפואי.</p>",
+                "align": "right",
+                "text_color": "#383F51",
+                "typography_typography": "custom",
+                "typography_font_family": "Heebo"
+              },
+              "elements": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "page_settings": {
+    "custom_css": "/* RTL support */\nbody, .elementor { direction: rtl; }\n\n/* Pill label override (fallback if widget custom_css doesn't fire) */\n.nv-pill-label .elementor-heading-title {\n  display: inline-block !important;\n  background: #DBF0F3;\n  color: #1A717D;\n  padding: 4px 12px;\n  border-radius: 20px;\n  font-size: 12px;\n  font-weight: 700;\n  letter-spacing: 0.05em;\n}"
+  }
+}

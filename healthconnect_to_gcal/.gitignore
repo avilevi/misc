@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Google OAuth tokens — never commit these
+token.json
+token.pickle
+hc_drive_token.json
+client_secret.json
+credentials.json
+
+# Health data exports
+/sdcard/
+
+# Android build
+hc_export_app/.gradle/
+hc_export_app/local.properties
+hc_export_app/app/build/
+hc_export_app/build/
+hc_export_app/.idea/
+hc_export_app/captures/
+*.iml

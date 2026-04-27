@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Google OAuth tokens — never commit these
+token.json
+token.pickle
+hc_drive_token.json
+client_secret.json
+credentials.json
+
+# Health data exports
+/healthconnect_to_gcal/sdcard/
+
+# Android build artifacts
+*.iml
+hc_export_app/.gradle/
+hc_export_app/local.properties
+hc_export_app/app/build/
+hc_export_app/build/
+hc_export_app/.idea/
+hc_export_app/captures/
+
+# Editor / OS
+.DS_Store
+*.swp

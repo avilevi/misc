@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account 38771082 — Keren Hishtalmut</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; min-height: 100vh; }
+    h1 { text-align: center; font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+    .subtitle { text-align: center; color: #64748b; font-size: 0.85rem; margin-bottom: 28px; }
+
+    .hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; text-align: center; }
+    .stat-value { font-size: 1.45rem; font-weight: 700; color: #38bdf8; line-height: 1.2; }
+    .stat-value.green { color: #4ade80; }
+    .stat-value.amber { color: #fbbf24; }
+    .stat-label { font-size: 0.68rem; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .chart-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .chart-title { font-size: 0.92rem; font-weight: 600; color: #cbd5e1; margin-bottom: 3px; }
+    .chart-desc { font-size: 0.71rem; color: #475569; margin-bottom: 14px; }
+    .chart-container { position: relative; height: 300px; }
+    .chart-container.short { height: 200px; }
+
+    .charts-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+    .section-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+    .section-header { background: #0f172a; padding: 12px 16px; font-size: 0.78rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.81rem; }
+    th { background: #0f172a; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.65rem; padding: 7px 12px; text-align: left; border-bottom: 1px solid #334155; }
+    td { padding: 9px 12px; border-bottom: 1px solid #0f172a; color: #cbd5e1; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.79rem; }
+    .green { color: #4ade80; }
+    .red { color: #f87171; }
+    .amber { color: #fbbf24; }
+    .total-row td { font-weight: 700; color: #f8fafc; background: #0f172a; border-top: 2px solid #334155; padding: 10px 12px; }
+    .est-row td { opacity: 0.65; }
+
+    .est-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; background: #78350f30; color: #fbbf24; border: 1px solid #d9770630; margin-left: 4px; vertical-align: middle; }
+    .conf-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; background: #0c4a2030; color: #4ade80; border: 1px solid #16a34a40; margin-left: 4px; vertical-align: middle; }
+
+    .note { background: #1e293b; border: 1px solid #334155; border-left: 3px solid #fbbf24; border-radius: 6px; padding: 12px 16px; font-size: 0.75rem; color: #64748b; line-height: 1.8; margin-top: 20px; }
+    .note strong { color: #94a3b8; }
+
+    @media (max-width: 700px) {
+      .charts-2col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>38771082 — קרן השתלמות (מסלול מניות)</h1>
+<p class="subtitle">Employer Hishtalmut · Stocks Track · Altshul Sham · Opened Jul 2017</p>
+
+<!-- Hero Stats -->
+<div class="hero-grid">
+  <div class="stat-card">
+    <div class="stat-value">₪793,838</div>
+    <div class="stat-label">Balance 31 Dec 2025</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">₪506,871</div>
+    <div class="stat-label">Total Deposited <span class="conf-badge">conf</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value green">+₪286,967</div>
+    <div class="stat-label">Total Investment Gain <span class="conf-badge">conf</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value green">+56.6%</div>
+    <div class="stat-label">Return on Deposits <span class="conf-badge">conf</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">20.78%</div>
+    <div class="stat-label">2025 Annual Return</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value amber">~₪5,692</div>
+    <div class="stat-label">Monthly Deposit (2023)</div>
+  </div>
+</div>
+
+<!-- Main chart: Cumulative deposits vs Actual balance -->
+<div class="chart-card">
+  <div class="chart-title">Balance vs. Deposit Base — Cumulative View</div>
+  <div class="chart-desc">Green area = investment gains above deposits. Shaded yellow = deposit accumulation only. All deposit figures confirmed from PDFs.</div>
+  <div class="chart-container">
+    <canvas id="mainChart"></canvas>
+  </div>
+</div>
+
+<!-- Two smaller charts -->
+<div class="charts-2col">
+  <div class="chart-card">
+    <div class="chart-title">Annual Deposits</div>
+    <div class="chart-desc">New money added each year. All values confirmed from PDFs.</div>
+    <div class="chart-container short">
+      <canvas id="depositsChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Annual Investment Return (₪)</div>
+    <div class="chart-desc">Actual balance change minus deposits. All values confirmed from PDFs.</div>
+    <div class="chart-container short">
+      <canvas id="returnsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Year-by-year table -->
+<div class="section-card">
+  <div class="section-header">Year-by-Year Detail — Account 38771082</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th class="num">Jan 1 Balance</th>
+        <th class="num">Annual Deposits</th>
+        <th class="num">Dec 31 w/o Returns<br><small style="color:#334155">(cumulative deposits only)</small></th>
+        <th class="num">Dec 31 Actual</th>
+        <th class="num">Investment Return</th>
+        <th class="num">Total Gain vs. Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- 2017 -->
+      <tr>
+        <td>2017<span class="conf-badge">conf</span></td>
+        <td class="num">—</td>
+        <td class="num">₪11,465</td>
+        <td class="num">₪11,465</td>
+        <td class="num">₪11,873</td>
+        <td class="num green">+₪408</td>
+        <td class="num green">+₪408 (+3.6%)</td>
+      </tr>
+
+      <!-- 2018 -->
+      <tr>
+        <td>2018<span class="conf-badge">conf</span></td>
+        <td class="num">₪11,873</td>
+        <td class="num">₪52,660</td>
+        <td class="num">₪64,125</td>
+        <td class="num">₪60,055</td>
+        <td class="num red">−₪4,478</td>
+        <td class="num red">−₪4,070 (−6.3%)</td>
+      </tr>
+
+      <!-- 2019 confirmed -->
+      <tr>
+        <td>2019<span class="conf-badge">conf</span></td>
+        <td class="num">₪60,055</td>
+        <td class="num">₪53,944</td>
+        <td class="num">₪118,069</td>
+        <td class="num">₪135,048</td>
+        <td class="num green">+₪21,049</td>
+        <td class="num green">+₪16,979 (+14.4%)</td>
+      </tr>
+
+      <!-- 2020 confirmed -->
+      <tr>
+        <td>2020<span class="conf-badge">conf</span></td>
+        <td class="num">₪135,048</td>
+        <td class="num">₪56,943</td>
+        <td class="num">₪175,012</td>
+        <td class="num">₪208,833</td>
+        <td class="num green">+₪16,842</td>
+        <td class="num green">+₪33,821 (+19.3%)</td>
+      </tr>
+
+      <!-- 2021 -->
+      <tr>
+        <td>2021<span class="conf-badge">conf</span></td>
+        <td class="num">₪208,833</td>
+        <td class="num">₪58,628</td>
+        <td class="num">₪233,640</td>
+        <td class="num">₪303,132</td>
+        <td class="num green">+₪35,671</td>
+        <td class="num green">+₪69,492 (+29.7%)</td>
+      </tr>
+
+      <!-- 2022 -->
+      <tr>
+        <td>2022<span class="conf-badge">conf</span></td>
+        <td class="num">₪303,132</td>
+        <td class="num">₪63,922</td>
+        <td class="num">₪297,562</td>
+        <td class="num">₪304,343</td>
+        <td class="num red">−₪62,711</td>
+        <td class="num green">+₪6,781 (+2.3%)</td>
+      </tr>
+
+      <!-- 2023 -->
+      <tr>
+        <td>2023<span class="conf-badge">conf</span></td>
+        <td class="num">₪304,343</td>
+        <td class="num">₪67,507</td>
+        <td class="num">₪365,069</td>
+        <td class="num">₪424,146</td>
+        <td class="num green">+₪52,296</td>
+        <td class="num green">+₪59,077 (+16.2%)</td>
+      </tr>
+
+      <!-- 2024 confirmed -->
+      <tr>
+        <td>2024<span class="conf-badge">conf</span></td>
+        <td class="num">₪424,146</td>
+        <td class="num">₪70,310</td>
+        <td class="num">₪435,379</td>
+        <td class="num">₪590,466</td>
+        <td class="num green">+₪96,010</td>
+        <td class="num green">+₪155,087 (+35.6%)</td>
+      </tr>
+
+      <!-- 2025 confirmed -->
+      <tr>
+        <td>2025<span class="conf-badge">conf</span></td>
+        <td class="num">₪590,466</td>
+        <td class="num">₪71,492</td>
+        <td class="num">₪506,871</td>
+        <td class="num">₪793,838</td>
+        <td class="num green">+₪131,880</td>
+        <td class="num green">+₪286,967 (+56.6%)</td>
+      </tr>
+
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td>Totals</td>
+        <td class="num">—</td>
+        <td class="num">₪506,871</td>
+        <td class="num">—</td>
+        <td class="num">₪793,838</td>
+        <td class="num green">+₪286,967</td>
+        <td class="num green">+56.6% on cost</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<!-- Projection table -->
+<div class="section-card" style="margin-bottom:20px">
+  <div class="section-header">Projection — Starting ₪793,838 · ₪71,492/yr deposits · Various Return Scenarios</div>
+  <table id="projTable">
+    <thead>
+      <tr>
+        <th>Horizon</th>
+        <th class="num">End Year</th>
+        <th class="num">5% / yr</th>
+        <th class="num">7% / yr</th>
+        <th class="num">10% / yr</th>
+        <th class="num">15% / yr</th>
+      </tr>
+    </thead>
+    <tbody id="projBody"></tbody>
+  </table>
+  <div style="padding:10px 16px; font-size:0.7rem; color:#475569; border-top:1px solid #0f172a;">
+    Formula: FV = ₪793,838 × (1+r)ⁿ + ₪71,492 × [(1+r)ⁿ − 1] / r &nbsp;·&nbsp; Deposits assumed constant at 2025 level, added end-of-year. Gain = FV − (₪793,838 + n × ₪71,492).
+  </div>
+</div>
+
+<div class="note">
+  <strong>Column definitions:</strong>
+  "Jan 1 Balance" = prior year-end actual balance.
+  "Dec 31 w/o Returns" = running total of all deposits ever made (what you'd have with zero investment return).
+  "Investment Return" for the year = (end balance) − (start balance) − (year's deposits). Includes market gain/loss on both existing balance and new deposits.
+  "Total Gain vs. Cost" = (actual balance) − (cumulative deposits); percentage = gain / cumulative deposits.
+  <br><br>
+  <strong>All values confirmed:</strong> Exact deposit totals extracted from all annual PDFs (2017–2025). Total deposited ₪506,871 and investment gain +₪286,967 (+56.6%) are fully confirmed.
+  <br><br>
+  <strong>Note on 2022:</strong> The −₪62,711 annual investment return reflects a brutal −19% year for the Stocks track on a ₪303K starting balance. Net balance only rose ₪1,211 despite depositing ₪64K.
+</div>
+
+<script>
+const years = ['2017','2018','2019','2020','2021','2022','2023','2024','2025'];
+
+// Year-end actual balances (all confirmed from PDFs)
+const actuals = [11873, 60055, 135048, 208833, 303132, 304343, 424146, 590466, 793838];
+
+// Cumulative deposits (all confirmed from PDFs)
+const cumDep  = [11465, 64125, 118069, 175012, 233640, 297562, 365069, 435379, 506871];
+
+// Annual deposits (all confirmed)
+const annDep  = [11465, 52660, 53944, 56943, 58628, 63922, 67507, 70310, 71492];
+const depConf = [true,   true,  true,  true,  true,  true,  true,  true,  true];
+
+// Investment gain = actual - cumDep
+const gains = actuals.map((a, i) => a - cumDep[i]);
+
+// Annual investment return = end - start - annualDeposit
+const startBals = [0, ...actuals.slice(0,-1)];
+const annReturn = actuals.map((a,i) => a - startBals[i] - annDep[i]);
+
+// ─── Main chart: cumDep vs actuals ───────────────────────────────────────────
+const mainCtx = document.getElementById('mainChart').getContext('2d');
+new Chart(mainCtx, {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [
+      {
+        label: 'Actual Balance',
+        data: actuals,
+        borderColor: '#4ade80',
+        backgroundColor: 'rgba(74,222,128,0.18)',
+        fill: '-1',
+        tension: 0.35,
+        pointRadius: 5,
+        pointBackgroundColor: '#4ade80',
+        borderWidth: 2.5,
+        order: 1
+      },
+      {
+        label: 'Cumulative Deposits (cost basis)',
+        data: cumDep,
+        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(251,191,36,0.12)',
+        fill: 'origin',
+        tension: 0.35,
+        pointRadius: 5,
+        pointBackgroundColor: depConf.map(c => c ? '#fbbf24' : '#f59e0b'),
+        borderWidth: 2,
+        borderDash: [],
+        order: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        labels: { color: '#94a3b8', font: { size: 11 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.y;
+            const fmt = v => '₪' + v.toLocaleString('en-IL', {maximumFractionDigits:0});
+            const label = ctx.dataset.label;
+            if (label.startsWith('Actual')) {
+              const dep = cumDep[ctx.dataIndex];
+              const gain = v - dep;
+              return [`${label}: ${fmt(v)}`, `  ↳ gain over deposits: ${gain>=0?'+':''}${fmt(gain)}`];
+            }
+            return `${label}: ${fmt(v)}`;
+          }
+        },
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
+        borderWidth: 1,
+        titleColor: '#f8fafc',
+        bodyColor: '#94a3b8'
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+      y: {
+        ticks: {
+          color: '#64748b',
+          callback: v => '₪' + (v/1000).toFixed(0) + 'K'
+        },
+        grid: { color: '#1e293b' }
+      }
+    }
+  }
+});
+
+// ─── Annual deposits chart ────────────────────────────────────────────────────
+const depCtx = document.getElementById('depositsChart').getContext('2d');
+new Chart(depCtx, {
+  type: 'bar',
+  data: {
+    labels: years,
+    datasets: [{
+      label: 'Annual Deposits',
+      data: annDep,
+      backgroundColor: depConf.map(c => c ? 'rgba(251,191,36,0.65)' : 'rgba(251,191,36,0.30)'),
+      borderColor: depConf.map(c => c ? '#fbbf24' : '#d97706'),
+      borderWidth: 1.5,
+      borderRadius: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const conf = depConf[ctx.dataIndex];
+            return (conf ? '' : '~') + '₪' + ctx.parsed.y.toLocaleString();
+          }
+        },
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
+        borderWidth: 1,
+        titleColor: '#f8fafc',
+        bodyColor: '#94a3b8'
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#64748b', font:{size:10} }, grid: { display:false } },
+      y: {
+        ticks: { color: '#64748b', callback: v => '₪'+(v/1000).toFixed(0)+'K' },
+        grid: { color: '#1e293b' }
+      }
+    }
+  }
+});
+
+// ─── Annual investment return chart ──────────────────────────────────────────
+const retCtx = document.getElementById('returnsChart').getContext('2d');
+new Chart(retCtx, {
+  type: 'bar',
+  data: {
+    labels: years,
+    datasets: [{
+      label: 'Annual Investment Return',
+      data: annReturn,
+      backgroundColor: annReturn.map((v, i) => {
+        const estimated = !depConf[i];
+        if (v >= 0) return estimated ? 'rgba(74,222,128,0.30)' : 'rgba(74,222,128,0.65)';
+        return estimated ? 'rgba(248,113,113,0.30)' : 'rgba(248,113,113,0.65)';
+      }),
+      borderColor: annReturn.map((v, i) => {
+        const estimated = !depConf[i];
+        if (v >= 0) return estimated ? '#16a34a80' : '#4ade80';
+        return estimated ? '#dc262680' : '#f87171';
+      }),
+      borderWidth: 1.5,
+      borderRadius: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.y;
+            const conf = depConf[ctx.dataIndex];
+            return (conf ? '' : '~') + (v>=0?'+':'') + '₪' + Math.round(v).toLocaleString();
+          }
+        },
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
+        borderWidth: 1,
+        titleColor: '#f8fafc',
+        bodyColor: '#94a3b8'
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#64748b', font:{size:10} }, grid: { display:false } },
+      y: {
+        ticks: { color: '#64748b', callback: v => (v>=0?'+':'')+'₪'+(v/1000).toFixed(0)+'K' },
+        grid: { color: '#1e293b' }
+      }
+    }
+  }
+});
+// ─── Projection table ────────────────────────────────────────────────────────
+(function() {
+  const P   = 793838;   // starting balance end-2025
+  const PMT = 71492;    // annual deposit (2025 level)
+  const rates   = [0.05, 0.07, 0.10, 0.15];
+  const rateLabels = ['5%','7%','10%','15%'];
+  const horizons = [5, 10, 15, 20];
+
+  function fv(r, n) {
+    const growth = Math.pow(1 + r, n);
+    return P * growth + PMT * (growth - 1) / r;
+  }
+
+  function fmt(v) {
+    return '₪' + Math.round(v).toLocaleString('en-IL');
+  }
+
+  // color scale: pick green intensity by value relative to row min/max
+  function cellColor(val, rowVals) {
+    const min = rowVals[0], max = rowVals[rowVals.length - 1];
+    const t = (val - min) / (max - min); // 0..1
+    // from muted green to bright green
+    const alpha = 0.15 + t * 0.55;
+    return `rgba(74,222,128,${alpha.toFixed(2)})`;
+  }
+
+  const tbody = document.getElementById('projBody');
+  horizons.forEach(n => {
+    const endYear = 2025 + n;
+    const totalDeposited = P + n * PMT;
+    const rowVals = rates.map(r => fv(r, n));
+
+    const tr = document.createElement('tr');
+
+    const tdLabel = document.createElement('td');
+    tdLabel.textContent = n + ' years';
+    tdLabel.style.fontWeight = '600';
+    tr.appendChild(tdLabel);
+
+    const tdYear = document.createElement('td');
+    tdYear.className = 'num';
+    tdYear.textContent = endYear;
+    tdYear.style.color = '#64748b';
+    tr.appendChild(tdYear);
+
+    rowVals.forEach((val, i) => {
+      const gain = val - totalDeposited;
+      const gainPct = (gain / totalDeposited * 100).toFixed(0);
+      const td = document.createElement('td');
+      td.className = 'num';
+      td.style.background = cellColor(val, rowVals);
+      td.style.borderRadius = '4px';
+      td.innerHTML = `<span style="font-size:0.88rem;font-weight:700;color:#f8fafc">${fmt(val)}</span>`
+        + `<br><span style="font-size:0.64rem;color:#4ade80">+${fmt(gain)} (+${gainPct}%)</span>`;
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+})();
+</script>
+
+</body>
+</html>

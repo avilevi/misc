@@ -1,0 +1,510 @@
+{
+  "_meta": {
+    "description": "Keren Hishtalmut & Investment Savings Portfolio — Altshul Sham (אלטשולר שחם)",
+    "owner": "Avil",
+    "currency": "ILS",
+    "last_updated": "2026-04-11",
+    "source_reports": [
+      "דוח שנתי מפורט גמל - 2025.pdf  (44 pages, covers year-end 31-Dec-2025)",
+      "דוח שנתי מפורט גמל - 2024.pdf  (48 pages, covers year-end 31-Dec-2024)",
+      "2023.pdf — 42-page real report extracted Apr 2026. 2022.pdf was identical to old 2023.pdf (stub); 2022 investment savings balances extracted from 2023 PDF opening balances."
+    ],
+    "notes": [
+      "Balances marked 'estimated' were calculated by applying the verified 2025 return rate of account 39394141 (21.04% effective) to the 2024 closing balance of the other investment savings accounts",
+      "Loans are taken against the bonds-track hishtalmut accounts; the underlying accounts continue to compound",
+      "Account 38771082 is in the מניות (stocks) track; all other employer hishtalmut accounts are in the conservative bonds+25% track"
+    ],
+    "add_new_year_instructions": "To add a new year: (1) read the new annual PDF, (2) fill in each account's balance_history entry for the new year, (3) add the year's return rates to return_rates_by_track, (4) update loan current_balance values, (5) update index.html chart data arrays."
+  },
+
+  "accounts": [
+
+    {
+      "id": "38771082",
+      "type": "קרן השתלמות",
+      "type_en": "Employer Hishtalmut",
+      "product": "קרן השתלמות לשכירים",
+      "track": "מניות",
+      "track_en": "Stocks (~92% equities)",
+      "opened": "2017-07",
+      "employer": "yes",
+      "monthly_deposit_approx": null,
+      "notes": "Flagship account. Employer + employee contributions since Jul 2017. No loan against this account.",
+      "deposits_history": {
+        "2017": 11465,
+        "2018": 52660,
+        "2019": 53944,
+        "2020": 56943,
+        "2021": 58628,
+        "2022": 63922,
+        "2023": 67507,
+        "2024": 70310,
+        "2025": 71492,
+        "cumulative_total": 506871,
+        "notes": "All years confirmed from annual PDFs. 2017: partial year (Aug-Nov posted in 2017; Dec-2017 salary posted Jan 2018 appears in 2018 balance). 2018 exact from 2018 PDF: ₪52,659.86. Salary base ₪42,812.80 Jan-Jun, raised to ₪44,953.60 Jul-Dec. 2019 exact: ₪53,944.32. 2020 exact: ₪56,942.70. 2021 exact: ₪58,628. 2022 exact: ₪63,922. 2023 exact: ₪67,507 (~₪5,692/mo). 2024 exact: ₪70,310.33. 2025 exact: ₪71,492.44."
+      },
+      "balance_history": {
+        "2017_end": 11873,
+        "2018_end": 60055,
+        "2019_end": 135048,
+        "2020_end": 208833,
+        "2021_end": 303132,
+        "2022_end": 304343,
+        "2023_end": 424146,
+        "2024_end": 590466,
+        "2025_end": 793838
+      },
+      "annual_returns": {
+        "2025": { "amount": 136584, "pct": 20.78, "source": "2025 PDF exact" }
+      },
+      "loan": null
+    },
+
+    {
+      "id": "38771171",
+      "type": "קרן השתלמות",
+      "type_en": "Employer Hishtalmut",
+      "product": "קרן השתלמות לשכירים",
+      "track": "מסלול אג\"ח עד 15% במניות",
+      "track_en": "Bonds + up to 15% stocks (switched from מניות stocks track — see note)",
+      "opened": "2017-07",
+      "employer": "yes",
+      "monthly_deposit_approx": null,
+      "notes": "Was in מסלול מניות (stocks) track in 2017–2019 (returns 2019: +25.67%). Track switched to מסלול אג\"ח עד 15% במניות (bonds+15%) by 2022 (2022 return ~-5.1%). Loan taken against this account.",
+      "deposits_history": {
+        "2017": 65242,
+        "notes": "One-time rollover transfer in Jul 2017. No new deposits since."
+      },
+      "balance_history": {
+        "2017_end": 70194,
+        "2018_end": 66455,
+        "2019_end": 83340,
+        "2020_end": 99897,
+        "2021_end": 94587,
+        "2022_end": 94587,
+        "2023_end": 99591,
+        "2024_end": 108291,
+        "2025_end": 114697
+      },
+      "annual_returns": {
+        "2025": { "amount": 8821, "pct": 8.14, "source": "2025 PDF exact" }
+      },
+      "loan": {
+        "loan_id": "loan_171",
+        "original_principal": 75000,
+        "balance_31dec2023": 81408,
+        "interest_rate_pct": 5.75,
+        "rate_type": "variable (prime-based)",
+        "maturity": "2028-06",
+        "start_date": "2021-06-10",
+        "notes": "One of 5 loans; see loans array for totals"
+      }
+    },
+
+    {
+      "id": "38771078",
+      "type": "קרן השתלמות",
+      "type_en": "Employer Hishtalmut",
+      "product": "קרן השתלמות לשכירים",
+      "track": "מסלול אג\"ח עד 15% במניות",
+      "track_en": "Bonds + up to 15% stocks",
+      "opened": "2017-07",
+      "employer": "yes",
+      "monthly_deposit_approx": null,
+      "deposits_history": {
+        "2017": 57985,
+        "notes": "One-time rollover transfer in Jul 2017. No new deposits since."
+      },
+      "balance_history": {
+        "2017_end": 62434,
+        "2018_end": 59558,
+        "2019_end": 74690,
+        "2020_end": 79352,
+        "2021_end": 89529,
+        "2022_end": 84770,
+        "2023_end": 89255,
+        "2024_end": 96988,
+        "2025_end": 102793
+      },
+      "annual_returns": {
+        "2025": { "amount": 8146, "pct": 8.40, "source": "2025 PDF exact" }
+      },
+      "loan": {
+        "notes": "Loan taken against this account; see loans array"
+      }
+    },
+
+    {
+      "id": "38771070",
+      "type": "קרן השתלמות",
+      "type_en": "Employer Hishtalmut",
+      "product": "קרן השתלמות לשכירים",
+      "track": "מסלול אג\"ח עד 15% במניות",
+      "track_en": "Bonds + up to 15% stocks",
+      "opened": "2017-07",
+      "employer": "yes",
+      "monthly_deposit_approx": null,
+      "deposits_history": {
+        "2017": 51766,
+        "notes": "One-time rollover transfer in Jul 2017. No new deposits since."
+      },
+      "balance_history": {
+        "2017_end": 55738,
+        "2018_end": 53171,
+        "2019_end": 66680,
+        "2020_end": 70842,
+        "2021_end": 79927,
+        "2022_end": 75679,
+        "2023_end": 79683,
+        "2024_end": 86586,
+        "2025_end": 91769
+      },
+      "annual_returns": {
+        "2025": { "amount": 7268, "pct": 8.39, "source": "2025 PDF exact" }
+      },
+      "loan": {
+        "notes": "Loan taken against this account; see loans array"
+      }
+    },
+
+    {
+      "id": "38771075",
+      "type": "קרן השתלמות",
+      "type_en": "Employer Hishtalmut",
+      "product": "קרן השתלמות לשכירים",
+      "track": "מסלול אג\"ח עד 15% במניות",
+      "track_en": "Bonds + up to 15% stocks",
+      "opened": "2017-07",
+      "employer": "yes",
+      "monthly_deposit_approx": null,
+      "deposits_history": {
+        "2017": 51857,
+        "notes": "One-time rollover transfer in Jul 2017. No new deposits since."
+      },
+      "balance_history": {
+        "2017_end": 55793,
+        "2018_end": 52822,
+        "2019_end": 66242,
+        "2020_end": 70376,
+        "2021_end": 79402,
+        "2022_end": 75182,
+        "2023_end": 79159,
+        "2024_end": 85980,
+        "2025_end": 91166
+      },
+      "annual_returns": {
+        "2025": { "amount": 6980, "pct": 8.12, "source": "2025 PDF exact" }
+      },
+      "loan": {
+        "notes": "Loan taken against this account; see loans array"
+      }
+    },
+
+    {
+      "id": "38771086",
+      "type": "קרן השתלמות",
+      "type_en": "Employer Hishtalmut",
+      "product": "קרן השתלמות לשכירים",
+      "track": "מסלול אג\"ח עד 15% במניות",
+      "track_en": "Bonds + up to 15% stocks",
+      "opened": "2017-07",
+      "employer": "yes",
+      "monthly_deposit_approx": null,
+      "deposits_history": {
+        "2017": 41035,
+        "notes": "One-time rollover transfer in Jul 2017. No new deposits since."
+      },
+      "balance_history": {
+        "2017_end": 44184,
+        "2018_end": 42149,
+        "2019_end": 52858,
+        "2020_end": 56156,
+        "2021_end": 63359,
+        "2022_end": 59991,
+        "2023_end": 63165,
+        "2024_end": 68745,
+        "2025_end": 72745
+      },
+      "annual_returns": {
+        "2025": { "amount": 5570, "pct": 8.10, "source": "2025 PDF exact" }
+      },
+      "loan": {
+        "notes": "Loan taken against this account; see loans array"
+      }
+    },
+
+    {
+      "id": "39394141",
+      "type": "קופת גמל להשקעה",
+      "type_en": "Investment Savings",
+      "product": "חיסכון פלוס",
+      "track": "מסלול מניות",
+      "track_en": "Stocks",
+      "opened": "2018-02",
+      "employer": "no",
+      "monthly_deposit": 450,
+      "notes": "Personal investment savings. Only investment account with exact 2025 data in the 2025 PDF. 2023: had extra ₪6,000 lump-sum deposit (03/12/2023) in addition to 12×₪450.",
+      "deposits_history": {
+        "2018": 2700,
+        "2019": 3600,
+        "2020_to_2022_approx_annual": 5400,
+        "2023": 11400,
+        "2024_to_2025_approx_annual": 5400,
+        "notes": "Started Feb 2018 at 300/month (9 months=2700). 300/month throughout 2019. Switched to 450/month; 2020-2022 estimated at 5,400/yr. 2023 had extra ₪6,000 lump sum (total ₪11,400). 2020-2022 are estimates."
+      },
+      "balance_history": {
+        "2018_end": 2487,
+        "2019_end": 7097,
+        "2020_end": 11674,
+        "2022_end": 18937,
+        "2023_end": 33873,
+        "2024_end": 55657,
+        "2025_end": 67053
+      },
+      "annual_returns": {
+        "2025": {
+          "amount": 11204,
+          "effective_pct": 21.04,
+          "source": "2025 PDF exact",
+          "note": "Used as reference return rate to estimate 2025 balances for accounts 148/149/152"
+        }
+      },
+      "loan": null
+    },
+
+    {
+      "id": "39394148",
+      "type": "קופת גמל להשקעה",
+      "type_en": "Investment Savings",
+      "product": "חיסכון פלוס",
+      "track": "מסלול מניות",
+      "track_en": "Stocks",
+      "opened": "2018-02",
+      "employer": "no",
+      "monthly_deposit": 450,
+      "notes": "Personal investment savings. 2024 exact from 2024 PDF; 2025 estimated using 21.04% effective return from account 39394141.",
+      "deposits_history": {
+        "2018": 2700,
+        "2019": 3600,
+        "2020_to_2025_approx_annual": 5400,
+        "notes": "Same deposit history as 39394141 (no extra lump sum in 2023). See that account for notes."
+      },
+      "balance_history": {
+        "2018_end": 2487,
+        "2019_end": 7097,
+        "2020_end": 11674,
+        "2022_end": 18937,
+        "2023_end": 27706,
+        "2024_end": 49672,
+        "2025_end": 60107
+      },
+      "annual_returns": {
+        "2025": {
+          "amount_estimated": 10435,
+          "effective_pct_estimated": 21.01,
+          "source": "estimated — 2025 PDF had no detail page for this account"
+        }
+      },
+      "loan": null
+    },
+
+    {
+      "id": "39394149",
+      "type": "קופת גמל להשקעה",
+      "type_en": "Investment Savings",
+      "product": "חיסכון פלוס",
+      "track": "מסלול מניות",
+      "track_en": "Stocks",
+      "opened": "2018-02",
+      "employer": "no",
+      "monthly_deposit": 450,
+      "notes": "Personal investment savings. 2024 exact from 2024 PDF; 2025 estimated.",
+      "deposits_history": {
+        "2018": 2700,
+        "2019": 3600,
+        "2020_to_2025_approx_annual": 5400,
+        "notes": "Same deposit history as 39394141 (no extra lump sum in 2023). See that account for notes."
+      },
+      "balance_history": {
+        "2018_end": 2487,
+        "2019_end": 7097,
+        "2020_end": 11674,
+        "2022_end": 18937,
+        "2023_end": 27706,
+        "2024_end": 44373,
+        "2025_end": 53720
+      },
+      "annual_returns": {
+        "2025": {
+          "amount_estimated": 9347,
+          "effective_pct_estimated": 21.07,
+          "source": "estimated — 2025 PDF had no detail page for this account"
+        }
+      },
+      "loan": null
+    },
+
+    {
+      "id": "39394152",
+      "type": "קופת גמל להשקעה",
+      "type_en": "Investment Savings",
+      "product": "חיסכון פלוס",
+      "track": "מסלול מניות",
+      "track_en": "Stocks",
+      "opened": "2018-02",
+      "employer": "no",
+      "monthly_deposit": 4500,
+      "notes": "Largest personal investment account (4,500/mo deposit). 2024 exact from 2024 PDF; 2025 estimated.",
+      "deposits_history": {
+        "2018": 36000,
+        "2019": 48000,
+        "2020_to_2025_approx_annual": 54000,
+        "notes": "Started Feb 2018 at 4000/month (9 months=36000). 4000/month throughout 2019. Switched to 4500/month; assumed 4500/month from 2020 onwards. 2020-2022 are estimates. 2023 confirmed ₪54,000 (12×₪4,500 from PDF)."
+      },
+      "balance_history": {
+        "2018_end": 34690,
+        "2019_end": 90795,
+        "2020_end": 146615,
+        "2022_end": 232960,
+        "2023_end": 327487,
+        "2024_end": 505007,
+        "2025_end": 611084
+      },
+      "annual_returns": {
+        "2025": {
+          "amount_estimated": 106077,
+          "effective_pct_estimated": 21.00,
+          "source": "estimated — 2025 PDF had no detail page for this account"
+        }
+      },
+      "loan": null
+    },
+
+    {
+      "id": "39220778",
+      "type": "קופת גמל לתגמולים",
+      "type_en": "Self-Employed Provident",
+      "product": "גמל לתגמולים עצמאי",
+      "track": "מסלול מניות",
+      "track_en": "Stocks",
+      "opened": "2017-10",
+      "employer": "no — self-employed contributions",
+      "monthly_deposit_approx": null,
+      "notes": "Self-employed provident fund. Single deposit ever made (₪7,856 in 2017). Nothing deposited since.",
+      "deposits_history": {
+        "2017": 7856,
+        "total_ever": 7856,
+        "notes": "Single one-time deposit in Oct 2017. No further contributions."
+      },
+      "balance_history": {
+        "2017_end": 8465,
+        "2018_end": 8002,
+        "2019_end": 10068,
+        "2020_end": 10744,
+        "2021_end": 12399,
+        "2022_end": 9985,
+        "2023_end": 11508,
+        "2024_end": 13926,
+        "2025_end": 16828
+      },
+      "annual_returns": {
+        "2025": { "amount": null, "pct": null, "source": "2025 PDF — limited detail extracted" }
+      },
+      "loan": null
+    }
+
+  ],
+
+  "loans": {
+    "summary": "5 loans total against bonds-track hishtalmut accounts (NOT against account 38771082 or investment savings)",
+    "total_original_principal": 309000,
+    "total_current_balance": 373230,
+    "interest_rate_pct": 5.25,
+    "rate_type": "variable (prime-based) — 1.10% at origination Jun 2021, peaked 5.75% Dec 2023, fell to 5.50% Dec 2024, 5.25% Dec 2025",
+    "maturity": "2028-06",
+    "loan_start_date": "2021-06-10",
+    "accounts_with_loans": ["38771171", "38771078", "38771070", "38771075", "38771086"],
+    "individual_loans_at_2022_year_end": [
+      { "account": "38771171", "balance_31dec2022": 77159 },
+      { "account": "38771078", "balance_31dec2022": 68928 },
+      { "account": "38771070", "balance_31dec2022": 61727 },
+      { "account": "38771075", "balance_31dec2022": 61727 },
+      { "account": "38771086", "balance_31dec2022": 48353 }
+    ],
+    "individual_loans_at_2023_year_end": [
+      { "account": "38771171", "balance_31dec2023": 81408, "original": 75000 },
+      { "account": "38771078", "balance_31dec2023": 72724, "original": 67000 },
+      { "account": "38771070", "balance_31dec2023": 65126, "original": 60000 },
+      { "account": "38771075", "balance_31dec2023": 65126, "original": 60000 },
+      { "account": "38771086", "balance_31dec2023": 51015, "original": 47000 }
+    ],
+    "total_loans_at_2023_year_end": 335399,
+    "individual_loans_note": "2022 year-end balances from 2022 PDF loan table (total ₪317,893). 2023 year-end balances confirmed from 2023 PDF (total ₪335,399.43). Current balances (31.12.2025) not individually broken down in PDF."
+  },
+
+  "portfolio_totals": {
+    "as_of": "2025-12-31",
+    "gross_value": 2075800,
+    "loans_outstanding": -373230,
+    "net_value": 1702570,
+    "monthly_deposits_total": 5850,
+    "monthly_breakdown": {
+      "investment_savings_450x3": 1350,
+      "investment_savings_4500x1": 4500
+    }
+  },
+
+  "return_rates_by_track": {
+    "מניות_stocks": {
+      "2025": { "pct": 20.78, "source": "account 38771082 exact; ~21% effective on investment savings" },
+      "2024": { "pct": 21.26, "source": "from 2024 PDF" },
+      "2023": { "pct": 15.91, "source": "2023 PDF — investment savings (חיסכון פלוס); hishtalmut 38771082 showed 15.79% (fee difference)" },
+      "2022": { "pct": -19.08, "source": "from 2022 PDF" },
+      "2021": { "pct": 15.60, "source": "from 2021 PDF" },
+      "2020": { "pct": 6.41, "source": "from 2020 PDF" },
+      "2019": { "pct": 25.44, "source": "from 2019 PDF — hishtalmut accounts showed 25.67% (slight diff due to fees/timing)" },
+      "2018": { "pct": -5.33, "source": "from historical data" },
+      "2017": { "pct": 20.89, "source": "from historical data" }
+    },
+    "bonds_15pct_stocks": {
+      "_note": "Track name: מסלול אג\"ח עד 15% במניות (bonds + up to 15% stocks). Previously mislabeled as bonds+25%.",
+      "2025": { "pct": 8.14, "source": "average of accounts 38771171/78/70/75/86 from 2025 PDF" },
+      "2024": { "pct": 6.94, "source": "2024 PDF — track renamed to מסלול אשראי ואג\"ח עם מניות עד 25% in 2024" },
+      "2023": { "pct": 5.51, "source": "2023 PDF confirmed for all 5 bonds-track hishtalmut accounts" },
+      "2022": { "pct": -5.12, "source": "from 2022 PDF" },
+      "2021": { "pct": 6.21, "source": "from 2021 PDF" },
+      "2019": { "pct": 14.96, "source": "כללי track rate from 2019 PDF — accounts were on מסלול מניות in 2019, not bonds" }
+    }
+  },
+
+  "data_gaps": [
+    "balance_history pre-2024 not extracted for most accounts — available in older PDF reports (2017–2023)",
+    "individual loan balances per account not extracted from PDF",
+    "account 39220778 (self-employed) — 2025 return amount/pct not extracted",
+    "accounts 39394148, 39394149, 39394152 — 2025 values are estimates only",
+    "open dates for investment savings accounts (393941xx) not recorded",
+    "return rates for 2017–2024 not yet populated"
+  ],
+
+  "template_for_next_year": {
+    "_instructions": "Copy this block and fill in values from the new annual PDF",
+    "year": "YYYY",
+    "report_file": "דוח שנתי מפורט גמל - YYYY.pdf",
+    "accounts": {
+      "38771082": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "38771171": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "38771078": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "38771070": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "38771075": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "38771086": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "39394141": { "balance_end": null, "return_amount": null, "return_pct": null },
+      "39394148": { "balance_end": null, "return_amount": null, "return_pct": null, "estimated": false },
+      "39394149": { "balance_end": null, "return_amount": null, "return_pct": null, "estimated": false },
+      "39394152": { "balance_end": null, "return_amount": null, "return_pct": null, "estimated": false },
+      "39220778": { "balance_end": null, "return_amount": null, "return_pct": null }
+    },
+    "loans_total_balance": null,
+    "gross_total": null,
+    "net_total": null
+  }
+}
