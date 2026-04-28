@@ -72,7 +72,7 @@ class ReorderActivity : ComponentActivity() {
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
             override fun onMove(rv: RecyclerView, from: RecyclerView.ViewHolder, to: RecyclerView.ViewHolder): Boolean {
-                adapter.move(from.adapterPosition, to.adapterPosition)
+                adapter.move(from.absoluteAdapterPosition, to.absoluteAdapterPosition)
                 return true
             }
             override fun onSwiped(vh: RecyclerView.ViewHolder, dir: Int) {}

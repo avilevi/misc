@@ -28,7 +28,7 @@ jobs:
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Decode keystore
-        working-directory: healthconnect_to_gcal/hc_export_app
+        working-directory: healthconnect_to_gcal/hc_export_app/app
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
       - name: Build release APK
