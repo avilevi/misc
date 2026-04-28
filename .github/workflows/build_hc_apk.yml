@@ -27,14 +27,22 @@ jobs:
         working-directory: healthconnect_to_gcal/hc_export_app
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Build debug APK
+      - name: Decode keystore
         working-directory: healthconnect_to_gcal/hc_export_app
-        run: ./gradlew assembleDebug
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+
+      - name: Build release APK
+        working-directory: healthconnect_to_gcal/hc_export_app
+        env:
+          KEYSTORE_PATH: keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: ./gradlew assembleRelease
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: HC Sync (latest build)
-          files: healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/debug/app-debug.apk
+          files: healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/release/app-release.apk
           prerelease: true

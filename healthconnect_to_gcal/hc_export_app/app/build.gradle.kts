@@ -15,6 +15,21 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile     = file(System.getenv("KEYSTORE_PATH") ?: "keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias      = System.getenv("KEY_ALIAS") ?: ""
+            keyPassword   = System.getenv("KEYSTORE_PASSWORD") ?: ""
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig  = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
