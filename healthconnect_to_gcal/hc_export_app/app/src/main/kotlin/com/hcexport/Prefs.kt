@@ -10,6 +10,14 @@ object Prefs {
     private fun prefs(ctx: Context): SharedPreferences =
         ctx.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
+    // ── Sync range ─────────────────────────────────────────────────────────
+
+    fun getSyncDaysBack(ctx: Context): Long =
+        prefs(ctx).getLong("sync_days_back", 90L)
+
+    fun setSyncDaysBack(ctx: Context, days: Long) =
+        prefs(ctx).edit().putLong("sync_days_back", days).apply()
+
     // ── Calendar ───────────────────────────────────────────────────────────
 
     fun getCalendarId(ctx: Context): Long? {

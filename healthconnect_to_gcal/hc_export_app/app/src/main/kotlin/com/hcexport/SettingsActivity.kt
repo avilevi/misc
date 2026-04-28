@@ -51,6 +51,31 @@ class SettingsActivity : ComponentActivity() {
 
         root.addView(spacer(32))
 
+        // ── Sync range ─────────────────────────────────────────────────────
+
+        sectionLabel("Sync range (days back)", root)
+
+        val rangeDays    = listOf(7L, 14L, 30L, 60L, 90L, 180L, 365L)
+        val rangeLabels  = listOf("7 days", "14 days", "30 days", "60 days", "90 days", "180 days", "1 year")
+        val rangeSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@SettingsActivity,
+                android.R.layout.simple_spinner_item,
+                rangeLabels,
+            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        val savedDays = Prefs.getSyncDaysBack(this)
+        rangeSpinner.setSelection(rangeDays.indexOf(savedDays).takeIf { it >= 0 } ?: 4)
+        rangeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                Prefs.setSyncDaysBack(this@SettingsActivity, rangeDays[pos])
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        root.addView(rangeSpinner)
+
+        root.addView(spacer(32))
+
         // ── Sleep sources ──────────────────────────────────────────────────
 
         sectionLabel("Sleep — source priority", root)

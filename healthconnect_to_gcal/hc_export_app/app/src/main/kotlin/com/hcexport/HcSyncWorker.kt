@@ -16,15 +16,15 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
 
     companion object {
         private const val TAG = "HcSyncWorker"
-        private const val DAYS_BACK = 90L
     }
 
     override suspend fun doWork(): Result {
         Log.i(TAG, "Starting sync")
         return try {
-            val client = HealthConnectClient.getOrCreate(applicationContext)
-            val now   = Instant.now()
-            val start = now.minus(DAYS_BACK, ChronoUnit.DAYS)
+            val client     = HealthConnectClient.getOrCreate(applicationContext)
+            val now        = Instant.now()
+            val daysBack   = Prefs.getSyncDaysBack(applicationContext)
+            val start      = now.minus(daysBack, ChronoUnit.DAYS)
             val range = TimeRangeFilter.between(start, now)
 
             val calendarId = Prefs.getCalendarId(applicationContext)
