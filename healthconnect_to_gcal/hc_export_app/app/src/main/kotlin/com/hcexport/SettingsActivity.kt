@@ -104,9 +104,9 @@ class SettingsActivity : ComponentActivity() {
 
         calSpinner.adapter = ArrayAdapter(
             this,
-            android.R.layout.simple_spinner_dropdown_item,
+            android.R.layout.simple_spinner_item,
             calendars.map { it.second },
-        )
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
         calSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 if (pos < calendars.size) Prefs.setCalendarId(this@SettingsActivity, calendars[pos].first)
