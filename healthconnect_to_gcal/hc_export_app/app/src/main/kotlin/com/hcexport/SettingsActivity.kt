@@ -15,7 +15,6 @@ class SettingsActivity : ComponentActivity() {
     // Mutable so we can refresh after calendar creation
     private var calendars = mutableListOf<Triple<Long, String, String>>() // id, displayName, accountName+type
     private lateinit var calSpinner: Spinner
-    private lateinit var calAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,19 +34,19 @@ class SettingsActivity : ComponentActivity() {
 
         sectionLabel("Calendar", root)
 
-        calAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mutableListOf<String>())
-        calSpinner = Spinner(this).apply { adapter = calAdapter }
-        calSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                if (pos < calendars.size) Prefs.setCalendarId(this@SettingsActivity, calendars[pos].first)
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
+        calSpinner = Spinner(this)
         root.addView(calSpinner)
 
-        Button(this).apply {
-            text = "Create new calendar…"
-            setOnClickListener { showCreateCalendarDialog() }
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            Button(this@SettingsActivity).apply {
+                text = "Refresh list"
+                setOnClickListener { refreshCalendarSpinner() }
+            }.also { addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) }
+            Button(this@SettingsActivity).apply {
+                text = "Create new…"
+                setOnClickListener { showCreateCalendarDialog() }
+            }.also { addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) }
         }.also { root.addView(it) }
 
         root.addView(spacer(32))
@@ -100,12 +99,20 @@ class SettingsActivity : ComponentActivity() {
     // ── Calendar helpers ───────────────────────────────────────────────────
 
     private fun refreshCalendarSpinner() {
-        val loaded = loadCalendars()
         calendars.clear()
-        calendars.addAll(loaded)
-        calAdapter.clear()
-        calAdapter.addAll(calendars.map { it.second })
-        calAdapter.notifyDataSetChanged()
+        calendars.addAll(loadCalendars())
+
+        calSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            calendars.map { it.second },
+        )
+        calSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                if (pos < calendars.size) Prefs.setCalendarId(this@SettingsActivity, calendars[pos].first)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
 
         val savedId = Prefs.getCalendarId(this)
         val idx = calendars.indexOfFirst { it.first == savedId }.takeIf { it >= 0 } ?: 0
