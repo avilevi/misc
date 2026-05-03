@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private lateinit var statusText: TextView
+    private lateinit var forceResyncCheck: CheckBox
     private var hcPermissionsLaunched = false
 
     private val hcPermissions = setOf(
@@ -44,8 +45,6 @@ class MainActivity : ComponentActivity() {
             hcPermissionsLaunched = false
             checkAndSetup()
         } else {
-            // Leave hcPermissionsLaunched = true so onResume doesn't re-trigger the loop.
-            // The user must tap Refresh to try again.
             status("⚠ Some Health Connect permissions denied.\n\nOpen the Health Connect app → App permissions → HC Sync, and allow all permissions. Then tap Refresh.")
         }
     }
@@ -79,9 +78,20 @@ class MainActivity : ComponentActivity() {
             setPadding(0, 0, 0, 32)
         }.also { root.addView(it) }
 
+        forceResyncCheck = CheckBox(this).apply {
+            text = "Force full resync"
+            textSize = 14f
+            setPadding(0, 0, 0, 8)
+        }.also { root.addView(it) }
+
         Button(this).apply {
             text = "Sync Now"
             setOnClickListener { triggerSync() }
+        }.also { root.addView(it) }
+
+        Button(this).apply {
+            text = "View Log"
+            setOnClickListener { showLog() }
         }.also { root.addView(it) }
 
         Button(this).apply {
@@ -155,34 +165,57 @@ class MainActivity : ComponentActivity() {
                 status("⚠ No Google calendar found on this device.\nMake sure a Google account is set up.")
             } else {
                 if (Prefs.getCalendarId(this@MainActivity) == null) Prefs.setCalendarId(this@MainActivity, calId)
-                val calName = resolveCalendarName(calId)
+                val calName    = resolveCalendarName(calId)
                 val schedCount = Prefs.getSyncSchedules(this@MainActivity).size
-                val schedInfo = if (schedCount == 0) "No auto-sync scheduled. Tap Settings → Auto-sync schedules to add one."
-                               else "$schedCount auto-sync schedule(s) active."
-                status("✓ Ready\n\nCalendar: $calName\n$schedInfo\n\nTap Settings to configure.")
+                val schedInfo  = if (schedCount == 0) "No auto-sync scheduled. Tap Settings → Auto-sync schedules to add one."
+                                 else "$schedCount auto-sync schedule(s) active."
+                val lastSummary = Prefs.getLastSyncSummary(this@MainActivity)
+                val summaryLine = if (lastSummary != null) "\n\n$lastSummary" else ""
+                status("✓ Ready\n\nCalendar: $calName\n$schedInfo$summaryLine\n\nTap Settings to configure.")
                 SyncScheduler.applySchedules(this@MainActivity)
             }
         }
     }
 
     private fun triggerSync() {
-        status("Syncing…")
-        val req = OneTimeWorkRequestBuilder<HcSyncWorker>().build()
+        val force = forceResyncCheck.isChecked
+        status("Syncing${if (force) " (full resync)…" else "…"}")
+        val data = workDataOf(HcSyncWorker.KEY_FORCE_RESYNC to force)
+        val req  = OneTimeWorkRequestBuilder<HcSyncWorker>().setInputData(data).build()
         WorkManager.getInstance(this).enqueue(req)
         WorkManager.getInstance(this).getWorkInfoByIdLiveData(req.id).observe(this) { info ->
             when (info?.state) {
                 WorkInfo.State.SUCCEEDED -> {
+                    forceResyncCheck.isChecked = false
                     lifecycleScope.launch {
                         val calId   = Prefs.getCalendarId(this@MainActivity)
                             ?: CalendarHelper.findCalendarId(this@MainActivity)
                         val calName = calId?.let { resolveCalendarName(it) } ?: "?"
-                        status("✓ Sync complete.\nEvents written to: $calName")
+                        val summary = Prefs.getLastSyncSummary(this@MainActivity) ?: ""
+                        status("✓ Sync complete.\nEvents written to: $calName\n\n$summary")
                     }
                 }
-                WorkInfo.State.FAILED -> status("✗ Sync failed. Check Android logcat (tag HcSyncWorker) for details.")
+                WorkInfo.State.FAILED -> status("✗ Sync failed. Tap \"View Log\" for details.")
                 else -> {}
             }
         }
+    }
+
+    private fun showLog() {
+        val log = SyncLogger.read(this)
+        val tv = TextView(this).apply {
+            text = log
+            textSize = 11f
+            setPadding(32, 32, 32, 32)
+            setTextIsSelectable(true)
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Sync Log")
+            .setView(ScrollView(this).also { it.addView(tv) })
+            .setPositiveButton("Close", null)
+            .setNeutralButton("Clear") { _, _ -> SyncLogger.clear(this) }
+            .show()
     }
 
     private fun checkForUpdates() {

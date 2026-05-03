@@ -14,32 +14,37 @@ object WodSync {
     private const val HANDLED_MARKER = "# populated by wod_sync"
     private const val DAYS_AHEAD = 7
 
-    suspend fun sync(context: Context) = withContext(Dispatchers.IO) {
+    suspend fun sync(context: Context): Int = withContext(Dispatchers.IO) {
         val events = CalendarHelper.findWodEvents(context, DAYS_AHEAD)
         if (events.isEmpty()) {
             Log.i(TAG, "No WOD events found in next $DAYS_AHEAD days")
-            return@withContext
+            return@withContext 0
         }
 
         Log.i(TAG, "Found ${events.size} WOD event(s), fetching workouts page")
+        SyncLogger.log(context, "WOD events found: ${events.size}")
         val pageHtml = fetchPage(WORKOUTS_URL)
 
         var updated = 0
         for (event in events) {
             if (HANDLED_MARKER in (event.description ?: "")) {
                 Log.d(TAG, "  ${event.dateStr}: already populated, skipping")
+                SyncLogger.log(context, "  SKIP WOD ${event.dateStr}: already populated")
                 continue
             }
             val wod = extractWodForDate(pageHtml, event.dateStr)
             if (wod == null) {
                 Log.i(TAG, "  ${event.dateStr}: no WOD found on website")
+                SyncLogger.log(context, "  SKIP WOD ${event.dateStr}: not found on website")
                 continue
             }
             CalendarHelper.updateEventDescription(context, event.id, "$wod\n\n$HANDLED_MARKER")
             Log.i(TAG, "  ${event.dateStr}: updated")
+            SyncLogger.log(context, "  NEW  WOD ${event.dateStr}: updated")
             updated++
         }
         Log.i(TAG, "WOD sync complete: $updated updated")
+        updated
     }
 
     private fun fetchPage(urlStr: String): String {

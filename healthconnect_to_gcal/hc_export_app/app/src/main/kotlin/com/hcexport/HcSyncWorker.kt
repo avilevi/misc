@@ -9,27 +9,44 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.Date
+import java.util.Locale
 
 class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     companion object {
         private const val TAG = "HcSyncWorker"
+        const val KEY_FORCE_RESYNC = "force_resync"
     }
+
+    private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
     override suspend fun doWork(): Result {
         Log.i(TAG, "Starting sync")
+        val forceResync = inputData.getBoolean(KEY_FORCE_RESYNC, false)
         return try {
-            val client     = HealthConnectClient.getOrCreate(applicationContext)
-            val now        = Instant.now()
-            val daysBack   = Prefs.getSyncDaysBack(applicationContext)
-            val start      = now.minus(daysBack, ChronoUnit.DAYS)
+            val client = HealthConnectClient.getOrCreate(applicationContext)
+            val now    = Instant.now()
+
+            val start = if (forceResync || Prefs.getLastSyncTime(applicationContext) == null) {
+                val daysBack = Prefs.getSyncDaysBack(applicationContext)
+                now.minus(daysBack, ChronoUnit.DAYS)
+            } else {
+                Instant.ofEpochMilli(Prefs.getLastSyncTime(applicationContext)!!)
+            }
             val range = TimeRangeFilter.between(start, now)
+
+            SyncLogger.log(applicationContext, "=== Sync started (from ${dateFmt.format(Date(start.toEpochMilli()))}${if (forceResync) ", forced" else ""}) ===")
 
             val calendarId = Prefs.getCalendarId(applicationContext)
                 ?: CalendarHelper.findCalendarId(applicationContext)
-                ?: return Result.failure().also { Log.e(TAG, "No calendar found") }
+                ?: return Result.failure().also {
+                    Log.e(TAG, "No calendar found")
+                    SyncLogger.log(applicationContext, "ERROR: No calendar found")
+                }
 
             var created = 0
             var skipped = 0
@@ -54,6 +71,8 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     { it.metadata.dataOrigin.packageName },
                     exercisePriority,
                 )
+
+            SyncLogger.log(applicationContext, "Exercise sessions found: ${exercises.size}")
 
             for (session in exercises) {
                 val sessionRange = TimeRangeFilter.between(session.startTime, session.endTime)
@@ -128,6 +147,7 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                 val eventTitle = CalendarHelper.exerciseTitle(event)
                 if (CalendarHelper.eventExists(applicationContext, calendarId, eventTitle, event.startMs)) {
                     skipped++
+                    SyncLogger.log(applicationContext, "  SKIP exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
                 } else {
                     CalendarHelper.insertEvent(
                         applicationContext, calendarId,
@@ -136,6 +156,7 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                         event.startMs, event.endMs,
                     )
                     created++
+                    SyncLogger.log(applicationContext, "  NEW  exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
                 }
             }
 
@@ -160,6 +181,8 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     sleepPriority,
                 )
 
+            SyncLogger.log(applicationContext, "Sleep sessions found: ${sleepSessions.size}")
+
             for (session in sleepSessions) {
                 val event = SleepEvent(
                     startMs  = session.startTime.toEpochMilli(),
@@ -177,6 +200,7 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                 val eventTitle = CalendarHelper.sleepTitle(event)
                 if (CalendarHelper.eventExists(applicationContext, calendarId, eventTitle, event.startMs)) {
                     skipped++
+                    SyncLogger.log(applicationContext, "  SKIP sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
                 } else {
                     CalendarHelper.insertEvent(
                         applicationContext, calendarId,
@@ -185,13 +209,24 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                         event.startMs, event.endMs,
                     )
                     created++
+                    SyncLogger.log(applicationContext, "  NEW  sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
                 }
             }
 
             Log.i(TAG, "Sync complete: $created created, $skipped skipped")
 
             // ── WOD descriptions ───────────────────────────────────────────
-            WodSync.sync(applicationContext)
+            val wodUpdated = WodSync.sync(applicationContext)
+
+            // ── Persist results ────────────────────────────────────────────
+            Prefs.setLastSyncTime(applicationContext, now.toEpochMilli())
+            val summary = buildString {
+                append("Last sync: ${dateFmt.format(Date(now.toEpochMilli()))}")
+                append("\nHC: $created new, $skipped skipped")
+                if (wodUpdated > 0) append("\nWOD: $wodUpdated updated")
+            }
+            Prefs.setLastSyncSummary(applicationContext, summary)
+            SyncLogger.log(applicationContext, "=== Sync done: $created new, $skipped skipped, $wodUpdated WOD updated ===")
 
             // Re-schedule this run for its next occurrence
             inputData.getString("schedule_id")
@@ -201,6 +236,7 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed: ${e.message}", e)
+            SyncLogger.log(applicationContext, "ERROR: Sync failed: ${e.message}")
             Result.failure()
         }
     }

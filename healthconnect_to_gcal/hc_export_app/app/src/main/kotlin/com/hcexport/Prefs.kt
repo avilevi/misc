@@ -61,6 +61,22 @@ object Prefs {
         }
     }
 
+    // ── Last sync ──────────────────────────────────────────────────────────
+
+    fun getLastSyncTime(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("last_sync_time", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setLastSyncTime(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("last_sync_time", ms).apply()
+
+    fun getLastSyncSummary(ctx: Context): String? =
+        prefs(ctx).getString("last_sync_summary", null)
+
+    fun setLastSyncSummary(ctx: Context, summary: String) =
+        prefs(ctx).edit().putString("last_sync_summary", summary).apply()
+
     // ── Sync schedules ─────────────────────────────────────────────────────
 
     fun getSyncSchedules(ctx: Context): List<SyncSchedule> {
