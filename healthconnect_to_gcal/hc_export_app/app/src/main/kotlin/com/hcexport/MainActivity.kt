@@ -1,5 +1,6 @@
 package com.hcexport
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
@@ -98,6 +99,11 @@ class MainActivity : ComponentActivity() {
             }
         }.also { root.addView(it) }
 
+        Button(this).apply {
+            text = "Check for Updates"
+            setOnClickListener { checkForUpdates() }
+        }.also { root.addView(it) }
+
         setContentView(ScrollView(this).also { it.addView(root) })
         checkAndSetup()
     }
@@ -176,6 +182,33 @@ class MainActivity : ComponentActivity() {
                 WorkInfo.State.FAILED -> status("✗ Sync failed. Check Android logcat (tag HcSyncWorker) for details.")
                 else -> {}
             }
+        }
+    }
+
+    private fun checkForUpdates() {
+        status("Checking for updates…")
+        lifecycleScope.launch {
+            val update = UpdateChecker.checkForUpdate(BuildConfig.VERSION_CODE)
+            if (update == null) {
+                status("✓ App is up to date (build ${BuildConfig.VERSION_CODE}).")
+                return@launch
+            }
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle("Update available")
+                .setMessage("Build ${update.remoteVersionCode} is available (you have ${BuildConfig.VERSION_CODE}).\n\nDownload and install now?")
+                .setPositiveButton("Install") { _, _ ->
+                    lifecycleScope.launch {
+                        try {
+                            UpdateChecker.downloadAndInstall(this@MainActivity) { pct ->
+                                runOnUiThread { status("Downloading update… $pct%") }
+                            }
+                        } catch (e: Exception) {
+                            status("✗ Download failed: ${e.message}")
+                        }
+                    }
+                }
+                .setNegativeButton("Later", null)
+                .show()
         }
     }
 

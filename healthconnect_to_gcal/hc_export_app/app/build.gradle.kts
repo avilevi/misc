@@ -7,12 +7,17 @@ android {
     namespace = "com.hcexport"
     compileSdk = 36
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.hcexport"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        val buildNum = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = buildNum
+        versionName = "1.0.$buildNum"
     }
 
     signingConfigs {

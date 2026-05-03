@@ -37,12 +37,18 @@ jobs:
           KEYSTORE_PATH: keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: ./gradlew assembleRelease
+
+      - name: Write version.json
+        run: echo '{"versionCode":${{ github.run_number }}}' > version.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: HC Sync (latest build)
-          files: healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/release/app-release.apk
+          name: HC Sync (build ${{ github.run_number }})
+          files: |
+            healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/release/app-release.apk
+            version.json
           prerelease: true
