@@ -3,6 +3,7 @@ package com.hcexport
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.activity.ComponentActivity
@@ -11,6 +12,7 @@ class SettingsActivity : ComponentActivity() {
 
     private lateinit var sleepLabel: TextView
     private lateinit var exerciseLabel: TextView
+    private lateinit var schedulesList: LinearLayout
 
     // Mutable so we can refresh after calendar creation
     private var calendars = mutableListOf<Triple<Long, String, String>>() // id, displayName, accountName+type
@@ -76,6 +78,22 @@ class SettingsActivity : ComponentActivity() {
 
         root.addView(spacer(32))
 
+        // ── Auto-sync schedules ────────────────────────────────────────────
+
+        sectionLabel("Auto-sync schedules", root)
+
+        schedulesList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        root.addView(schedulesList)
+
+        Button(this).apply {
+            text = "+ Add schedule"
+            setOnClickListener { showAddScheduleDialog() }
+        }.also { root.addView(it) }
+
+        root.addView(spacer(32))
+
         // ── Sleep sources ──────────────────────────────────────────────────
 
         sectionLabel("Sleep — source priority", root)
@@ -119,6 +137,143 @@ class SettingsActivity : ComponentActivity() {
         super.onResume()
         refreshCalendarSpinner()
         refreshSourceLabels()
+        refreshSchedulesList()
+    }
+
+    // ── Schedule helpers ───────────────────────────────────────────────────
+
+    private fun refreshSchedulesList() {
+        schedulesList.removeAllViews()
+        val schedules = Prefs.getSyncSchedules(this)
+        if (schedules.isEmpty()) {
+            TextView(this).apply {
+                text = "No schedules yet."
+                textSize = 13f
+            }.also { schedulesList.addView(it) }
+            return
+        }
+        for (schedule in schedules) {
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 6, 0, 6)
+                TextView(this@SettingsActivity).apply {
+                    text = schedule.displayString()
+                    textSize = 14f
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }.also { addView(it) }
+                Button(this@SettingsActivity).apply {
+                    text = "✕"
+                    setOnClickListener {
+                        val updated = Prefs.getSyncSchedules(this@SettingsActivity)
+                            .filter { it.id != schedule.id }
+                        Prefs.setSyncSchedules(this@SettingsActivity, updated)
+                        SyncScheduler.applySchedules(this@SettingsActivity)
+                        refreshSchedulesList()
+                    }
+                }.also { addView(it) }
+            }.also { schedulesList.addView(it) }
+        }
+    }
+
+    private fun showAddScheduleDialog() {
+        val dialogView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 16)
+        }
+
+        // Daily / Weekly radio
+        val radioDaily  = RadioButton(this).apply { text = "Daily";  isChecked = true }
+        val radioWeekly = RadioButton(this).apply { text = "Weekly" }
+        RadioGroup(this).apply {
+            orientation = RadioGroup.HORIZONTAL
+            addView(radioDaily)
+            addView(radioWeekly)
+        }.also { dialogView.addView(it) }
+
+        // Time pickers
+        val hourPicker = NumberPicker(this).apply {
+            minValue = 0; maxValue = 23
+            setFormatter { "%02d".format(it) }
+            value = 8
+        }
+        val minutePicker = NumberPicker(this).apply {
+            minValue = 0; maxValue = 59
+            setFormatter { "%02d".format(it) }
+            value = 0
+        }
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 16, 0, 8)
+            TextView(this@SettingsActivity).apply { text = "Time:  " }.also { addView(it) }
+            addView(hourPicker)
+            TextView(this@SettingsActivity).apply { text = "  :  " }.also { addView(it) }
+            addView(minutePicker)
+        }.also { dialogView.addView(it) }
+
+        // Day checkboxes (weekly only)
+        val dayNames  = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        val dayChecks = dayNames.mapIndexed { i, name ->
+            CheckBox(this).apply { text = name; tag = i + 1 }
+        }
+        val daysRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 8, 0, 0)
+            visibility = View.GONE
+            dayChecks.forEach { addView(it) }
+        }
+        dialogView.addView(TextView(this).apply {
+            text = "Days:"
+            textSize = 14f
+            setPadding(0, 8, 0, 0)
+            visibility = View.GONE
+            tag = "days_label"
+        })
+        dialogView.addView(daysRow)
+
+        val daysLabel = dialogView.findViewWithTag<TextView>("days_label")
+
+        radioDaily.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                daysLabel.visibility = View.GONE
+                daysRow.visibility = View.GONE
+            }
+        }
+        radioWeekly.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                daysLabel.visibility = View.VISIBLE
+                daysRow.visibility = View.VISIBLE
+            }
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Add sync schedule")
+            .setView(dialogView)
+            .setPositiveButton("Add", null)
+            .setNegativeButton("Cancel", null)
+            .show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val type = if (radioDaily.isChecked) "daily" else "weekly"
+            val selectedDays = dayChecks.filter { it.isChecked }.map { it.tag as Int }.toSet()
+
+            if (type == "weekly" && selectedDays.isEmpty()) {
+                Toast.makeText(this, "Select at least one day", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val schedule = SyncSchedule(
+                type   = type,
+                hour   = hourPicker.value,
+                minute = minutePicker.value,
+                days   = selectedDays,
+            )
+            Prefs.setSyncSchedules(this, Prefs.getSyncSchedules(this) + schedule)
+            SyncScheduler.enqueue(this, schedule)
+            refreshSchedulesList()
+            dialog.dismiss()
+        }
     }
 
     // ── Calendar helpers ───────────────────────────────────────────────────
@@ -158,7 +313,6 @@ class SettingsActivity : ComponentActivity() {
             .setView(input)
             .setPositiveButton("Create") { _, _ ->
                 val name = input.text.toString().trim().ifBlank { "Health Connect" }
-                // Use the account of the currently selected calendar
                 val selected = calendars.getOrNull(calSpinner.selectedItemPosition)
                 val (accountName, accountType) = if (selected != null) {
                     val parts = selected.third.split("|")

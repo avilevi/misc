@@ -61,6 +61,23 @@ object Prefs {
         }
     }
 
+    // ── Sync schedules ─────────────────────────────────────────────────────
+
+    fun getSyncSchedules(ctx: Context): List<SyncSchedule> {
+        val json = prefs(ctx).getString("sync_schedules", "[]") ?: "[]"
+        return try {
+            val arr = JSONArray(json)
+            (0 until arr.length()).mapNotNull {
+                runCatching { SyncSchedule.fromJson(arr.getJSONObject(it)) }.getOrNull()
+            }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun setSyncSchedules(ctx: Context, schedules: List<SyncSchedule>) =
+        prefs(ctx).edit()
+            .putString("sync_schedules", JSONArray(schedules.map { it.toJson() }).toString())
+            .apply()
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     private fun getList(ctx: Context, key: String): List<String> {

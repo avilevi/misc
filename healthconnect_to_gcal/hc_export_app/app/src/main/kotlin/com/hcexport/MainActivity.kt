@@ -15,7 +15,6 @@ import androidx.health.connect.client.records.*
 import androidx.lifecycle.lifecycleScope
 import androidx.work.*
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -151,8 +150,11 @@ class MainActivity : ComponentActivity() {
             } else {
                 if (Prefs.getCalendarId(this@MainActivity) == null) Prefs.setCalendarId(this@MainActivity, calId)
                 val calName = resolveCalendarName(calId)
-                status("✓ Ready\n\nCalendar: $calName\nSyncs every 6 hours automatically.\n\nTap Settings to choose calendar or set source priority.")
-                schedulePeriodicSync()
+                val schedCount = Prefs.getSyncSchedules(this@MainActivity).size
+                val schedInfo = if (schedCount == 0) "No auto-sync scheduled. Tap Settings → Auto-sync schedules to add one."
+                               else "$schedCount auto-sync schedule(s) active."
+                status("✓ Ready\n\nCalendar: $calName\n$schedInfo\n\nTap Settings to configure.")
+                SyncScheduler.applySchedules(this@MainActivity)
             }
         }
     }
@@ -175,14 +177,6 @@ class MainActivity : ComponentActivity() {
                 else -> {}
             }
         }
-    }
-
-    private fun schedulePeriodicSync() {
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "hc_periodic_sync",
-            ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequestBuilder<HcSyncWorker>(6, TimeUnit.HOURS).build(),
-        )
     }
 
     private fun resolveCalendarName(calendarId: Long): String {

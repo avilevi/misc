@@ -189,6 +189,12 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             }
 
             Log.i(TAG, "Sync complete: $created created, $skipped skipped")
+
+            // Re-schedule this run for its next occurrence
+            inputData.getString("schedule_id")
+                ?.let { id -> Prefs.getSyncSchedules(applicationContext).find { it.id == id } }
+                ?.let { SyncScheduler.enqueue(applicationContext, it) }
+
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed: ${e.message}", e)
