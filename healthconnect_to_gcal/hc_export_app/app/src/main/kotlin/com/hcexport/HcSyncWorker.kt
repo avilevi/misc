@@ -190,6 +190,9 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
 
             Log.i(TAG, "Sync complete: $created created, $skipped skipped")
 
+            // ── WOD descriptions ───────────────────────────────────────────
+            WodSync.sync(applicationContext)
+
             // Re-schedule this run for its next occurrence
             inputData.getString("schedule_id")
                 ?.let { id -> Prefs.getSyncSchedules(applicationContext).find { it.id == id } }

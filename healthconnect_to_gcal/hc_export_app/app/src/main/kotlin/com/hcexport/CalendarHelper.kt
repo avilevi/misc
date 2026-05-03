@@ -4,6 +4,10 @@ import android.content.ContentValues
 import android.content.Context
 import android.provider.CalendarContract
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 object CalendarHelper {
@@ -221,6 +225,61 @@ object CalendarHelper {
         appendLine()
         append("Source: ${friendlySource(event.sourcePkg)}")
     }.trimEnd()
+
+    // ── WOD events ────────────────────────────────────────────────────────
+
+    data class WodEventInfo(val id: Long, val dateStr: String, val description: String?)
+
+    fun findWodEvents(context: Context, daysAhead: Int): List<WodEventInfo> {
+        val todayStart = Instant.now().truncatedTo(ChronoUnit.DAYS)
+        val rangeEnd   = todayStart.plus(daysAhead.toLong(), ChronoUnit.DAYS)
+
+        val projection = arrayOf(
+            CalendarContract.Events._ID,
+            CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DESCRIPTION,
+        )
+        val selection = "${CalendarContract.Events.TITLE} = ? " +
+            "AND ${CalendarContract.Events.DTSTART} >= ? " +
+            "AND ${CalendarContract.Events.DTSTART} < ? " +
+            "AND ${CalendarContract.Events.DELETED} = 0"
+
+        val results = mutableListOf<WodEventInfo>()
+        context.contentResolver.query(
+            CalendarContract.Events.CONTENT_URI,
+            projection,
+            selection,
+            arrayOf("WOD", todayStart.toEpochMilli().toString(), rangeEnd.toEpochMilli().toString()),
+            null,
+        )?.use { cursor ->
+            val idCol    = cursor.getColumnIndex(CalendarContract.Events._ID)
+            val startCol = cursor.getColumnIndex(CalendarContract.Events.DTSTART)
+            val descCol  = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION)
+            while (cursor.moveToNext()) {
+                val id    = cursor.getLong(idCol)
+                val start = cursor.getLong(startCol)
+                val desc  = cursor.getString(descCol)
+                val date  = Instant.ofEpochMilli(start)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                results += WodEventInfo(id, date, desc)
+            }
+        }
+        return results
+    }
+
+    fun updateEventDescription(context: Context, eventId: Long, description: String) {
+        val values = ContentValues().apply {
+            put(CalendarContract.Events.DESCRIPTION, description)
+        }
+        context.contentResolver.update(
+            CalendarContract.Events.CONTENT_URI,
+            values,
+            "${CalendarContract.Events._ID} = ?",
+            arrayOf(eventId.toString()),
+        )
+    }
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
