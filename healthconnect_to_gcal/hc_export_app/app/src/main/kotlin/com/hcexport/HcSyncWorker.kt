@@ -45,9 +45,10 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
 
             val calendarId = Prefs.getCalendarId(applicationContext)
                 ?: CalendarHelper.findCalendarId(applicationContext)
-                ?: return Result.failure().also {
+                ?: run {
                     Log.e(TAG, "No calendar found")
                     SyncLogger.log(applicationContext, "ERROR: No calendar found")
+                    throw Exception("No calendar found")
                 }
 
             var created = 0

@@ -7,9 +7,10 @@ import java.util.concurrent.TimeUnit
 object SyncScheduler {
 
     fun applySchedules(ctx: Context) {
-        val wm = WorkManager.getInstance(ctx)
-        wm.cancelUniqueWork("hc_periodic_sync")
-        wm.cancelAllWorkByTag("scheduled_sync")
+        // Enqueue all schedules stored in Prefs. ExistingWorkPolicy.REPLACE
+        // handles updates (same schedule re-enqueued with a fresh delay).
+        // Orphaned work from deleted schedules fires once, finds no matching
+        // schedule_id in Prefs, and does not re-enqueue itself.
         for (schedule in Prefs.getSyncSchedules(ctx)) enqueue(ctx, schedule)
     }
 
