@@ -27,7 +27,9 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
     override suspend fun doWork(): Result {
         Log.i(TAG, "Starting sync")
         val forceResync = inputData.getBoolean(KEY_FORCE_RESYNC, false)
-        return try {
+
+        var summary: String? = null
+        val result = try {
             val client = HealthConnectClient.getOrCreate(applicationContext)
             val now    = Instant.now()
 
@@ -220,18 +222,13 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
 
             // ── Persist results ────────────────────────────────────────────
             Prefs.setLastSyncTime(applicationContext, now.toEpochMilli())
-            val summary = buildString {
+            summary = buildString {
                 append("Last sync: ${dateFmt.format(Date(now.toEpochMilli()))}")
                 append("\nHC: $created new, $skipped skipped")
                 if (wodUpdated > 0) append("\nWOD: $wodUpdated updated")
             }
-            Prefs.setLastSyncSummary(applicationContext, summary)
+            Prefs.setLastSyncSummary(applicationContext, summary!!)
             SyncLogger.log(applicationContext, "=== Sync done: $created new, $skipped skipped, $wodUpdated WOD updated ===")
-
-            // Re-schedule this run for its next occurrence
-            inputData.getString("schedule_id")
-                ?.let { id -> Prefs.getSyncSchedules(applicationContext).find { it.id == id } }
-                ?.let { SyncScheduler.enqueue(applicationContext, it) }
 
             Result.success()
         } catch (e: Exception) {
@@ -239,5 +236,15 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             SyncLogger.log(applicationContext, "ERROR: Sync failed: ${e.message}")
             Result.failure()
         }
+
+        // Always re-schedule the next run, even if this sync failed
+        inputData.getString("schedule_id")
+            ?.let { id -> Prefs.getSyncSchedules(applicationContext).find { it.id == id } }
+            ?.let { SyncScheduler.enqueue(applicationContext, it) }
+
+        // Notify on success
+        summary?.let { NotificationHelper.notifySyncComplete(applicationContext, it) }
+
+        return result
     }
 }

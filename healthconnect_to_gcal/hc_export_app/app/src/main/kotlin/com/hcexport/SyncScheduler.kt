@@ -26,4 +26,10 @@ object SyncScheduler {
             req,
         )
     }
+
+    fun nextScheduledTimeMs(ctx: Context): Long? {
+        val schedules = Prefs.getSyncSchedules(ctx)
+        if (schedules.isEmpty()) return null
+        return schedules.minOf { it.nextTriggerMs() }
+    }
 }

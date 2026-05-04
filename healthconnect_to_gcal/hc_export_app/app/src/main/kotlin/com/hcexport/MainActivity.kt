@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.*
 import androidx.activity.ComponentActivity
@@ -16,6 +17,9 @@ import androidx.health.connect.client.records.*
 import androidx.lifecycle.lifecycleScope
 import androidx.work.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +41,10 @@ class MainActivity : ComponentActivity() {
         Manifest.permission.READ_CALENDAR,
         Manifest.permission.WRITE_CALENDAR,
     )
+
+    private val requestNotificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* non-blocking: notification is optional */ }
 
     private val requestHcPermissions = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
@@ -132,6 +140,13 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        // Notification permission is optional (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         if (HealthConnectClient.getSdkStatus(this) != HealthConnectClient.SDK_AVAILABLE) {
             status("⚠ Health Connect is not available on this device.\nRequires Android 9+ with Health Connect installed.")
             return
@@ -171,10 +186,18 @@ class MainActivity : ComponentActivity() {
                                  else "$schedCount auto-sync schedule(s) active."
                 val lastSummary = Prefs.getLastSyncSummary(this@MainActivity)
                 val summaryLine = if (lastSummary != null) "\n\n$lastSummary" else ""
-                status("✓ Ready\n\nCalendar: $calName\n$schedInfo$summaryLine\n\nTap Settings to configure.")
+                val nextLine    = nextSyncLine()
+                status("✓ Ready\n\nCalendar: $calName\n$schedInfo$summaryLine$nextLine\n\nTap Settings to configure.")
                 SyncScheduler.applySchedules(this@MainActivity)
             }
         }
+    }
+
+    private fun nextSyncLine(): String {
+        val nextMs = SyncScheduler.nextScheduledTimeMs(this)
+        if (nextMs == null) return ""
+        val fmt = SimpleDateFormat("EEE, dd MMM HH:mm", Locale.getDefault())
+        return "\nNext auto-sync: ${fmt.format(Date(nextMs))}"
     }
 
     private fun triggerSync() {

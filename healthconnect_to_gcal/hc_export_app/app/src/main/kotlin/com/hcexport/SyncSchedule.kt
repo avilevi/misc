@@ -12,7 +12,7 @@ data class SyncSchedule(
     val minute: Int,
     val days: Set<Int> = emptySet(), // 1=Mon..7=Sun, only for weekly
 ) {
-    fun nextTriggerDelayMs(): Long {
+    fun nextTriggerMs(): Long {
         val now = Calendar.getInstance()
         if (type == "daily") {
             val target = Calendar.getInstance().apply {
@@ -22,9 +22,8 @@ data class SyncSchedule(
                 set(Calendar.MILLISECOND, 0)
             }
             if (!target.after(now)) target.add(Calendar.DAY_OF_MONTH, 1)
-            return target.timeInMillis - now.timeInMillis
+            return target.timeInMillis
         } else {
-            // 1=Mon..7=Sun → Calendar: 2=Mon..7=Sat, 1=Sun
             val calDays = days.map { d -> if (d == 7) Calendar.SUNDAY else d + 1 }.toSet()
             for (i in 0..7) {
                 val candidate = Calendar.getInstance().apply {
@@ -35,11 +34,17 @@ data class SyncSchedule(
                     if (i > 0) add(Calendar.DAY_OF_MONTH, i)
                 }
                 if (candidate.after(now) && candidate.get(Calendar.DAY_OF_WEEK) in calDays) {
-                    return candidate.timeInMillis - now.timeInMillis
+                    return candidate.timeInMillis
                 }
             }
-            return 7L * 24 * 60 * 60 * 1000
+            return now.timeInMillis + 7L * 24 * 60 * 60 * 1000
         }
+    }
+
+    fun nextTriggerDelayMs(): Long {
+        val targetMs = nextTriggerMs()
+        val nowMs = System.currentTimeMillis()
+        return (targetMs - nowMs).coerceAtLeast(0L)
     }
 
     fun displayString(): String {
