@@ -1,6 +1,7 @@
 package com.hcexport
 
 import android.app.AlertDialog
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.ComponentActivity
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -16,17 +18,17 @@ import java.util.Locale
 class JournalActivity : ComponentActivity() {
 
     private var currentYear: Int = 0
-    private var currentMonth: Int = 0 // 0-based
-    private var selectedDayMs: Long = 0L
-    private val expandedCardIds = mutableSetOf<String>()
+    private var currentMonth: Int = 0
+    private var selectedDate: String = ""
 
     private lateinit var calendarContainer: LinearLayout
     private lateinit var monthLabel: TextView
     private lateinit var dayHeaderText: TextView
     private lateinit var dayEntriesContainer: LinearLayout
 
-    private val dayFmt  = SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault())
-    private val timeFmt = SimpleDateFormat("h:mm a", Locale.getDefault())
+    private val dateFmt    = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val headerFmt  = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+    private val timeFmt    = SimpleDateFormat("h:mm a", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +36,7 @@ class JournalActivity : ComponentActivity() {
         val cal = Calendar.getInstance()
         currentYear  = cal.get(Calendar.YEAR)
         currentMonth = cal.get(Calendar.MONTH)
-        selectedDayMs = dayStartMs(cal)
+        selectedDate = dateFmt.format(cal.time)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -42,8 +44,7 @@ class JournalActivity : ComponentActivity() {
             setPadding(Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 48), Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 24))
         }
 
-        // ── Header ───────────────────────────────────────────────────────────
-
+        // Header
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -61,10 +62,8 @@ class JournalActivity : ComponentActivity() {
         header.addView(Ui.secondaryButton(this, "Back") { finish() })
         root.addView(header)
 
-        // ── Calendar card ────────────────────────────────────────────────────
-
+        // Calendar card
         root.addView(Ui.card(this) {
-            // Month nav
             val nav = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -84,13 +83,11 @@ class JournalActivity : ComponentActivity() {
 
             addView(Ui.divider(context))
 
-            // Day-of-week headers
             val dowRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, Ui.dp(context, 4), 0, Ui.dp(context, 4))
             }
-            val dowLabels = listOf("M", "T", "W", "T", "F", "S", "S")
-            for (d in dowLabels) {
+            for (d in listOf("M", "T", "W", "T", "F", "S", "S")) {
                 dowRow.addView(TextView(context).apply {
                     text = d
                     textSize = 11f
@@ -102,7 +99,6 @@ class JournalActivity : ComponentActivity() {
             }
             addView(dowRow)
 
-            // Grid container
             calendarContainer = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
             }
@@ -113,24 +109,24 @@ class JournalActivity : ComponentActivity() {
                 val c = Calendar.getInstance()
                 currentYear  = c.get(Calendar.YEAR)
                 currentMonth = c.get(Calendar.MONTH)
-                selectedDayMs = dayStartMs(c)
+                selectedDate = dateFmt.format(c.time)
                 refreshCalendar()
                 refreshDayEntries()
             })
         })
 
-        root.addView(Ui.sectionSpacer(this, 20))
+        root.addView(Ui.sectionSpacer(this, 24))
 
-        // ── Selected day section ─────────────────────────────────────────────
-
+        // Day header
         dayHeaderText = TextView(this).apply {
-            textSize = 15f
+            textSize = 18f
             setTextColor(Ui.TEXT_PRIMARY)
             typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 8))
+            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 16))
         }
         root.addView(dayHeaderText)
 
+        // Entries container
         dayEntriesContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -162,22 +158,21 @@ class JournalActivity : ComponentActivity() {
         val cal = Calendar.getInstance()
         cal.set(currentYear, currentMonth, 1)
         val daysInMonth   = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-        val firstDayOfWeekZeroMonday = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7 // 0=Mon
+        val firstDowZeroMon = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
 
         val todayCal = Calendar.getInstance()
         val todayY = todayCal.get(Calendar.YEAR)
         val todayM = todayCal.get(Calendar.MONTH)
         val todayD = todayCal.get(Calendar.DAY_OF_MONTH)
 
-        val selCal = Calendar.getInstance().apply { timeInMillis = selectedDayMs }
-        val selDay = if (selCal.get(Calendar.YEAR) == currentYear && selCal.get(Calendar.MONTH) == currentMonth)
-            selCal.get(Calendar.DAY_OF_MONTH) else null
+        val selDay = if (selectedDate.startsWith("%04d-%02d".format(currentYear, currentMonth + 1)))
+            selectedDate.substringAfterLast('-').toIntOrNull() else null
 
         val entries = JournalStorage.getEntriesForMonth(this, currentYear, currentMonth)
         val dayMap  = JournalStorage.buildDayMap(entries)
 
         var cell = 0
-        val totalCells = firstDayOfWeekZeroMonday + daysInMonth
+        val totalCells = firstDowZeroMon + daysInMonth
         val rows = (totalCells + 6) / 7
 
         for (row in 0 until rows) {
@@ -186,7 +181,7 @@ class JournalActivity : ComponentActivity() {
                 setPadding(0, Ui.dp(this@JournalActivity, 2), 0, Ui.dp(this@JournalActivity, 2))
             }
             for (col in 0 until 7) {
-                val day = cell - firstDayOfWeekZeroMonday + 1
+                val day = cell - firstDowZeroMon + 1
                 val inMonth = day in 1..daysInMonth
 
                 val cellView = LinearLayout(this).apply {
@@ -207,7 +202,7 @@ class JournalActivity : ComponentActivity() {
                     isClickable = inMonth
                     if (inMonth) {
                         setOnClickListener {
-                            selectedDayMs = dayStartMs(currentYear, currentMonth, day)
+                            selectedDate = "%04d-%02d-%02d".format(currentYear, currentMonth + 1, day)
                             refreshCalendar()
                             refreshDayEntries()
                         }
@@ -245,17 +240,18 @@ class JournalActivity : ComponentActivity() {
         }
     }
 
-    // ── Day entries ──────────────────────────────────────────────────────────
+    // ── Day entries (narrative diary) ────────────────────────────────────────
 
     private fun refreshDayEntries() {
-        dayHeaderText.text = dayFmt.format(Date(selectedDayMs))
+        val dayMs = dateToMs(selectedDate)
+        dayHeaderText.text = headerFmt.format(Date(dayMs))
         dayEntriesContainer.removeAllViews()
 
-        val entries = JournalStorage.getEntriesForDay(this, selectedDayMs)
+        val entries = JournalStorage.getEntriesForDay(this, selectedDate)
 
         if (entries.isEmpty()) {
             dayEntriesContainer.addView(TextView(this).apply {
-                text = "No workouts on this day."
+                text = "Nothing logged on this day."
                 textSize = 13f
                 setTextColor(Ui.TEXT_MUTED)
                 setPadding(0, Ui.dp(this@JournalActivity, 8), 0, 0)
@@ -263,220 +259,122 @@ class JournalActivity : ComponentActivity() {
             return
         }
 
-        for (entry in entries) {
-            dayEntriesContainer.addView(buildWorkoutCard(entry))
-            dayEntriesContainer.addView(Ui.sectionSpacer(this, 8))
+        for ((i, entry) in entries.withIndex()) {
+            if (i > 0) {
+                dayEntriesContainer.addView(ruleView())
+            }
+            dayEntriesContainer.addView(buildEntryBlock(entry))
         }
     }
 
-    // ── Workout card ─────────────────────────────────────────────────────────
-
-    private fun buildWorkoutCard(entry: JournalEntry): View {
-        val card = LinearLayout(this).apply {
+    private fun buildEntryBlock(entry: JournalEntry): View {
+        val block = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(Ui.dp(this@JournalActivity, 16), Ui.dp(this@JournalActivity, 16), Ui.dp(this@JournalActivity, 16), Ui.dp(this@JournalActivity, 16))
-            background = Ui.cardBg(Ui.dpf(this@JournalActivity, 14))
-            tag = entry.id
+            setPadding(0, Ui.dp(this@JournalActivity, 8), 0, Ui.dp(this@JournalActivity, 8))
         }
 
-        val isExpanded = expandedCardIds.contains(entry.id)
-
-        // ── Header row (always visible, clickable) ──
-        val header = LinearLayout(this).apply {
+        // Time + type label
+        val metaRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setOnClickListener {
-                toggleExpanded(entry.id, card)
-            }
+            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 4))
         }
-
-        val (emoji, _) = CalendarHelper.EXERCISE_TYPES[entry.originalTypeCode]
-            ?: ("🏃" to "Exercise")
-
-        header.addView(TextView(this).apply {
-            text = emoji
-            textSize = 22f
-            setPadding(0, 0, Ui.dp(this@JournalActivity, 10), 0)
+        val startMs = extractStartMs(entry)
+        val typeLabel = if (entry.entryType == "sleep") "Sleep" else {
+            try {
+                val tc = JSONObject(entry.originalDataJson).optInt("tc", -1)
+                CalendarHelper.EXERCISE_TYPES[tc]?.second ?: "Workout"
+            } catch (_: Exception) { "Workout" }
+        }
+        metaRow.addView(TextView(this).apply {
+            text = "${timeFmt.format(Date(startMs))}  ·  $typeLabel"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+            letterSpacing = 0.04f
         })
+        block.addView(metaRow)
 
-        val titleCol = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        titleCol.addView(TextView(this).apply {
-            text = entry.effectiveTitle().ifBlank { "Workout" }
+        // Narrative text
+        val narrative = entry.narrativeText()
+        block.addView(TextView(this).apply {
+            text = narrative
             textSize = 15f
             setTextColor(Ui.TEXT_PRIMARY)
-            typeface = Typeface.DEFAULT_BOLD
-        })
-        titleCol.addView(TextView(this).apply {
-            text = "${timeFmt.format(Date(entry.originalStartMs))} → ${timeFmt.format(Date(entry.originalEndMs))}"
-            textSize = 12f
-            setTextColor(Ui.TEXT_SECONDARY)
-        })
-        header.addView(titleCol)
-
-        val arrow = TextView(this).apply {
-            text = if (isExpanded) "▲" else "▼"
-            textSize = 14f
-            setTextColor(Ui.TEXT_MUTED)
-            setPadding(Ui.dp(this@JournalActivity, 8), 0, 0, 0)
-        }
-        header.addView(arrow)
-        card.addView(header)
-
-        // ── Expanded details ──
-        val detailsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            visibility = if (isExpanded) View.VISIBLE else View.GONE
-            tag = "details"
-        }
-        detailsContainer.addView(View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(this@JournalActivity, 1)).also {
-                it.setMargins(0, Ui.dp(this@JournalActivity, 12), 0, Ui.dp(this@JournalActivity, 8))
-            }
-            setBackgroundColor(Ui.BORDER_FAINT)
+            setLineSpacing(Ui.dpf(this@JournalActivity, 4), 1f)
+            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 8))
         })
 
-        // Metrics
-        val durMin = (entry.originalEndMs - entry.originalStartMs) / 60_000
-        detailsContainer.addView(Ui.statusLine(this, "Duration", fmtDur(durMin)))
-        val label = CalendarHelper.EXERCISE_TYPES[entry.originalTypeCode]?.second ?: "Exercise"
-        detailsContainer.addView(Ui.statusLine(this, "Type", label))
-        entry.originalDistanceM?.let {
-            detailsContainer.addView(Ui.statusLine(this, "Distance", "%.2f km".format(it / 1000.0)))
-        }
-        entry.originalCaloriesKcal?.let {
-            detailsContainer.addView(Ui.statusLine(this, "Calories", "%.0f kcal".format(it)))
-        }
-        entry.originalAvgHrBpm?.let {
-            detailsContainer.addView(Ui.statusLine(this, "Avg HR", "%.0f bpm".format(it)))
-        }
-        entry.originalMaxHrBpm?.let {
-            detailsContainer.addView(Ui.statusLine(this, "Max HR", "%.0f bpm".format(it)))
-        }
-        entry.originalPaceSecPerKm?.let {
-            detailsContainer.addView(Ui.statusLine(this, "Pace", fmtPace(it)))
-        }
-        entry.originalStepsCount?.let {
-            detailsContainer.addView(Ui.statusLine(this, "Steps", "%,d".format(it)))
-        }
-        detailsContainer.addView(Ui.statusLine(this, "Source", friendlySource(entry.originalSourcePkg)))
-
-        // Notes
-        val notes = entry.effectiveNotes()
-        if (notes.isNotBlank()) {
-            detailsContainer.addView(TextView(this).apply {
-                text = "NOTES"
-                textSize = 11f
-                setTextColor(Ui.TEXT_MUTED)
-                typeface = Typeface.DEFAULT_BOLD
-                setPadding(0, Ui.dp(this@JournalActivity, 6), 0, Ui.dp(this@JournalActivity, 2))
-            })
-            detailsContainer.addView(TextView(this).apply {
-                text = notes
-                textSize = 13f
-                setTextColor(Ui.TEXT_SECONDARY)
-            })
-        }
-
-        if (entry.hasCustomizations()) {
-            detailsContainer.addView(TextView(this).apply {
-                text = "(edited)"
-                textSize = 11f
-                setTextColor(Ui.ACCENT)
-                setPadding(0, Ui.dp(this@JournalActivity, 4), 0, 0)
-            })
-        }
-
-        // Action buttons
-        val btnRow = LinearLayout(this).apply {
+        // Edit links row
+        val linksRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, Ui.dp(this@JournalActivity, 12), 0, 0)
+            setPadding(0, 0, 0, 0)
         }
-        btnRow.addView(Ui.secondaryButton(this, "Edit") { showEditDialog(entry) }.apply {
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also {
-                it.setMargins(0, 0, Ui.dp(this@JournalActivity, 6), 0)
-            }
-        })
-        btnRow.addView(Ui.secondaryButton(this, "Revert") {
-            if (entry.hasCustomizations()) showRevertDialog(entry)
-        }.apply {
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also {
-                it.setMargins(Ui.dp(this@JournalActivity, 6), 0, 0, 0)
-            }
-        })
-        detailsContainer.addView(btnRow)
+        if (entry.entryType == "exercise") {
+            linksRow.addView(editLink("edit data…") { showEditDataDialog(entry) })
+            linksRow.addView(TextView(this).apply {
+                text = "  "
+                textSize = 11f
+            })
+        }
+        linksRow.addView(editLink("edit text…") { showEditTextDialog(entry) })
+        if (entry.hasCustomizations()) {
+            linksRow.addView(TextView(this).apply {
+                text = "  "
+                textSize = 11f
+            })
+            linksRow.addView(editLink("revert") { showRevertDialog(entry) })
+        }
+        block.addView(linksRow)
 
-        card.addView(detailsContainer)
-        return card
+        return block
     }
 
-    private fun toggleExpanded(id: String, card: View) {
-        if (expandedCardIds.contains(id)) expandedCardIds.remove(id)
-        else expandedCardIds.add(id)
-        // Rebuild card
-        val parent = card.parent as? ViewGroup ?: return
-        val idx   = parent.indexOfChild(card)
-        parent.removeView(card)
-        parent.addView(buildWorkoutCard(requireEntry(id)), idx)
-    }
+    private fun editLink(label: String, onClick: () -> Unit): TextView =
+        TextView(this).apply {
+            text = label
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+            paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
+            setOnClickListener { onClick() }
+        }
 
-    private fun requireEntry(id: String): JournalEntry =
-        JournalStorage.getEntry(this, id)!!
+    private fun ruleView(): View =
+        View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Ui.dp(this@JournalActivity, 1),
+            ).also { it.setMargins(0, Ui.dp(this@JournalActivity, 4), 0, Ui.dp(this@JournalActivity, 4)) }
+            setBackgroundColor(Ui.BORDER_FAINT)
+        }
 
-    // ── Edit dialog ──────────────────────────────────────────────────────────
+    // ── Edit Text dialog ─────────────────────────────────────────────────────
 
-    private fun showEditDialog(entry: JournalEntry) {
+    private fun showEditTextDialog(entry: JournalEntry) {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 16), Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 8))
         }
-
-        container.addView(TextView(this).apply {
-            text = "TITLE"
-            textSize = 11f
-            setTextColor(Ui.TEXT_MUTED)
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 4))
-        })
-        val titleInput = EditText(this).apply {
-            setText(entry.effectiveTitle())
-            textSize = 14f
+        val input = EditText(this).apply {
+            setText(entry.narrativeText())
+            textSize = 15f
             setTextColor(Ui.TEXT_PRIMARY)
-            setPadding(Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 10), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 10))
-            background = Ui.cardBg(Ui.dpf(this@JournalActivity, 8), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
-        }
-        container.addView(titleInput)
-
-        container.addView(TextView(this).apply {
-            text = "NOTES"
-            textSize = 11f
-            setTextColor(Ui.TEXT_MUTED)
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, Ui.dp(this@JournalActivity, 12), 0, Ui.dp(this@JournalActivity, 4))
-        })
-        val notesInput = EditText(this).apply {
-            setText(entry.effectiveNotes())
-            textSize = 14f
-            setTextColor(Ui.TEXT_PRIMARY)
-            minLines = 4
+            minLines = 6
             gravity = Gravity.START or Gravity.TOP
-            setPadding(Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 10), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 10))
-            background = Ui.cardBg(Ui.dpf(this@JournalActivity, 8), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
+            setPadding(Ui.dp(this@JournalActivity, 14), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 14), Ui.dp(this@JournalActivity, 12))
+            background = Ui.cardBg(Ui.dpf(this@JournalActivity, 10), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
         }
-        container.addView(notesInput)
+        container.addView(input)
 
         AlertDialog.Builder(this)
-            .setTitle("Edit Workout")
+            .setTitle("Edit Text")
             .setView(container)
             .setPositiveButton("Save") { _, _ ->
-                val newTitle = titleInput.text.toString().trim()
-                val newNotes = notesInput.text.toString().trim()
+                val text = input.text.toString().trim()
+                // Check if text differs from auto-generated narrative
+                val autoNarrative = DiaryNarrator.generate(entry)
                 val updated = entry.copy(
-                    customTitle  = newTitle.takeIf { it.isNotEmpty() && it != entry.originalTitle },
-                    customNotes  = newNotes.takeIf { it.isNotEmpty() && it != entry.originalNotes },
-                    updatedAtMs  = System.currentTimeMillis(),
+                    customNarrative = text.takeIf { it.isNotEmpty() && it != autoNarrative },
+                    updatedAtMs = System.currentTimeMillis(),
                 )
                 JournalStorage.updateEntry(this, updated)
                 refreshDayEntries()
@@ -486,10 +384,160 @@ class JournalActivity : ComponentActivity() {
             .show()
     }
 
+    // ── Edit Data dialog (exercise fields) ────────────────────────────────────
+
+    private fun showEditDataDialog(entry: JournalEntry) {
+        val json = JSONObject(entry.effectiveDataJson())
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 8))
+        }
+
+        data class FieldSpec(val key: String, val label: String, val isNum: Boolean = false,
+                             val toDisplay: (JSONObject, String) -> String = { j, k -> j.optString(k, "") })
+
+        val fields = mutableListOf<Pair<FieldSpec, EditText>>()
+
+        // Exercise field specs
+        val fieldSpecs = listOf(
+            FieldSpec("tt", "Title"),
+            FieldSpec("dm", "Distance (km)", isNum = true,
+                toDisplay = { j, k -> if (j.has(k)) "%.2f".format(j.getDouble(k) / 1000.0) else "" }),
+            FieldSpec("ck", "Calories (kcal)", isNum = true,
+                toDisplay = { j, k -> if (j.has(k)) "%.0f".format(j.getDouble(k)) else "" }),
+            FieldSpec("ah", "Avg HR (bpm)", isNum = true,
+                toDisplay = { j, k -> if (j.has(k)) "%.0f".format(j.getDouble(k)) else "" }),
+            FieldSpec("mh", "Max HR (bpm)", isNum = true,
+                toDisplay = { j, k -> if (j.has(k)) "%.0f".format(j.getDouble(k)) else "" }),
+            FieldSpec("pp", "Pace (/km)", isNum = true,
+                toDisplay = { j, k ->
+                    if (!j.has(k)) "" else {
+                        val sec = j.getDouble(k).toInt()
+                        "%d:%02d".format(sec / 60, sec % 60)
+                    }
+                }),
+            FieldSpec("st", "Steps", isNum = true,
+                toDisplay = { j, k -> if (j.has(k)) j.getLong(k).toString() else "" }),
+            FieldSpec("nt", "Notes"),
+        )
+
+        for (spec in fieldSpecs) {
+            container.addView(TextView(this).apply {
+                text = spec.label.uppercase()
+                textSize = 10f
+                setTextColor(Ui.TEXT_MUTED)
+                typeface = Typeface.DEFAULT_BOLD
+                letterSpacing = 0.06f
+                setPadding(0, Ui.dp(this@JournalActivity, 8), 0, Ui.dp(this@JournalActivity, 4))
+            })
+            val edit = EditText(this).apply {
+                setText(spec.toDisplay(json, spec.key))
+                textSize = 13f
+                setTextColor(Ui.TEXT_PRIMARY)
+                setPadding(Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 8), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 8))
+                background = Ui.cardBg(Ui.dpf(this@JournalActivity, 8), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
+                if (spec.key == "nt") {
+                    minLines = 3
+                    gravity = Gravity.START or Gravity.TOP
+                }
+                if (spec.isNum) {
+                    inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                }
+            }
+            container.addView(edit)
+            fields += spec to edit
+        }
+
+        // Source (read-only)
+        container.addView(TextView(this).apply {
+            text = "SOURCE".uppercase()
+            textSize = 10f
+            setTextColor(Ui.TEXT_MUTED)
+            typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.06f
+            setPadding(0, Ui.dp(this@JournalActivity, 8), 0, Ui.dp(this@JournalActivity, 4))
+        })
+        container.addView(TextView(this).apply {
+            val pkg = json.optString("sp", "")
+            val name = when {
+                pkg.contains("samsung") -> "Samsung Health"
+                pkg.contains("fitbit")  -> "Fitbit"
+                pkg.contains("garmin")  -> "Garmin Connect"
+                pkg.contains("fitness") -> "Google Fit"
+                pkg.contains("huawei")  -> "Huawei Health"
+                pkg.contains("polar")   -> "Polar Flow"
+                pkg.contains("strava")  -> "Strava"
+                pkg.contains("withings")-> "Withings"
+                pkg.contains("whoop")   -> "WHOOP"
+                else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
+            }
+            text = name
+            textSize = 13f
+            setTextColor(Ui.TEXT_SECONDARY)
+        })
+
+        val scrollContainer = ScrollView(this).apply {
+            addView(container)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Ui.dp(this@JournalActivity, 480),
+            )
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Edit Data")
+            .setView(scrollContainer)
+            .setPositiveButton("Save") { _, _ ->
+                val updates = mutableMapOf<String, String?>()
+                val origJson = JSONObject(entry.originalDataJson)
+                for ((spec, edit) in fields) {
+                    val newVal = edit.text.toString().trim()
+                    if (newVal.isEmpty()) continue
+
+                    val parsedValue: Any? = when (spec.key) {
+                        "dm" -> newVal.toDoubleOrNull()?.times(1000.0)?.let {
+                            val origM = if (origJson.has("dm")) origJson.getDouble("dm") else null
+                            if (origM != null && kotlin.math.abs(it - origM) < 0.01) null else it
+                        }
+                        "pp" -> {
+                            val parts = newVal.split(":")
+                            if (parts.size == 2) {
+                                val totalSec = (parts[0].toIntOrNull() ?: 0) * 60 + (parts[1].toIntOrNull() ?: 0)
+                                totalSec.toDouble().takeIf { it > 0 }
+                            } else newVal.toDoubleOrNull()
+                        }
+                        "ck", "ah", "mh" -> newVal.toDoubleOrNull()
+                        "st" -> newVal.toLongOrNull()
+                        "tt", "nt" -> newVal
+                        else -> newVal
+                    }
+
+                    if (parsedValue != null) {
+                        // Check if value actually changed from original
+                        val origVal = if (origJson.has(spec.key)) origJson.get(spec.key) else null
+                        if (parsedValue != origVal) {
+                            updates[spec.key] = parsedValue.toString()
+                        }
+                    }
+                }
+
+                if (updates.isNotEmpty()) {
+                    val updated = entry.editDataFields(updates)
+                    JournalStorage.updateEntry(this, updated)
+                }
+                refreshDayEntries()
+                refreshCalendar()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // ── Revert dialog ────────────────────────────────────────────────────────
+
     private fun showRevertDialog(entry: JournalEntry) {
         AlertDialog.Builder(this)
             .setTitle("Revert to original?")
-            .setMessage("This will discard your custom title and notes.")
+            .setMessage("This will discard your custom data and text edits.")
             .setPositiveButton("Revert") { _, _ ->
                 JournalStorage.updateEntry(this, entry.reverted())
                 refreshDayEntries()
@@ -526,37 +574,12 @@ class JournalActivity : ComponentActivity() {
         return c.timeInMillis
     }
 
-    private fun dayStartMs(cal: Calendar): Long {
-        val c = cal.clone() as Calendar
-        c.set(Calendar.HOUR_OF_DAY, 0)
-        c.set(Calendar.MINUTE, 0)
-        c.set(Calendar.SECOND, 0)
-        c.set(Calendar.MILLISECOND, 0)
-        return c.timeInMillis
+    private fun dateToMs(dateStr: String): Long {
+        try { return dateFmt.parse(dateStr)?.time ?: System.currentTimeMillis() }
+        catch (_: Exception) { return System.currentTimeMillis() }
     }
 
-    private fun fmtDur(totalMinutes: Long): String {
-        val h = totalMinutes / 60
-        val m = totalMinutes % 60
-        return if (h > 0) "${h}h ${m}m" else "${m}m"
-    }
-
-    private fun fmtPace(secPerKm: Double): String {
-        val min = (secPerKm / 60).toInt()
-        val sec = (secPerKm % 60).toInt()
-        return "%d:%02d /km".format(min, sec)
-    }
-
-    private fun friendlySource(pkg: String): String = when {
-        pkg.contains("samsung") -> "Samsung Health"
-        pkg.contains("fitbit")  -> "Fitbit"
-        pkg.contains("garmin")  -> "Garmin Connect"
-        pkg.contains("fitness") -> "Google Fit"
-        pkg.contains("huawei")  -> "Huawei Health"
-        pkg.contains("polar")   -> "Polar Flow"
-        pkg.contains("strava")  -> "Strava"
-        pkg.contains("withings")-> "Withings"
-        pkg.contains("whoop")   -> "WHOOP"
-        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-    }
+    private fun extractStartMs(entry: JournalEntry): Long =
+        try { JSONObject(entry.originalDataJson).getLong("sm") }
+        catch (_: Exception) { 0L }
 }

@@ -68,7 +68,7 @@ object CalendarHelper {
         72 to ("♿" to "Wheelchair"),
     )
 
-    private val SLEEP_STAGES = mapOf(
+    val SLEEP_STAGES = mapOf(
         0 to "Unknown",
         1 to "Awake",
         2 to "Sleeping",

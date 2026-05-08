@@ -215,6 +215,7 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     )
                     created++
                     SyncLogger.log(applicationContext, "  NEW  sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                    JournalStorage.addEntryIfAbsent(applicationContext, JournalEntry.fromSleepEvent(event))
                 }
             }
 
