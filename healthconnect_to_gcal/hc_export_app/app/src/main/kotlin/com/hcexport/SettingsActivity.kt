@@ -2,6 +2,7 @@ package com.hcexport
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -14,8 +15,7 @@ class SettingsActivity : ComponentActivity() {
     private lateinit var exerciseLabel: TextView
     private lateinit var schedulesList: LinearLayout
 
-    // Mutable so we can refresh after calendar creation
-    private var calendars = mutableListOf<Triple<Long, String, String>>() // id, displayName, accountName+type
+    private var calendars = mutableListOf<Triple<Long, String, String>>()
     private lateinit var calSpinner: Spinner
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,48 +23,54 @@ class SettingsActivity : ComponentActivity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(64, 80, 64, 64)
+            setBackgroundColor(Ui.BG)
+            setPadding(Ui.dp(this@SettingsActivity, 20), Ui.dp(this@SettingsActivity, 60), Ui.dp(this@SettingsActivity, 20), Ui.dp(this@SettingsActivity, 24))
         }
 
-        TextView(this).apply {
-            text = "Settings"
-            textSize = 22f
-            setPadding(0, 0, 0, 32)
-        }.also { root.addView(it) }
+        // ── Header ───────────────────────────────────────────────────────────
 
-        // ── Calendar picker ────────────────────────────────────────────────
+        headerBar(root)
 
-        sectionLabel("Calendar", root)
+        // ── Calendar card ────────────────────────────────────────────────────
 
-        calSpinner = Spinner(this)
+        Ui.sectionHeader(this, "Calendar").also { root.addView(it) }
+
+        calSpinner = Spinner(this).apply {
+            setPadding(Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 12))
+            background = Ui.cardBg(Ui.dpf(this@SettingsActivity, 12))
+        }
         root.addView(calSpinner)
+        root.addView(Ui.sectionSpacer(this, 8))
 
-        LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            Button(this@SettingsActivity).apply {
-                text = "Refresh list"
-                setOnClickListener { refreshCalendarSpinner() }
-            }.also { addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) }
-            Button(this@SettingsActivity).apply {
-                text = "Create new…"
-                setOnClickListener { showCreateCalendarDialog() }
-            }.also { addView(it, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)) }
-        }.also { root.addView(it) }
+        val calBtnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        calBtnRow.addView(Ui.secondaryButton(this, "Refresh list") { refreshCalendarSpinner() }.apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).also {
+                it.setMargins(0, 0, Ui.dp(this@SettingsActivity, 6), 0)
+            }
+        })
+        calBtnRow.addView(Ui.secondaryButton(this, "Create new…") { showCreateCalendarDialog() }.apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).also {
+                it.setMargins(Ui.dp(this@SettingsActivity, 6), 0, 0, 0)
+            }
+        })
+        root.addView(calBtnRow)
 
-        root.addView(spacer(32))
+        root.addView(Ui.sectionSpacer(this, 28))
 
-        // ── Sync range ─────────────────────────────────────────────────────
+        // ── Sync range card ──────────────────────────────────────────────────
 
-        sectionLabel("Sync range (days back)", root)
+        Ui.sectionHeader(this, "Sync range (days back)").also { root.addView(it) }
 
-        val rangeDays    = listOf(7L, 14L, 30L, 60L, 90L, 180L, 365L)
-        val rangeLabels  = listOf("7 days", "14 days", "30 days", "60 days", "90 days", "180 days", "1 year")
+        val rangeDays   = listOf(7L, 14L, 30L, 60L, 90L, 180L, 365L)
+        val rangeLabels = listOf("7 days", "14 days", "30 days", "60 days", "90 days", "180 days", "1 year")
         val rangeSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(
                 this@SettingsActivity,
                 android.R.layout.simple_spinner_item,
                 rangeLabels,
             ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            setPadding(Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 12))
+            background = Ui.cardBg(Ui.dpf(this@SettingsActivity, 12))
         }
         val savedDays = Prefs.getSyncDaysBack(this)
         rangeSpinner.setSelection(rangeDays.indexOf(savedDays).takeIf { it >= 0 } ?: 4)
@@ -76,61 +82,60 @@ class SettingsActivity : ComponentActivity() {
         }
         root.addView(rangeSpinner)
 
-        root.addView(spacer(32))
+        root.addView(Ui.sectionSpacer(this, 28))
 
-        // ── Auto-sync schedules ────────────────────────────────────────────
+        // ── Auto-sync card ───────────────────────────────────────────────────
 
-        sectionLabel("Auto-sync schedules", root)
+        Ui.sectionHeader(this, "Auto-sync schedules").also { root.addView(it) }
 
-        schedulesList = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
+        schedulesList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(schedulesList)
 
-        Button(this).apply {
-            text = "+ Add schedule"
-            setOnClickListener { showAddScheduleDialog() }
-        }.also { root.addView(it) }
+        root.addView(Ui.sectionSpacer(this, 8))
+        root.addView(Ui.secondaryButton(this, "+ Add schedule") { showAddScheduleDialog() })
 
-        root.addView(spacer(32))
+        root.addView(Ui.sectionSpacer(this, 28))
 
-        // ── Sleep sources ──────────────────────────────────────────────────
+        // ── Sleep sources card ───────────────────────────────────────────────
 
-        sectionLabel("Sleep — source priority", root)
+        Ui.sectionHeader(this, "Sleep — source priority").also { root.addView(it) }
+
         sleepLabel = TextView(this).apply {
             textSize = 13f
-            setPadding(0, 0, 0, 8)
-        }.also { root.addView(it) }
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 8))
+        }
+        root.addView(sleepLabel)
 
-        Button(this).apply {
-            text = "Reorder sleep sources…"
-            setOnClickListener {
-                startActivity(Intent(this@SettingsActivity, ReorderActivity::class.java).apply {
-                    putExtra(ReorderActivity.EXTRA_TYPE, ReorderActivity.TYPE_SLEEP)
-                })
-            }
-        }.also { root.addView(it) }
+        root.addView(Ui.secondaryButton(this, "Reorder sleep sources…") {
+            startActivity(Intent(this, ReorderActivity::class.java).apply {
+                putExtra(ReorderActivity.EXTRA_TYPE, ReorderActivity.TYPE_SLEEP)
+            })
+        })
 
-        root.addView(spacer(32))
+        root.addView(Ui.sectionSpacer(this, 28))
 
-        // ── Exercise sources ───────────────────────────────────────────────
+        // ── Exercise sources card ────────────────────────────────────────────
 
-        sectionLabel("Exercise — source priority", root)
+        Ui.sectionHeader(this, "Exercise — source priority").also { root.addView(it) }
+
         exerciseLabel = TextView(this).apply {
             textSize = 13f
-            setPadding(0, 0, 0, 8)
-        }.also { root.addView(it) }
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 8))
+        }
+        root.addView(exerciseLabel)
 
-        Button(this).apply {
-            text = "Reorder exercise sources…"
-            setOnClickListener {
-                startActivity(Intent(this@SettingsActivity, ReorderActivity::class.java).apply {
-                    putExtra(ReorderActivity.EXTRA_TYPE, ReorderActivity.TYPE_EXERCISE)
-                })
-            }
-        }.also { root.addView(it) }
+        root.addView(Ui.secondaryButton(this, "Reorder exercise sources…") {
+            startActivity(Intent(this, ReorderActivity::class.java).apply {
+                putExtra(ReorderActivity.EXTRA_TYPE, ReorderActivity.TYPE_EXERCISE)
+            })
+        })
 
-        setContentView(ScrollView(this).also { it.addView(root) })
+        setContentView(ScrollView(this).apply {
+            addView(root)
+            setBackgroundColor(Ui.BG)
+        })
     }
 
     override fun onResume() {
@@ -140,7 +145,24 @@ class SettingsActivity : ComponentActivity() {
         refreshSchedulesList()
     }
 
-    // ── Schedule helpers ───────────────────────────────────────────────────
+    // ── Header ───────────────────────────────────────────────────────────────
+
+    private fun headerBar(parent: LinearLayout) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 28))
+        }
+        TextView(this).apply {
+            text = "Settings"
+            textSize = 24f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+        }.also { row.addView(it) }
+        parent.addView(row)
+    }
+
+    // ── Schedule helpers ─────────────────────────────────────────────────────
 
     private fun refreshSchedulesList() {
         schedulesList.removeAllViews()
@@ -149,6 +171,8 @@ class SettingsActivity : ComponentActivity() {
             TextView(this).apply {
                 text = "No schedules yet."
                 textSize = 13f
+                setTextColor(Ui.TEXT_MUTED)
+                setPadding(0, Ui.dp(this@SettingsActivity, 4), 0, 0)
             }.also { schedulesList.addView(it) }
             return
         }
@@ -156,14 +180,19 @@ class SettingsActivity : ComponentActivity() {
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 6, 0, 6)
+                setPadding(0, Ui.dp(this@SettingsActivity, 6), 0, Ui.dp(this@SettingsActivity, 6))
                 TextView(this@SettingsActivity).apply {
                     text = schedule.displayString()
                     textSize = 14f
+                    setTextColor(Ui.TEXT_PRIMARY)
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }.also { addView(it) }
                 Button(this@SettingsActivity).apply {
                     text = "✕"
+                    textSize = 13f
+                    setTextColor(Ui.ERROR)
+                    background = Ui.cardBg(Ui.dpf(this@SettingsActivity, 8), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
+                    setPadding(Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 6), Ui.dp(this@SettingsActivity, 12), Ui.dp(this@SettingsActivity, 6))
                     setOnClickListener {
                         val updated = Prefs.getSyncSchedules(this@SettingsActivity)
                             .filter { it.id != schedule.id }
@@ -182,7 +211,6 @@ class SettingsActivity : ComponentActivity() {
             setPadding(48, 32, 48, 16)
         }
 
-        // Daily / Weekly radio
         val radioDaily  = RadioButton(this).apply { text = "Daily";  isChecked = true }
         val radioWeekly = RadioButton(this).apply { text = "Weekly" }
         RadioGroup(this).apply {
@@ -191,7 +219,6 @@ class SettingsActivity : ComponentActivity() {
             addView(radioWeekly)
         }.also { dialogView.addView(it) }
 
-        // Time pickers
         val hourPicker = NumberPicker(this).apply {
             minValue = 0; maxValue = 23
             setFormatter { "%02d".format(it) }
@@ -212,7 +239,6 @@ class SettingsActivity : ComponentActivity() {
             addView(minutePicker)
         }.also { dialogView.addView(it) }
 
-        // Day checkboxes (weekly only)
         val dayNames  = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
         val dayChecks = dayNames.mapIndexed { i, name ->
             CheckBox(this).apply { text = name; tag = i + 1 }
@@ -276,7 +302,7 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
-    // ── Calendar helpers ───────────────────────────────────────────────────
+    // ── Calendar helpers ─────────────────────────────────────────────────────
 
     private fun refreshCalendarSpinner() {
         calendars.clear()
@@ -360,7 +386,7 @@ class SettingsActivity : ComponentActivity() {
         return result
     }
 
-    // ── Source helpers ─────────────────────────────────────────────────────
+    // ── Source helpers ───────────────────────────────────────────────────────
 
     private fun refreshSourceLabels() {
         sleepLabel.text    = sourceSummary(Prefs.getSleepSourcePriority(this))
@@ -370,18 +396,6 @@ class SettingsActivity : ComponentActivity() {
     private fun sourceSummary(sources: List<String>): String =
         if (sources.isEmpty()) "Run a sync first to discover sources."
         else sources.mapIndexed { i, pkg -> "${i + 1}. ${friendlySource(pkg)}" }.joinToString("\n")
-
-    private fun sectionLabel(text: String, parent: LinearLayout) {
-        TextView(this).apply {
-            this.text = text
-            textSize = 16f
-            setPadding(0, 0, 0, 8)
-        }.also { parent.addView(it) }
-    }
-
-    private fun spacer(dp: Int) = View(this).apply {
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp)
-    }
 
     private fun friendlySource(pkg: String): String = when {
         pkg.contains("samsung") -> "Samsung Health"

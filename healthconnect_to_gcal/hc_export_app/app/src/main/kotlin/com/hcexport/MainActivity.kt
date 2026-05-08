@@ -4,8 +4,13 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,8 +28,12 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var statusText: TextView
+    private lateinit var statusDot: View
+    private lateinit var statusLabel: TextView
+    private lateinit var statusDetail: TextView
+    private lateinit var statusCard: LinearLayout
     private lateinit var forceResyncCheck: CheckBox
+    private lateinit var syncButton: Button
     private var hcPermissionsLaunched = false
 
     private val hcPermissions = setOf(
@@ -53,17 +62,17 @@ class MainActivity : ComponentActivity() {
             hcPermissionsLaunched = false
             checkAndSetup()
         } else {
-            status("⚠ Some Health Connect permissions denied.\n\nOpen the Health Connect app → App permissions → HC Sync, and allow all permissions. Then tap Refresh.")
+            setStatus(Ui.WARNING, "Permissions incomplete",
+                "Open Health Connect → App permissions → HC Sync, and allow all permissions. Then tap Refresh.")
         }
     }
 
     private val requestCalendarPermissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
-        if (results.values.all { it })
-            checkAndSetup()
-        else
-            status("⚠ Calendar permission denied. HC Sync needs it to create events.")
+        if (results.values.all { it }) checkAndSetup()
+        else setStatus(Ui.WARNING, "Calendar permission needed",
+            "HC Sync needs calendar access to create events.")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,58 +80,122 @@ class MainActivity : ComponentActivity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(64, 80, 64, 64)
+            setBackgroundColor(Ui.BG)
+            setPadding(Ui.dp(this@MainActivity, 20), Ui.dp(this@MainActivity, 60), Ui.dp(this@MainActivity, 20), Ui.dp(this@MainActivity, 24))
         }
+
+        // ── Header ───────────────────────────────────────────────────────────
 
         TextView(this).apply {
             text = "HC Sync"
-            textSize = 24f
-            setPadding(0, 0, 0, 12)
+            textSize = 28f
+            setTextColor(Ui.PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 0, 0, Ui.dp(this@MainActivity, 2))
         }.also { root.addView(it) }
 
-        statusText = TextView(this).apply {
-            text = "Checking…"
-            textSize = 14f
-            setPadding(0, 0, 0, 32)
+        TextView(this).apply {
+            text = "Health Connect  →  Calendar"
+            textSize = 13f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(0, 0, 0, Ui.dp(this@MainActivity, 28))
         }.also { root.addView(it) }
+
+        // ── Status card ──────────────────────────────────────────────────────
+
+        statusCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(this@MainActivity, 20), Ui.dp(this@MainActivity, 20), Ui.dp(this@MainActivity, 20), Ui.dp(this@MainActivity, 20))
+            background = Ui.cardBg(Ui.dpf(this@MainActivity, 16))
+        }
+
+        // Status row: dot + label
+        val statusRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        statusDot = View(this).apply {
+            val s = Ui.dp(this@MainActivity, 10)
+            layoutParams = LinearLayout.LayoutParams(s, s).also {
+                it.setMargins(0, 0, Ui.dp(this@MainActivity, 10), 0)
+            }
+            background = Ui.dotBg(Ui.TEXT_MUTED, s)
+        }
+        statusRow.addView(statusDot)
+        statusLabel = TextView(this).apply {
+            text = "Checking…"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        statusRow.addView(statusLabel)
+        statusCard.addView(statusRow)
+
+        statusDetail = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, Ui.dp(this@MainActivity, 8), 0, 0)
+            visibility = View.GONE
+        }
+        statusCard.addView(statusDetail)
+        root.addView(statusCard)
+
+        root.addView(Ui.sectionSpacer(this, 20))
+
+        // ── Force resync ─────────────────────────────────────────────────────
 
         forceResyncCheck = CheckBox(this).apply {
             text = "Force full resync"
-            textSize = 14f
-            setPadding(0, 0, 0, 8)
-        }.also { root.addView(it) }
+            textSize = 13f
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, 0, 0, Ui.dp(this@MainActivity, 4))
+            buttonTintList = ColorStateList.valueOf(Ui.PRIMARY)
+        }
+        root.addView(forceResyncCheck)
 
-        Button(this).apply {
-            text = "Sync Now"
-            setOnClickListener { triggerSync() }
-        }.also { root.addView(it) }
+        root.addView(Ui.sectionSpacer(this, 16))
 
-        Button(this).apply {
-            text = "View Log"
-            setOnClickListener { showLog() }
-        }.also { root.addView(it) }
+        // ── Sync button ──────────────────────────────────────────────────────
 
-        Button(this).apply {
-            text = "Refresh / Re-check Permissions"
-            setOnClickListener {
-                hcPermissionsLaunched = false
-                checkAndSetup()
+        syncButton = Ui.primaryButton(this, "Sync Now") { triggerSync() }
+        root.addView(syncButton)
+
+        root.addView(Ui.sectionSpacer(this, 24))
+
+        // ── Secondary button grid ────────────────────────────────────────────
+
+        val buttonRows = listOf(
+            listOf("View Log" to { showLog() }, "Settings" to {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            }),
+            listOf("Refresh Permissions" to { hcPermissionsLaunched = false; checkAndSetup() },
+                   "Check for Updates" to { checkForUpdates() }),
+        )
+
+        for (row in buttonRows) {
+            val rowLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 0, 0, Ui.dp(this@MainActivity, 10))
             }
-        }.also { root.addView(it) }
-
-        Button(this).apply {
-            text = "Settings"
-            setOnClickListener {
-                startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+            for ((label, action) in row) {
+                val btn = Ui.secondaryButton(this, label) { action() }
+                val params = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                if (row.indexOf(label to action) == 0) {
+                    params.setMargins(0, 0, Ui.dp(this@MainActivity, 6), 0)
+                } else {
+                    params.setMargins(Ui.dp(this@MainActivity, 6), 0, 0, 0)
+                }
+                btn.layoutParams = params
+                rowLayout.addView(btn)
             }
-        }.also { root.addView(it) }
+            root.addView(rowLayout)
+        }
 
-        Button(this).apply {
-            text = "Check for Updates"
-            setOnClickListener { checkForUpdates() }
-        }.also { root.addView(it) }
+        setContentView(ScrollView(this).apply {
+            addView(root)
+            setBackgroundColor(Ui.BG)
+        })
 
-        setContentView(ScrollView(this).also { it.addView(root) })
         checkAndSetup()
     }
 
@@ -135,12 +208,12 @@ class MainActivity : ComponentActivity() {
         if (calendarPermissions.any {
                 ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
             }) {
-            status("Step 1 of 2: Requesting calendar permission…")
+            setStatus(Ui.WARNING, "Calendar permission needed",
+                "Step 1 of 2 — grant calendar access.")
             requestCalendarPermissions.launch(calendarPermissions)
             return
         }
 
-        // Notification permission is optional (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -148,7 +221,8 @@ class MainActivity : ComponentActivity() {
         }
 
         if (HealthConnectClient.getSdkStatus(this) != HealthConnectClient.SDK_AVAILABLE) {
-            status("⚠ Health Connect is not available on this device.\nRequires Android 9+ with Health Connect installed.")
+            setStatus(Ui.ERROR, "Health Connect unavailable",
+                "Requires Android 9+ with Health Connect installed.")
             return
         }
 
@@ -159,35 +233,45 @@ class MainActivity : ComponentActivity() {
                 if (!granted.containsAll(hcPermissions)) {
                     if (!hcPermissionsLaunched) {
                         hcPermissionsLaunched = true
-                        status("Step 2 of 2: Requesting Health Connect permissions…")
+                        setStatus(Ui.WARNING, "Health Connect permissions required",
+                            "Step 2 of 2 — grant data access.")
                         try {
                             requestHcPermissions.launch(hcPermissions)
                         } catch (e: Exception) {
                             hcPermissionsLaunched = false
-                            status("⚠ Could not open Health Connect permissions.\n\nOpen the Health Connect app → App permissions → HC Sync → allow all. Then tap Refresh.")
+                            setStatus(Ui.ERROR, "Could not open permissions",
+                                "Open Health Connect → App permissions → HC Sync → allow all. Then tap Refresh.")
                         }
                     }
                     return@launch
                 }
             } catch (e: Exception) {
-                status("⚠ Health Connect error: ${e.message}\n\nMake sure Health Connect is installed and up to date, then tap Refresh.")
+                setStatus(Ui.ERROR, "Health Connect error",
+                    e.message ?: "Unknown error")
                 return@launch
             }
 
             val calId = Prefs.getCalendarId(this@MainActivity)
                 ?: CalendarHelper.findCalendarId(this@MainActivity)
             if (calId == null) {
-                status("⚠ No Google calendar found on this device.\nMake sure a Google account is set up.")
+                setStatus(Ui.WARNING, "No calendar found",
+                    "Make sure a Google account is set up on this device.")
             } else {
-                if (Prefs.getCalendarId(this@MainActivity) == null) Prefs.setCalendarId(this@MainActivity, calId)
+                if (Prefs.getCalendarId(this@MainActivity) == null)
+                    Prefs.setCalendarId(this@MainActivity, calId)
                 val calName    = resolveCalendarName(calId)
                 val schedCount = Prefs.getSyncSchedules(this@MainActivity).size
-                val schedInfo  = if (schedCount == 0) "No auto-sync scheduled. Tap Settings → Auto-sync schedules to add one."
-                                 else "$schedCount auto-sync schedule(s) active."
+                val schedInfo  = if (schedCount == 0) "No auto-sync scheduled"
+                                 else "$schedCount auto-sync schedule(s) active"
                 val lastSummary = Prefs.getLastSyncSummary(this@MainActivity)
-                val summaryLine = if (lastSummary != null) "\n\n$lastSummary" else ""
                 val nextLine    = nextSyncLine()
-                status("✓ Ready\n\nCalendar: $calName\n$schedInfo$summaryLine$nextLine\n\nTap Settings to configure.")
+                val detail = buildString {
+                    append("Calendar: $calName")
+                    append("\n$schedInfo")
+                    if (lastSummary != null) append("\n$lastSummary")
+                    if (nextLine.isNotEmpty()) append(nextLine)
+                }
+                setStatus(Ui.SUCCESS, "Ready", detail)
                 SyncScheduler.applySchedules(this@MainActivity)
             }
         }
@@ -202,7 +286,8 @@ class MainActivity : ComponentActivity() {
 
     private fun triggerSync() {
         val force = forceResyncCheck.isChecked
-        status("Syncing${if (force) " (full resync)…" else "…"}")
+        setStatus(Ui.PRIMARY, "Syncing…",
+            if (force) "Full resync in progress" else "Syncing since last run")
         val data = workDataOf(HcSyncWorker.KEY_FORCE_RESYNC to force)
         val req  = OneTimeWorkRequestBuilder<HcSyncWorker>().setInputData(data).build()
         WorkManager.getInstance(this).enqueue(req)
@@ -215,10 +300,13 @@ class MainActivity : ComponentActivity() {
                             ?: CalendarHelper.findCalendarId(this@MainActivity)
                         val calName = calId?.let { resolveCalendarName(it) } ?: "?"
                         val summary = Prefs.getLastSyncSummary(this@MainActivity) ?: ""
-                        status("✓ Sync complete.\nEvents written to: $calName\n\n$summary")
+                        setStatus(Ui.SUCCESS, "Sync complete",
+                            "Calendar: $calName\n$summary")
                     }
                 }
-                WorkInfo.State.FAILED -> status("✗ Sync failed. Tap \"View Log\" for details.")
+                WorkInfo.State.FAILED ->
+                    setStatus(Ui.ERROR, "Sync failed",
+                        "Tap View Log for details.")
                 else -> {}
             }
         }
@@ -231,7 +319,8 @@ class MainActivity : ComponentActivity() {
             textSize = 11f
             setPadding(32, 32, 32, 32)
             setTextIsSelectable(true)
-            typeface = android.graphics.Typeface.MONOSPACE
+            typeface = Typeface.MONOSPACE
+            setTextColor(Ui.TEXT_PRIMARY)
         }
         AlertDialog.Builder(this)
             .setTitle("Sync Log")
@@ -242,11 +331,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkForUpdates() {
-        status("Checking for updates…")
+        setStatus(Ui.PRIMARY, "Checking for updates…", "")
         lifecycleScope.launch {
             val update = UpdateChecker.checkForUpdate(BuildConfig.VERSION_CODE)
             if (update == null) {
-                status("✓ App is up to date (build ${BuildConfig.VERSION_CODE}).")
+                setStatus(Ui.SUCCESS, "Up to date",
+                    "Build ${BuildConfig.VERSION_CODE} is the latest.")
                 return@launch
             }
             AlertDialog.Builder(this@MainActivity)
@@ -256,10 +346,10 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         try {
                             UpdateChecker.downloadAndInstall(this@MainActivity) { pct ->
-                                runOnUiThread { status("Downloading update… $pct%") }
+                                runOnUiThread { setStatus(Ui.PRIMARY, "Downloading update…", "$pct%") }
                             }
                         } catch (e: Exception) {
-                            status("✗ Download failed: ${e.message}")
+                            setStatus(Ui.ERROR, "Download failed", e.message ?: "")
                         }
                     }
                 }
@@ -289,5 +379,15 @@ class MainActivity : ComponentActivity() {
         return calendarId.toString()
     }
 
-    private fun status(msg: String) { statusText.text = msg }
+    private fun setStatus(color: Int, title: String, detail: String) {
+        val dotSize = Ui.dp(this, 10)
+        statusDot.background = Ui.dotBg(color, dotSize)
+        statusLabel.text = title
+        if (detail.isNotEmpty()) {
+            statusDetail.text = detail
+            statusDetail.visibility = View.VISIBLE
+        } else {
+            statusDetail.visibility = View.GONE
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package com.hcexport
 
 import android.annotation.SuppressLint
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
@@ -31,6 +32,7 @@ class ReorderActivity : ComponentActivity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Ui.BG)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -40,16 +42,19 @@ class ReorderActivity : ComponentActivity() {
         // Header
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(64, 80, 64, 0)
+            setPadding(Ui.dp(this@ReorderActivity, 20), Ui.dp(this@ReorderActivity, 60), Ui.dp(this@ReorderActivity, 20), 0)
             TextView(this@ReorderActivity).apply {
                 text = if (isSleep) "Sleep sources" else "Exercise sources"
-                textSize = 22f
-                setPadding(0, 0, 0, 8)
+                textSize = 24f
+                setTextColor(Ui.TEXT_PRIMARY)
+                typeface = Typeface.DEFAULT_BOLD
+                setPadding(0, 0, 0, Ui.dp(this@ReorderActivity, 6))
             }.also { addView(it) }
             TextView(this@ReorderActivity).apply {
-                text = "Drag ≡ to reorder. Top = highest priority."
+                text = "Drag  ≡  to reorder. Top = highest priority."
                 textSize = 13f
-                setPadding(0, 0, 0, 24)
+                setTextColor(Ui.TEXT_SECONDARY)
+                setPadding(0, 0, 0, Ui.dp(this@ReorderActivity, 20))
             }.also { addView(it) }
         }.also { root.addView(it, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)) }
 
@@ -57,7 +62,8 @@ class ReorderActivity : ComponentActivity() {
             TextView(this).apply {
                 text = "No sources discovered yet.\nRun a sync first to populate this list."
                 textSize = 14f
-                setPadding(64, 32, 64, 0)
+                setTextColor(Ui.TEXT_MUTED)
+                setPadding(Ui.dp(this@ReorderActivity, 20), Ui.dp(this@ReorderActivity, 16), Ui.dp(this@ReorderActivity, 20), 0)
             }.also { root.addView(it) }
             setContentView(root)
             return
@@ -83,7 +89,8 @@ class ReorderActivity : ComponentActivity() {
         RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@ReorderActivity)
             this.adapter  = adapter
-            setPadding(48, 0, 48, 0)
+            setPadding(Ui.dp(this@ReorderActivity, 12), 0, Ui.dp(this@ReorderActivity, 12), 0)
+            setBackgroundColor(Ui.BG)
             touchHelper.attachToRecyclerView(this)
         }.also {
             root.addView(it, LinearLayout.LayoutParams(
@@ -107,20 +114,27 @@ class SourceAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val row = LinearLayout(parent.context).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 28, 0, 28)
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            val p = Ui.dp(parent.context, 16)
+            setPadding(p, p, p, p)
             layoutParams = RecyclerView.LayoutParams(
                 RecyclerView.LayoutParams.MATCH_PARENT,
                 RecyclerView.LayoutParams.WRAP_CONTENT,
             )
+            val margin = Ui.dp(parent.context, 6)
+            (layoutParams as RecyclerView.LayoutParams).setMargins(0, margin, 0, margin)
+            background = Ui.cardBg(Ui.dpf(parent.context, 12))
         }
         val label = TextView(parent.context).apply {
-            textSize = 15f
+            textSize = 14f
+            setTextColor(Ui.TEXT_PRIMARY)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
         val handle = TextView(parent.context).apply {
             text = "≡"
-            textSize = 24f
-            setPadding(16, 0, 0, 0)
+            textSize = 22f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(Ui.dp(parent.context, 12), 0, 0, 0)
         }
         row.addView(label)
         row.addView(handle)
