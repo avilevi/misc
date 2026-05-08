@@ -15,7 +15,7 @@ object CalendarHelper {
     private val timeFmt = SimpleDateFormat("h:mm a", Locale.getDefault())
     private val tz get() = TimeZone.getDefault().id
 
-    private val EXERCISE_TYPES = mapOf(
+    val EXERCISE_TYPES = mapOf(
         0  to ("💪" to "Other Workout"),
         2  to ("🏸" to "Badminton"),
         4  to ("⚾" to "Baseball"),

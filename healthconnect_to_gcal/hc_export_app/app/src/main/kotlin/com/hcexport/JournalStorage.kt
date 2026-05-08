@@ -45,15 +45,15 @@ object JournalStorage {
         val y = cal.get(Calendar.YEAR)
         val m = cal.get(Calendar.MONTH)
         val d = cal.get(Calendar.DAY_OF_MONTH)
-        return readAll(ctx).filter {
-            val ec = Calendar.getInstance().also { it.timeInMillis = it.originalStartMs }
+        return readAll(ctx).filter { entry ->
+            val ec = Calendar.getInstance().also { it.timeInMillis = entry.originalStartMs }
             ec.get(Calendar.YEAR) == y && ec.get(Calendar.MONTH) == m && ec.get(Calendar.DAY_OF_MONTH) == d
         }.sortedBy { it.originalStartMs }
     }
 
     fun getEntriesForMonth(ctx: Context, year: Int, month: Int): List<JournalEntry> =
-        readAll(ctx).filter {
-            val c = Calendar.getInstance().also { c -> c.timeInMillis = it.originalStartMs }
+        readAll(ctx).filter { entry ->
+            val c = Calendar.getInstance().also { it.timeInMillis = entry.originalStartMs }
             c.get(Calendar.YEAR) == year && c.get(Calendar.MONTH) == month
         }
 
