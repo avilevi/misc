@@ -164,6 +164,13 @@ class MainActivity : ComponentActivity() {
 
         // ── Secondary button grid ────────────────────────────────────────────
 
+        // Journal — prominent full-width secondary
+        root.addView(Ui.secondaryButton(this, "Journal") {
+            startActivity(Intent(this, JournalActivity::class.java))
+        })
+
+        root.addView(Ui.sectionSpacer(this, 10))
+
         val buttonRows = listOf(
             listOf("View Log" to { showLog() }, "Settings" to {
                 startActivity(Intent(this, SettingsActivity::class.java))

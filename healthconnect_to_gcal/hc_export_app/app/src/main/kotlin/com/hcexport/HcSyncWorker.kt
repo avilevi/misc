@@ -160,6 +160,8 @@ class HcSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     )
                     created++
                     SyncLogger.log(applicationContext, "  NEW  exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                    // Persist to journal
+                    JournalStorage.addEntryIfAbsent(applicationContext, JournalEntry.fromExerciseEvent(event))
                 }
             }
 
