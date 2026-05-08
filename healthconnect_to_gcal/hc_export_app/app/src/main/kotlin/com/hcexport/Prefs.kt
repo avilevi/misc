@@ -77,6 +77,28 @@ object Prefs {
     fun setLastSyncSummary(ctx: Context, summary: String) =
         prefs(ctx).edit().putString("last_sync_summary", summary).apply()
 
+    // ── Journal last sync ───────────────────────────────────────────────────
+
+    fun getJournalSyncDaysBack(ctx: Context): Long =
+        prefs(ctx).getLong("journal_sync_days_back", 90L)
+
+    fun setJournalSyncDaysBack(ctx: Context, days: Long) =
+        prefs(ctx).edit().putLong("journal_sync_days_back", days).apply()
+
+    fun getJournalLastSyncTime(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("journal_last_sync_time", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setJournalLastSyncTime(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("journal_last_sync_time", ms).apply()
+
+    fun getJournalLastSyncSummary(ctx: Context): String? =
+        prefs(ctx).getString("journal_last_sync_summary", null)
+
+    fun setJournalLastSyncSummary(ctx: Context, summary: String) =
+        prefs(ctx).edit().putString("journal_last_sync_summary", summary).apply()
+
     // ── Sync schedules ─────────────────────────────────────────────────────
 
     fun getSyncSchedules(ctx: Context): List<SyncSchedule> {

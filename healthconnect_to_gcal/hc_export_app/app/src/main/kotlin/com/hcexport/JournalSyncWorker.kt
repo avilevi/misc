@@ -15,17 +15,17 @@ import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 
-class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     companion object {
-        private const val TAG = "CalendarSyncWorker"
+        private const val TAG = "JournalSyncWorker"
         const val KEY_FORCE_RESYNC = "force_resync"
     }
 
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
     override suspend fun doWork(): Result {
-        Log.i(TAG, "Starting sync")
+        Log.i(TAG, "Starting journal sync")
         val forceResync = inputData.getBoolean(KEY_FORCE_RESYNC, false)
 
         var summary: String? = null
@@ -33,23 +33,15 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             val client = HealthConnectClient.getOrCreate(applicationContext)
             val now    = Instant.now()
 
-            val start = if (forceResync || Prefs.getLastSyncTime(applicationContext) == null) {
-                val daysBack = Prefs.getSyncDaysBack(applicationContext)
+            val start = if (forceResync || Prefs.getJournalLastSyncTime(applicationContext) == null) {
+                val daysBack = Prefs.getJournalSyncDaysBack(applicationContext)
                 now.minus(daysBack, ChronoUnit.DAYS)
             } else {
-                Instant.ofEpochMilli(Prefs.getLastSyncTime(applicationContext)!!)
+                Instant.ofEpochMilli(Prefs.getJournalLastSyncTime(applicationContext)!!)
             }
             val range = TimeRangeFilter.between(start, now)
 
-            SyncLogger.log(applicationContext, "=== Sync started (from ${dateFmt.format(Date(start.toEpochMilli()))}${if (forceResync) ", forced" else ""}) ===")
-
-            val calendarId = Prefs.getCalendarId(applicationContext)
-                ?: CalendarHelper.findCalendarId(applicationContext)
-                ?: run {
-                    Log.e(TAG, "No calendar found")
-                    SyncLogger.log(applicationContext, "ERROR: No calendar found")
-                    throw Exception("No calendar found")
-                }
+            SyncLogger.log(applicationContext, "=== Journal sync started (from ${dateFmt.format(Date(start.toEpochMilli()))}${if (forceResync) ", forced" else ""}) ===")
 
             var created = 0
             var skipped = 0
@@ -58,7 +50,7 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             val allExercise = client.readRecords(
                 ReadRecordsRequest(ExerciseSessionRecord::class, range)
             ).records
-            Log.i(TAG, "Found ${allExercise.size} exercise sessions")
+            Log.i(TAG, "Found ${allExercise.size} exercise sessions for journal")
 
             Prefs.addKnownExerciseSources(
                 applicationContext,
@@ -75,7 +67,7 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
                     exercisePriority,
                 )
 
-            SyncLogger.log(applicationContext, "Exercise sessions found: ${exercises.size}")
+            SyncLogger.log(applicationContext, "Journal exercise sessions: ${exercises.size}")
 
             for (session in exercises) {
                 val sessionRange = TimeRangeFilter.between(session.startTime, session.endTime)
@@ -147,19 +139,14 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
                     sourcePkg    = session.metadata.dataOrigin.packageName,
                 )
 
+                val entry = JournalEntry.fromExerciseEvent(event)
                 val eventTitle = CalendarHelper.exerciseTitle(event)
-                if (CalendarHelper.eventExists(applicationContext, calendarId, eventTitle, event.startMs)) {
-                    skipped++
-                    SyncLogger.log(applicationContext, "  SKIP exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
-                } else {
-                    CalendarHelper.insertEvent(
-                        applicationContext, calendarId,
-                        eventTitle,
-                        CalendarHelper.exerciseDescription(event),
-                        event.startMs, event.endMs,
-                    )
+                if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
                     created++
-                    SyncLogger.log(applicationContext, "  NEW  exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                    SyncLogger.log(applicationContext, "  NEW  journal exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                } else {
+                    skipped++
+                    SyncLogger.log(applicationContext, "  SKIP journal exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
                 }
             }
 
@@ -167,7 +154,7 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             val allSleep = client.readRecords(
                 ReadRecordsRequest(SleepSessionRecord::class, range)
             ).records
-            Log.i(TAG, "Found ${allSleep.size} sleep sessions")
+            Log.i(TAG, "Found ${allSleep.size} sleep sessions for journal")
 
             Prefs.addKnownSleepSources(
                 applicationContext,
@@ -184,7 +171,7 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
                     sleepPriority,
                 )
 
-            SyncLogger.log(applicationContext, "Sleep sessions found: ${sleepSessions.size}")
+            SyncLogger.log(applicationContext, "Journal sleep sessions: ${sleepSessions.size}")
 
             for (session in sleepSessions) {
                 val event = SleepEvent(
@@ -200,50 +187,34 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
                     sourcePkg = session.metadata.dataOrigin.packageName,
                 )
 
+                val entry = JournalEntry.fromSleepEvent(event)
                 val eventTitle = CalendarHelper.sleepTitle(event)
-                if (CalendarHelper.eventExists(applicationContext, calendarId, eventTitle, event.startMs)) {
-                    skipped++
-                    SyncLogger.log(applicationContext, "  SKIP sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
-                } else {
-                    CalendarHelper.insertEvent(
-                        applicationContext, calendarId,
-                        eventTitle,
-                        CalendarHelper.sleepDescription(event),
-                        event.startMs, event.endMs,
-                    )
+                if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
                     created++
-                    SyncLogger.log(applicationContext, "  NEW  sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                    SyncLogger.log(applicationContext, "  NEW  journal sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                } else {
+                    skipped++
+                    SyncLogger.log(applicationContext, "  SKIP journal sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
                 }
             }
 
-            Log.i(TAG, "Sync complete: $created created, $skipped skipped")
+            Log.i(TAG, "Journal sync complete: $created created, $skipped skipped")
 
-            // ── WOD descriptions ───────────────────────────────────────────
-            val wodUpdated = WodSync.sync(applicationContext)
-
-            // ── Persist results ────────────────────────────────────────────
-            Prefs.setLastSyncTime(applicationContext, now.toEpochMilli())
+            Prefs.setJournalLastSyncTime(applicationContext, now.toEpochMilli())
             summary = buildString {
-                append("Last sync: ${dateFmt.format(Date(now.toEpochMilli()))}")
-                append("\nHC: $created new, $skipped skipped")
-                if (wodUpdated > 0) append("\nWOD: $wodUpdated updated")
+                append("Journal: ${dateFmt.format(Date(now.toEpochMilli()))}")
+                append("\n$created new, $skipped skipped")
             }
-            Prefs.setLastSyncSummary(applicationContext, summary!!)
-            SyncLogger.log(applicationContext, "=== Sync done: $created new, $skipped skipped, $wodUpdated WOD updated ===")
+            Prefs.setJournalLastSyncSummary(applicationContext, summary!!)
+            SyncLogger.log(applicationContext, "=== Journal sync done: $created new, $skipped skipped ===")
 
             Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Sync failed: ${e.message}", e)
-            SyncLogger.log(applicationContext, "ERROR: Sync failed: ${e.message}")
+            Log.e(TAG, "Journal sync failed: ${e.message}", e)
+            SyncLogger.log(applicationContext, "ERROR: Journal sync failed: ${e.message}")
             Result.failure()
         }
 
-        // Always re-schedule the next run, even if this sync failed
-        inputData.getString("schedule_id")
-            ?.let { id -> Prefs.getSyncSchedules(applicationContext).find { it.id == id } }
-            ?.let { SyncScheduler.enqueue(applicationContext, it) }
-
-        // Notify on success
         summary?.let { NotificationHelper.notifySyncComplete(applicationContext, it) }
 
         return result

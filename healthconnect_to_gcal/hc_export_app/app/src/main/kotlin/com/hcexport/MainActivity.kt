@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
-import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
@@ -32,8 +31,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var statusLabel: TextView
     private lateinit var statusDetail: TextView
     private lateinit var statusCard: LinearLayout
-    private lateinit var forceResyncCheck: CheckBox
-    private lateinit var syncButton: Button
     private var hcPermissionsLaunched = false
 
     private val hcPermissions = setOf(
@@ -142,23 +139,11 @@ class MainActivity : ComponentActivity() {
 
         root.addView(Ui.sectionSpacer(this, 20))
 
-        // ── Force resync ─────────────────────────────────────────────────────
+        // ── Sync buttons ─────────────────────────────────────────────────────
 
-        forceResyncCheck = CheckBox(this).apply {
-            text = "Force full resync"
-            textSize = 13f
-            setTextColor(Ui.TEXT_SECONDARY)
-            setPadding(0, 0, 0, Ui.dp(this@MainActivity, 4))
-            buttonTintList = ColorStateList.valueOf(Ui.PRIMARY)
-        }
-        root.addView(forceResyncCheck)
-
-        root.addView(Ui.sectionSpacer(this, 16))
-
-        // ── Sync button ──────────────────────────────────────────────────────
-
-        syncButton = Ui.primaryButton(this, "Sync Now") { triggerSync() }
-        root.addView(syncButton)
+        root.addView(Ui.primaryButton(this, "Sync to Calendar") { triggerCalendarSync() })
+        root.addView(Ui.sectionSpacer(this, 10))
+        root.addView(Ui.primaryButton(this, "Sync to Journal") { triggerJournalSync() })
 
         root.addView(Ui.sectionSpacer(this, 24))
 
@@ -270,12 +255,14 @@ class MainActivity : ComponentActivity() {
                 val schedCount = Prefs.getSyncSchedules(this@MainActivity).size
                 val schedInfo  = if (schedCount == 0) "No auto-sync scheduled"
                                  else "$schedCount auto-sync schedule(s) active"
-                val lastSummary = Prefs.getLastSyncSummary(this@MainActivity)
+                val calSummary  = Prefs.getLastSyncSummary(this@MainActivity)
+                val journalSummary = Prefs.getJournalLastSyncSummary(this@MainActivity)
                 val nextLine    = nextSyncLine()
                 val detail = buildString {
                     append("Calendar: $calName")
                     append("\n$schedInfo")
-                    if (lastSummary != null) append("\n$lastSummary")
+                    if (calSummary != null) append("\n$calSummary")
+                    if (journalSummary != null) append("\n$journalSummary")
                     if (nextLine.isNotEmpty()) append(nextLine)
                 }
                 setStatus(Ui.SUCCESS, "Ready", detail)
@@ -291,28 +278,44 @@ class MainActivity : ComponentActivity() {
         return "\nNext auto-sync: ${fmt.format(Date(nextMs))}"
     }
 
-    private fun triggerSync() {
-        val force = forceResyncCheck.isChecked
-        setStatus(Ui.PRIMARY, "Syncing…",
-            if (force) "Full resync in progress" else "Syncing since last run")
-        val data = workDataOf(HcSyncWorker.KEY_FORCE_RESYNC to force)
-        val req  = OneTimeWorkRequestBuilder<HcSyncWorker>().setInputData(data).build()
+    private fun triggerCalendarSync() {
+        setStatus(Ui.PRIMARY, "Syncing to Calendar…", "")
+        val req = OneTimeWorkRequestBuilder<CalendarSyncWorker>().build()
         WorkManager.getInstance(this).enqueue(req)
         WorkManager.getInstance(this).getWorkInfoByIdLiveData(req.id).observe(this) { info ->
             when (info?.state) {
                 WorkInfo.State.SUCCEEDED -> {
-                    forceResyncCheck.isChecked = false
                     lifecycleScope.launch {
                         val calId   = Prefs.getCalendarId(this@MainActivity)
                             ?: CalendarHelper.findCalendarId(this@MainActivity)
                         val calName = calId?.let { resolveCalendarName(it) } ?: "?"
                         val summary = Prefs.getLastSyncSummary(this@MainActivity) ?: ""
-                        setStatus(Ui.SUCCESS, "Sync complete",
+                        setStatus(Ui.SUCCESS, "Calendar sync complete",
                             "Calendar: $calName\n$summary")
                     }
                 }
                 WorkInfo.State.FAILED ->
-                    setStatus(Ui.ERROR, "Sync failed",
+                    setStatus(Ui.ERROR, "Calendar sync failed",
+                        "Tap View Log for details.")
+                else -> {}
+            }
+        }
+    }
+
+    private fun triggerJournalSync() {
+        setStatus(Ui.PRIMARY, "Syncing to Journal…", "")
+        val req = OneTimeWorkRequestBuilder<JournalSyncWorker>().build()
+        WorkManager.getInstance(this).enqueue(req)
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(req.id).observe(this) { info ->
+            when (info?.state) {
+                WorkInfo.State.SUCCEEDED -> {
+                    lifecycleScope.launch {
+                        val summary = Prefs.getJournalLastSyncSummary(this@MainActivity) ?: ""
+                        setStatus(Ui.SUCCESS, "Journal sync complete", summary)
+                    }
+                }
+                WorkInfo.State.FAILED ->
+                    setStatus(Ui.ERROR, "Journal sync failed",
                         "Tap View Log for details.")
                 else -> {}
             }

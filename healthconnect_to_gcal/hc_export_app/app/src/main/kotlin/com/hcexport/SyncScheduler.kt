@@ -16,7 +16,7 @@ object SyncScheduler {
 
     fun enqueue(ctx: Context, schedule: SyncSchedule) {
         val delay = schedule.nextTriggerDelayMs().coerceAtLeast(5_000L)
-        val req = OneTimeWorkRequestBuilder<HcSyncWorker>()
+        val req = OneTimeWorkRequestBuilder<CalendarSyncWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf("schedule_id" to schedule.id))
             .addTag("scheduled_sync")
