@@ -14,14 +14,23 @@ object UpdateChecker {
     private const val VERSION_URL = "https://github.com/avilevi/misc/releases/download/latest/version.json"
     private const val APK_URL     = "https://github.com/avilevi/misc/releases/download/latest/app-release.apk"
 
-    data class UpdateInfo(val remoteVersionCode: Int)
+    data class UpdateInfo(
+        val remoteVersionCode: Int,
+        val remoteVersionName: String,
+        val buildDate: String,
+    )
 
     suspend fun checkForUpdate(currentVersionCode: Int): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
             val json = fetchText(VERSION_URL) ?: return@withContext null
             val remoteCode = Regex(""""versionCode"\s*:\s*(\d+)""")
                 .find(json)?.groupValues?.get(1)?.toIntOrNull() ?: return@withContext null
-            if (remoteCode > currentVersionCode) UpdateInfo(remoteCode) else null
+            if (remoteCode <= currentVersionCode) return@withContext null
+            val remoteName = Regex(""""versionName"\s*:\s*"([^"]+)"""")
+                .find(json)?.groupValues?.get(1) ?: "?"
+            val buildDate = Regex(""""buildDate"\s*:\s*"([^"]+)"""")
+                .find(json)?.groupValues?.get(1) ?: ""
+            UpdateInfo(remoteCode, remoteName, buildDate)
         } catch (_: Exception) { null }
     }
 

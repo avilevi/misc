@@ -16,8 +16,10 @@ android {
         minSdk = 26
         targetSdk = 36
         val buildNum = System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1
+        val major = System.getenv("VERSION_MAJOR") ?: "1"
         versionCode = buildNum
-        versionName = "1.0.$buildNum"
+        versionName = "$major.$buildNum"
+        buildConfigField("String", "VERSION_NAME", "\"$versionName\"")
     }
 
     signingConfigs {

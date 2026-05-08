@@ -346,12 +346,20 @@ class MainActivity : ComponentActivity() {
             val update = UpdateChecker.checkForUpdate(BuildConfig.VERSION_CODE)
             if (update == null) {
                 setStatus(Ui.SUCCESS, "Up to date",
-                    "Build ${BuildConfig.VERSION_CODE} is the latest.")
+                    "v${BuildConfig.VERSION_NAME} is the latest.")
                 return@launch
             }
+            val dateDisplay = if (update.buildDate.isNotEmpty()) {
+                try {
+                    val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+                    sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                    val fmt = SimpleDateFormat("MMM d, yyyy 'at' HH:mm 'UTC'", Locale.getDefault())
+                    fmt.format(sdf.parse(update.buildDate)!!)
+                } catch (_: Exception) { update.buildDate }
+            } else "unknown"
             AlertDialog.Builder(this@MainActivity)
                 .setTitle("Update available")
-                .setMessage("Build ${update.remoteVersionCode} is available (you have ${BuildConfig.VERSION_CODE}).\n\nDownload and install now?")
+                .setMessage("v${update.remoteVersionName} is available (you have v${BuildConfig.VERSION_NAME}).\nBuilt: $dateDisplay\n\nDownload and install now?")
                 .setPositiveButton("Install") { _, _ ->
                     lifecycleScope.launch {
                         try {

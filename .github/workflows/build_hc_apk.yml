@@ -12,6 +12,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VERSION_MAJOR: '1'
 
     steps:
       - uses: actions/checkout@v4
@@ -37,11 +39,13 @@ jobs:
           KEYSTORE_PATH: keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          VERSION_MAJOR: '1'
           BUILD_NUMBER: ${{ github.run_number }}
         run: ./gradlew assembleRelease
 
       - name: Write version.json
-        run: echo '{"versionCode":${{ github.run_number }}}' > version.json
+        run: |
+          echo '{"versionCode":${{ github.run_number }},"versionName":"${{ env.VERSION_MAJOR }}.${{ github.run_number }}","buildDate":"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"}' > version.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
