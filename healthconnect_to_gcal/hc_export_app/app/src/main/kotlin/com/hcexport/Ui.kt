@@ -15,22 +15,22 @@ object Ui {
 
     // ── Color constants (mirrors colors.xml for programmatic use) ────────────
 
-    const val BG              = 0xFF0B1121u.toInt()
-    const val SURFACE         = 0xFF162033u.toInt()
-    const val SURFACE_ELEVATED = 0xFF1D2A42u.toInt()
-    const val PRIMARY         = 0xFF00D4C3u.toInt()
-    const val PRIMARY_DARK    = 0xFF00B09Du.toInt()
-    const val ON_PRIMARY      = 0xFF0B1121u.toInt()
-    const val SECONDARY       = 0xFF7B93E0u.toInt()
-    const val ACCENT          = 0xFFF5A623u.toInt()
-    const val TEXT_PRIMARY    = 0xFFECF1F8u.toInt()
-    const val TEXT_SECONDARY  = 0xFF8B9EC0u.toInt()
-    const val TEXT_MUTED      = 0xFF506080u.toInt()
-    const val SUCCESS         = 0xFF34D399u.toInt()
-    const val WARNING         = 0xFFF59E0Bu.toInt()
-    const val ERROR           = 0xFFF87171u.toInt()
-    const val BORDER          = 0xFF253550u.toInt()
-    const val BORDER_FAINT    = 0xFF1C2B44u.toInt()
+    val BG              = 0xFF0B1121.toInt()
+    val SURFACE         = 0xFF162033.toInt()
+    val SURFACE_ELEVATED = 0xFF1D2A42.toInt()
+    val PRIMARY         = 0xFF00D4C3.toInt()
+    val PRIMARY_DARK    = 0xFF00B09D.toInt()
+    val ON_PRIMARY      = 0xFF0B1121.toInt()
+    val SECONDARY       = 0xFF7B93E0.toInt()
+    val ACCENT          = 0xFFF5A623.toInt()
+    val TEXT_PRIMARY    = 0xFFECF1F8.toInt()
+    val TEXT_SECONDARY  = 0xFF8B9EC0.toInt()
+    val TEXT_MUTED      = 0xFF506080.toInt()
+    val SUCCESS         = 0xFF34D399.toInt()
+    val WARNING         = 0xFFF59E0B.toInt()
+    val ERROR           = 0xFFF87171.toInt()
+    val BORDER          = 0xFF253550.toInt()
+    val BORDER_FAINT    = 0xFF1C2B44.toInt()
 
     // ── Unit conversion ──────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ object Ui {
         GradientDrawable().apply {
             setColor(fillColor)
             cornerRadius = cornerPx
-            setStroke(1f, borderColor)
+            setStroke(1, borderColor)
         }
 
     fun pillBg(fillColor: Int): GradientDrawable =
