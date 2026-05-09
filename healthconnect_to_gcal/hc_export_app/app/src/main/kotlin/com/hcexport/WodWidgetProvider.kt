@@ -35,7 +35,6 @@ class WodWidgetProvider : AppWidgetProvider() {
 
                 val adapterIntent = Intent(context, WodWidgetService::class.java).apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-                    data = android.net.Uri.parse(this.toUri(Intent.URI_INTENT_SCHEME))
                 }
                 views.setRemoteAdapter(R.id.wod_list, adapterIntent)
                 views.setEmptyView(R.id.wod_list, R.id.wod_empty)

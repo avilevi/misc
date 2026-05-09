@@ -36,12 +36,6 @@
             android:gravity="end" />
     </LinearLayout>
 
-    <!-- Orange accent line -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="#FFF5A623" />
-
     <!-- WOD content -->
     <TextView
         android:id="@+id/item_desc"
@@ -52,6 +46,6 @@
         android:textSize="12sp"
         android:maxLines="6"
         android:ellipsize="end"
-        android:paddingTop="5dp" />
+        android:paddingTop="2dp" />
 
 </LinearLayout>
