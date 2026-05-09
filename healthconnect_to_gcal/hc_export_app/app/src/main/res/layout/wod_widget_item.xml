@@ -36,8 +36,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#FFF5A623"
-        android:layout_marginBottom="5dp" />
+        android:background="#FFF5A623" />
 
     <!-- WOD content -->
     <TextView
@@ -48,6 +47,6 @@
         android:textSize="12sp"
         android:maxLines="4"
         android:ellipsize="end"
-        android:lineSpacingMultiplier="1.15" />
+        android:paddingTop="5dp" />
 
 </LinearLayout>
