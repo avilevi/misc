@@ -228,7 +228,7 @@ object CalendarHelper {
 
     // ── WOD events ────────────────────────────────────────────────────────
 
-    data class WodEventInfo(val id: Long, val dateStr: String, val description: String?)
+    data class WodEventInfo(val id: Long, val dateStr: String, val startMs: Long, val endMs: Long, val description: String?)
 
     fun findWodEvents(context: Context, daysAhead: Int): List<WodEventInfo> {
         val todayStart = Instant.now().truncatedTo(ChronoUnit.DAYS)
@@ -237,6 +237,7 @@ object CalendarHelper {
         val projection = arrayOf(
             CalendarContract.Events._ID,
             CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DTEND,
             CalendarContract.Events.DESCRIPTION,
         )
         val selection = "${CalendarContract.Events.TITLE} = ? " +
@@ -254,16 +255,18 @@ object CalendarHelper {
         )?.use { cursor ->
             val idCol    = cursor.getColumnIndex(CalendarContract.Events._ID)
             val startCol = cursor.getColumnIndex(CalendarContract.Events.DTSTART)
+            val endCol   = cursor.getColumnIndex(CalendarContract.Events.DTEND)
             val descCol  = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION)
             while (cursor.moveToNext()) {
-                val id    = cursor.getLong(idCol)
-                val start = cursor.getLong(startCol)
-                val desc  = cursor.getString(descCol)
-                val date  = Instant.ofEpochMilli(start)
+                val id      = cursor.getLong(idCol)
+                val startMs = cursor.getLong(startCol)
+                val endMs   = cursor.getLong(endCol)
+                val desc    = cursor.getString(descCol)
+                val date    = Instant.ofEpochMilli(startMs)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
                     .format(DateTimeFormatter.ISO_LOCAL_DATE)
-                results += WodEventInfo(id, date, desc)
+                results += WodEventInfo(id, date, startMs, endMs, desc)
             }
         }
         return results

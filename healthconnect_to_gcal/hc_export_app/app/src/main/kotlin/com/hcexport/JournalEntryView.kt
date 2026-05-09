@@ -3,6 +3,7 @@ package com.hcexport
 import android.app.AlertDialog
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
@@ -48,6 +49,7 @@ object JournalEntryView {
         return when (entry.entryType) {
             "exercise" -> buildExerciseCard(ctx, entry, onEntryChanged)
             "sleep"    -> buildSleepCard(ctx, entry, onEntryChanged)
+            "wod"      -> buildWodCard(ctx, entry, onEntryChanged)
             else       -> buildUnknownCard(ctx, entry, onEntryChanged)
         }
     }
@@ -304,6 +306,99 @@ object JournalEntryView {
             text = narrative
             textSize = 14f
             setTextColor(Ui.TEXT_PRIMARY)
+            setLineSpacing(Ui.dpf(ctx, 4), 1f)
+            setPadding(0, 0, 0, Ui.dp(ctx, 8))
+            Linkify.addLinks(this, Linkify.WEB_URLS)
+            movementMethod = LinkMovementMethod.getInstance()
+        })
+
+        // Action links
+        card.addView(actionLinks(ctx, entry, onEntryChanged))
+
+        return card
+    }
+
+    // ── WOD card ───────────────────────────────────────────────────────────
+
+    private val POTENTIAL_BG = 0xFF2A2418.toInt()  // warm amber-tinted dark surface
+
+    private fun buildWodCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onEntryChanged: (JournalEntry) -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.optLong("sm", 0L)
+        val isFuture = startMs > System.currentTimeMillis()
+
+        val cardBg = if (isFuture) {
+            GradientDrawable().apply {
+                setColor(POTENTIAL_BG)
+                cornerRadius = Ui.dpf(ctx, 16)
+                setStroke(Ui.dp(ctx, 1), Ui.ACCENT)
+            }
+        } else {
+            Ui.cardBg(Ui.dpf(ctx, 16))
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                Ui.dp(ctx, 18), Ui.dp(ctx, 18),
+                Ui.dp(ctx, 18), Ui.dp(ctx, 14),
+            )
+            background = cardBg
+        }
+
+        // Header row with potential badge
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply {
+            text = "🔥"
+            textSize = 20f
+        })
+        header.addView(TextView(ctx).apply {
+            text = "  WOD"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        if (isFuture) {
+            header.addView(TextView(ctx).apply {
+                text = "  POTENTIAL"
+                textSize = 9f
+                setTextColor(Ui.ACCENT)
+                typeface = Typeface.DEFAULT_BOLD
+                letterSpacing = 0.08f
+                setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 2), Ui.dp(ctx, 8), Ui.dp(ctx, 2))
+                background = GradientDrawable().apply {
+                    setColor(Ui.ACCENT and 0x20FFFFFF.toInt())
+                    cornerRadius = Ui.dpf(ctx, 4)
+                }
+            })
+        }
+        header.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+        })
+        header.addView(TextView(ctx).apply {
+            val dateStr = json.optString("date", entry.date)
+            val timeStr = if (startMs > 0) "  ${timeFmt.format(Date(startMs))}" else ""
+            text = "$dateStr$timeStr"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        card.addView(header)
+
+        card.addView(Ui.sectionSpacer(ctx, 10))
+
+        // WOD content
+        val narrative = entry.narrativeText()
+        card.addView(TextView(ctx).apply {
+            text = narrative
+            textSize = 14f
+            setTextColor(if (isFuture) Ui.TEXT_SECONDARY else Ui.TEXT_PRIMARY)
             setLineSpacing(Ui.dpf(ctx, 4), 1f)
             setPadding(0, 0, 0, Ui.dp(ctx, 8))
             Linkify.addLinks(this, Linkify.WEB_URLS)

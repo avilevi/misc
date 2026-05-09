@@ -72,6 +72,28 @@ object JournalStorage {
         writeAll(ctx, readAll(ctx).filter { it.id != id })
     }
 
+    /** Find WOD entries whose time range overlaps with [startMs, endMs]. */
+    fun findOverlappingWod(ctx: Context, startMs: Long, endMs: Long): List<JournalEntry> =
+        readAll(ctx).filter { entry ->
+            entry.entryType == "wod" && try {
+                val j = org.json.JSONObject(entry.originalDataJson)
+                val ws = j.getLong("sm")
+                val we = j.getLong("em")
+                ws < endMs && we > startMs
+            } catch (_: Exception) { false }
+        }
+
+    /** True if any non-WOD entry overlaps the given time range. */
+    fun hasOverlappingEntry(ctx: Context, startMs: Long, endMs: Long): Boolean =
+        readAll(ctx).any { entry ->
+            entry.entryType != "wod" && try {
+                val j = org.json.JSONObject(entry.originalDataJson)
+                val es = j.getLong("sm")
+                val ee = j.getLong("em")
+                es < endMs && ee > startMs
+            } catch (_: Exception) { false }
+        }
+
     fun buildDayMap(entries: List<JournalEntry>): Map<Int, List<JournalEntry>> {
         val map = mutableMapOf<Int, MutableList<JournalEntry>>()
         for (e in entries) {

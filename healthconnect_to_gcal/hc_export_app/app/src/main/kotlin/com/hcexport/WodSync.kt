@@ -14,6 +14,13 @@ object WodSync {
     private const val HANDLED_MARKER = "# populated by wod_sync"
     private const val DAYS_AHEAD = 7
 
+    data class JournalWodEntry(
+        val dateStr: String,
+        val startMs: Long,
+        val endMs: Long,
+        val content: String,
+    )
+
     suspend fun sync(context: Context): Int = withContext(Dispatchers.IO) {
         val events = CalendarHelper.findWodEvents(context, DAYS_AHEAD)
         if (events.isEmpty()) {
@@ -46,6 +53,21 @@ object WodSync {
         Log.i(TAG, "WOD sync complete: $updated updated")
         updated
     }
+
+    /** Returns WOD entries with calendar event times (for journal sync). */
+    suspend fun getWodsForJournal(context: Context, daysAhead: Int = DAYS_AHEAD): List<JournalWodEntry> =
+        withContext(Dispatchers.IO) {
+            val calEvents = CalendarHelper.findWodEvents(context, daysAhead)
+            if (calEvents.isEmpty()) return@withContext emptyList()
+
+            val html = fetchPage(WORKOUTS_URL)
+
+            calEvents.mapNotNull { event ->
+                val wod = extractWodForDate(html, event.dateStr)
+                if (wod != null) JournalWodEntry(event.dateStr, event.startMs, event.endMs, wod)
+                else null
+            }
+        }
 
     private fun fetchPage(urlStr: String): String {
         val conn = URL(urlStr).openConnection() as HttpURLConnection

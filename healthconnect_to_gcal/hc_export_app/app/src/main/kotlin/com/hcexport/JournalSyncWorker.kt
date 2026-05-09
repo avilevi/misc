@@ -139,14 +139,32 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     sourcePkg    = session.metadata.dataOrigin.packageName,
                 )
 
-                val entry = JournalEntry.fromExerciseEvent(event)
-                val eventTitle = CalendarHelper.exerciseTitle(event)
+                // Merge overlapping WOD entries
+                var mergedWod = ""
+                val overlapping = JournalStorage.findOverlappingWod(
+                    applicationContext, event.startMs, event.endMs
+                )
+                for (wodEntry in overlapping) {
+                    val wodJson = org.json.JSONObject(wodEntry.effectiveDataJson())
+                    mergedWod += if (mergedWod.isNotEmpty()) "\n\n" else ""
+                    mergedWod += wodJson.optString("wod", "")
+                    JournalStorage.deleteEntry(applicationContext, wodEntry.id)
+                    SyncLogger.log(applicationContext, "  MERGE WOD ${wodEntry.date} into exercise")
+                }
+                val finalNotes = if (mergedWod.isNotEmpty()) {
+                    val existing = event.notes
+                    if (existing.isNotBlank()) "$existing\n\n---\n$mergedWod" else mergedWod
+                } else event.notes
+                val mergedEvent = event.copy(notes = finalNotes)
+
+                val entry = JournalEntry.fromExerciseEvent(mergedEvent)
+                val eventTitle = CalendarHelper.exerciseTitle(mergedEvent)
                 if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
                     created++
-                    SyncLogger.log(applicationContext, "  NEW  journal exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                    SyncLogger.log(applicationContext, "  NEW  journal exercise: $eventTitle (${dateFmt.format(Date(mergedEvent.startMs))})")
                 } else {
                     skipped++
-                    SyncLogger.log(applicationContext, "  SKIP journal exercise: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                    SyncLogger.log(applicationContext, "  SKIP journal exercise: $eventTitle (${dateFmt.format(Date(mergedEvent.startMs))})")
                 }
             }
 
@@ -195,6 +213,25 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 } else {
                     skipped++
                     SyncLogger.log(applicationContext, "  SKIP journal sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
+                }
+            }
+
+            // ── WOD entries ───────────────────────────────────────────────
+            val wods = WodSync.getWodsForJournal(applicationContext)
+            for (wod in wods) {
+                // Skip if an HC entry already covers this WOD time slot (merged)
+                if (JournalStorage.hasOverlappingEntry(applicationContext, wod.startMs, wod.endMs)) {
+                    skipped++
+                    SyncLogger.log(applicationContext, "  SKIP journal WOD: ${wod.dateStr} (already covered)")
+                    continue
+                }
+                val entry = JournalEntry.fromWod(wod.dateStr, wod.startMs, wod.endMs, wod.content)
+                if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
+                    created++
+                    SyncLogger.log(applicationContext, "  NEW  journal WOD: ${wod.dateStr}")
+                } else {
+                    skipped++
+                    SyncLogger.log(applicationContext, "  SKIP journal WOD: ${wod.dateStr}")
                 }
             }
 

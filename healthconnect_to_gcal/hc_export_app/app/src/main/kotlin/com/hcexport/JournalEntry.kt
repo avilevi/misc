@@ -102,5 +102,25 @@ data class JournalEntry(
                 updatedAtMs      = System.currentTimeMillis(),
             )
         }
+
+        fun fromWod(dateStr: String, startMs: Long, endMs: Long, content: String): JournalEntry {
+            val json = JSONObject().apply {
+                put("sm", startMs)
+                put("em", endMs)
+                put("date", dateStr)
+                put("wod", content)
+                put("sp", "wod")
+            }
+            return JournalEntry(
+                id               = UUID.randomUUID().toString(),
+                date             = dateStr,
+                entryType        = "wod",
+                originalDataJson = json.toString(),
+                customDataJson   = null,
+                customNarrative  = content,
+                createdAtMs      = System.currentTimeMillis(),
+                updatedAtMs      = System.currentTimeMillis(),
+            )
+        }
     }
 }
