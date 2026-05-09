@@ -21,7 +21,10 @@ class WodWidgetService : RemoteViewsService() {
 
         private var wods: List<CalendarHelper.WodEventInfo> = emptyList()
 
-        override fun onCreate() {}
+        override fun onCreate() {
+            // Ensure we never show stale loading by initializing empty immediately
+            wods = emptyList()
+        }
 
         override fun onDataSetChanged() {
             wods = try {
@@ -30,6 +33,7 @@ class WodWidgetService : RemoteViewsService() {
                 Log.w("WodWidget", "Failed to query WOD events", e)
                 emptyList()
             }
+            Log.d("WodWidget", "onDataSetChanged: ${wods.size} WODs found")
         }
 
         override fun getCount(): Int = wods.size
