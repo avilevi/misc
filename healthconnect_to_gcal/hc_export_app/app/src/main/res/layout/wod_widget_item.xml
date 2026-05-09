@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="8dp"
-    android:background="#00000000">
+    android:background="#FF1D2A42"
+    android:padding="10dp">
 
     <!-- Date + time row -->
     <LinearLayout
@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingBottom="2dp">
+        android:paddingBottom="4dp">
 
         <TextView
             android:id="@+id/item_date"
@@ -36,7 +36,13 @@
             android:gravity="end" />
     </LinearLayout>
 
-    <!-- Description preview -->
+    <!-- Orange accent line -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="#FFF5A623" />
+
+    <!-- WOD content -->
     <TextView
         android:id="@+id/item_desc"
         android:layout_width="match_parent"
@@ -44,7 +50,8 @@
         android:text="Warm-up, 3 rounds..."
         android:textColor="#FFECF1F8"
         android:textSize="12sp"
-        android:maxLines="3"
-        android:ellipsize="end" />
+        android:maxLines="6"
+        android:ellipsize="end"
+        android:paddingTop="5dp" />
 
 </LinearLayout>
