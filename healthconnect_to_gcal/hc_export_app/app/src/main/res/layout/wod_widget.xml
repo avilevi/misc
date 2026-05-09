@@ -40,31 +40,29 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#1C2B44" />
+        android:background="#FF1C2B44" />
 
     <!-- Scrollable WOD list -->
     <ListView
-        android:id="@android:id/list"
+        android:id="@+id/wod_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="#1C2B44"
+        android:divider="#FF1C2B44"
         android:dividerHeight="1dp"
         android:paddingTop="4dp"
-        android:paddingBottom="4dp"
-        android:listSelector="@android:color/transparent"
-        android:cacheColorHint="#00000000" />
+        android:paddingBottom="4dp" />
 
-    <!-- Empty state -->
+    <!-- Empty state (hidden when list has items) -->
     <TextView
-        android:id="@android:id/empty"
+        android:id="@+id/wod_empty"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:text="No upcoming WODs"
         android:textColor="#506080"
         android:textSize="13sp"
         android:gravity="center"
-        android:padding="16dp" />
+        android:padding="16dp"
+        android:visibility="gone" />
 
 </LinearLayout>

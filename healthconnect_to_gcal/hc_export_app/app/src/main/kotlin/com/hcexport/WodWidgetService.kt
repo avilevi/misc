@@ -2,6 +2,7 @@ package com.hcexport
 
 import android.content.Intent
 import android.text.Html
+import android.util.Log
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import java.text.SimpleDateFormat
@@ -20,17 +21,32 @@ class WodWidgetService : RemoteViewsService() {
 
         private var wods: List<CalendarHelper.WodEventInfo> = emptyList()
 
-        override fun onCreate() {
-            wods = emptyList()
-        }
+        override fun onCreate() {}
 
         override fun onDataSetChanged() {
-            wods = CalendarHelper.findWodEvents(context, 7)
+            wods = try {
+                CalendarHelper.findWodEvents(context, 7)
+            } catch (e: Exception) {
+                Log.w("WodWidget", "Failed to query WOD events", e)
+                emptyList()
+            }
         }
 
         override fun getCount(): Int = wods.size
 
-        override fun getViewAt(position: Int): RemoteViews {
+        override fun getViewAt(position: Int): RemoteViews =
+            try {
+                buildItemView(position)
+            } catch (e: Exception) {
+                Log.w("WodWidget", "Failed to build item view at $position", e)
+                RemoteViews(context.packageName, R.layout.wod_widget_item).apply {
+                    setTextViewText(R.id.item_date, "Error")
+                    setTextViewText(R.id.item_time, "")
+                    setTextViewText(R.id.item_desc, "")
+                }
+            }
+
+        private fun buildItemView(position: Int): RemoteViews {
             val wod = wods[position]
             val views = RemoteViews(context.packageName, R.layout.wod_widget_item)
 
