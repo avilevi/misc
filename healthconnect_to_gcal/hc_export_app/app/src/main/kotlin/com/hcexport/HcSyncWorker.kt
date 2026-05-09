@@ -231,6 +231,8 @@ class CalendarSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             Prefs.setLastSyncSummary(applicationContext, summary!!)
             SyncLogger.log(applicationContext, "=== Sync done: $created new, $skipped skipped, $wodUpdated WOD updated ===")
 
+            WodWidgetProvider.notifyDataChanged(applicationContext)
+
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed: ${e.message}", e)

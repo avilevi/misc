@@ -292,6 +292,7 @@ class MainActivity : ComponentActivity() {
                         val summary = Prefs.getLastSyncSummary(this@MainActivity) ?: ""
                         setStatus(Ui.SUCCESS, "Calendar sync complete",
                             "Calendar: $calName\n$summary")
+                        WodWidgetProvider.notifyDataChanged(this@MainActivity)
                     }
                 }
                 WorkInfo.State.FAILED ->
@@ -312,6 +313,7 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         val summary = Prefs.getJournalLastSyncSummary(this@MainActivity) ?: ""
                         setStatus(Ui.SUCCESS, "Journal sync complete", summary)
+                        WodWidgetProvider.notifyDataChanged(this@MainActivity)
                     }
                 }
                 WorkInfo.State.FAILED ->

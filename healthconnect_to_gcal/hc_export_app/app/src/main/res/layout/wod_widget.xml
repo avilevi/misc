@@ -1,0 +1,70 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="12dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔥 WODs"
+            android:textColor="#00D4C3"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/widget_last_updated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#506080"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1C2B44" />
+
+    <!-- Scrollable WOD list -->
+    <ListView
+        android:id="@android:id/list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="#1C2B44"
+        android:dividerHeight="1dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:listSelector="@android:color/transparent"
+        android:cacheColorHint="#00000000" />
+
+    <!-- Empty state -->
+    <TextView
+        android:id="@android:id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="No upcoming WODs"
+        android:textColor="#506080"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:padding="16dp" />
+
+</LinearLayout>

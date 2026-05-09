@@ -245,6 +245,8 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             Prefs.setJournalLastSyncSummary(applicationContext, summary!!)
             SyncLogger.log(applicationContext, "=== Journal sync done: $created new, $skipped skipped ===")
 
+            WodWidgetProvider.notifyDataChanged(applicationContext)
+
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Journal sync failed: ${e.message}", e)
