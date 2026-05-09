@@ -71,10 +71,14 @@ class WodWidgetService : RemoteViewsService() {
                     Html.fromHtml(html).toString().trim()
                 }
                 // Remove the sync marker line
-                stripped.replace("# populated by wod_sync", "").trim()
-                    .take(200)
-            } ?: ""
-            views.setTextViewText(R.id.item_desc, desc)
+                val cleaned = stripped.replace("# populated by wod_sync", "").trim()
+                if (cleaned.isNotEmpty()) cleaned.take(250) else null
+            }
+            if (desc != null) {
+                views.setTextViewText(R.id.item_desc, desc)
+            } else {
+                views.setTextViewText(R.id.item_desc, "")
+            }
 
             // Fill-in intent for item click
             val fillInIntent = Intent().apply {
