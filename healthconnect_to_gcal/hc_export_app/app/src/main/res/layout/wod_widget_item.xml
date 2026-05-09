@@ -44,8 +44,7 @@
         android:text="Warm-up, 3 rounds..."
         android:textColor="#FFECF1F8"
         android:textSize="12sp"
-        android:maxLines="6"
-        android:ellipsize="end"
+        android:maxLines="100"
         android:paddingTop="2dp" />
 
 </LinearLayout>
