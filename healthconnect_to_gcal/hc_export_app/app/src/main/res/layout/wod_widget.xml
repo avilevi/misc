@@ -3,63 +3,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/widget_bg"
+    android:background="#FF162033"
     android:padding="12dp">
 
-    <!-- Header -->
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingBottom="8dp">
+        android:text="🔥 WODs"
+        android:textColor="#FF00D4C3"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:paddingBottom="8dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🔥 WODs"
-            android:textColor="#00D4C3"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/widget_last_updated"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="#506080"
-            android:textSize="10sp" />
-    </LinearLayout>
-
-    <!-- Divider -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#FF1C2B44" />
-
-    <!-- Scrollable WOD list -->
     <ListView
         android:id="@+id/wod_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:divider="#FF1C2B44"
-        android:dividerHeight="1dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp" />
+        android:layout_weight="1" />
 
-    <!-- Empty state (hidden when list has items) -->
     <TextView
         android:id="@+id/wod_empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="No upcoming WODs"
-        android:textColor="#506080"
+        android:textColor="#FF506080"
         android:textSize="13sp"
         android:gravity="center"
         android:padding="16dp"
