@@ -14,6 +14,9 @@ object DiaryNarrator {
     }
 
     private fun generateExercise(j: JSONObject): String {
+        val notes = j.optString("nt", "").trim()
+        if (notes.isNotEmpty()) return notes
+
         val durMin = (j.getLong("em") - j.getLong("sm")) / 60_000
         val typeLabel = CalendarHelper.EXERCISE_TYPES[j.optInt("tc", -1)]?.second ?: "Workout"
         val title = j.optString("tt", "").trim()
