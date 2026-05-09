@@ -45,7 +45,7 @@ jobs:
 
       - name: Write version.json
         run: |
-          echo '{"versionCode":${{ github.run_number }},"versionName":"${{ env.VERSION_MAJOR }}.${{ github.run_number }}","buildDate":"$(date -u +'%Y-%m-%dT%H:%M:%SZ')"}' > version.json
+          echo "{\"versionCode\":${{ github.run_number }},\"versionName\":\"${{ env.VERSION_MAJOR }}.${{ github.run_number }}\",\"buildDate\":\"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}" > version.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
