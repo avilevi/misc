@@ -1,15 +1,21 @@
 package com.hcexport
 
 import android.app.AlertDialog
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Typeface
 import android.text.InputType
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -161,6 +167,14 @@ object JournalEntryView {
             }))
         }
 
+        // HR graph
+        val hrArr = json.optJSONArray("hr")
+        if (hrArr != null && hrArr.length() > 1) {
+            card.addView(Ui.sectionSpacer(ctx, 4))
+            card.addView(Ui.sectionTitle(ctx, "Heart Rate"))
+            card.addView(buildHrGraph(ctx, hrArr))
+        }
+
         // Source (read-only display)
         card.addView(Ui.metricRow(ctx, "Source", source, "", onClick = null))
 
@@ -173,6 +187,8 @@ object JournalEntryView {
             textSize = 14f
             setTextColor(Ui.TEXT_PRIMARY)
             setLineSpacing(Ui.dpf(ctx, 4), 1f)
+            Linkify.addLinks(this, Linkify.WEB_URLS)
+            movementMethod = LinkMovementMethod.getInstance()
             setPadding(0, 0, 0, Ui.dp(ctx, 8))
         })
 
@@ -290,6 +306,8 @@ object JournalEntryView {
             setTextColor(Ui.TEXT_PRIMARY)
             setLineSpacing(Ui.dpf(ctx, 4), 1f)
             setPadding(0, 0, 0, Ui.dp(ctx, 8))
+            Linkify.addLinks(this, Linkify.WEB_URLS)
+            movementMethod = LinkMovementMethod.getInstance()
         })
 
         // Action links
@@ -533,6 +551,154 @@ object JournalEntryView {
             updatedAtMs = System.currentTimeMillis(),
         )
         onEntryChanged(updated)
+    }
+
+    // ── HR Graph ───────────────────────────────────────────────────────────
+
+    private fun buildHrGraph(
+        ctx: android.content.Context,
+        hrArr: JSONArray,
+    ): View {
+        val samples = mutableListOf<Pair<Int, Int>>() // (offsetMin, bpm)
+        for (i in 0 until hrArr.length()) {
+            val s = hrArr.getJSONObject(i)
+            samples += s.getInt("o") to s.getInt("b")
+        }
+        if (samples.isEmpty()) return View(ctx)
+
+        val graphHeight = Ui.dp(ctx, 150)
+        val leftPad     = Ui.dp(ctx, 36)
+        val rightPad    = Ui.dp(ctx, 12)
+        val topPad      = Ui.dp(ctx, 16)
+        val bottomPad   = Ui.dp(ctx, 28)
+
+        val minBpm = (samples.minOf { it.second } / 10 * 10).coerceAtLeast(0)
+        val maxBpm = ((samples.maxOf { it.second } + 9) / 10 * 10).coerceAtLeast(minBpm + 10)
+        val maxMin = samples.maxOf { it.first }.coerceAtLeast(1)
+
+        val linePaint = Paint().apply {
+            color = Ui.PRIMARY
+            strokeWidth = Ui.dpf(ctx, 2.5f)
+            style = Paint.Style.STROKE
+            isAntiAlias = true
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        val fillPaint = Paint().apply {
+            color = Ui.PRIMARY
+            style = Paint.Style.FILL
+            isAntiAlias = true
+            alpha = 30
+        }
+        val dotPaint = Paint().apply {
+            color = Ui.PRIMARY
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+        val gridPaint = Paint().apply {
+            color = Ui.BORDER_FAINT
+            strokeWidth = Ui.dpf(ctx, 1f)
+            style = Paint.Style.STROKE
+            isAntiAlias = true
+        }
+        val textPaint = Paint().apply {
+            color = Ui.TEXT_MUTED
+            textSize = Ui.dpf(ctx, 10f)
+            isAntiAlias = true
+        }
+
+        return object : View(ctx) {
+            override fun onDraw(canvas: Canvas) {
+                super.onDraw(canvas)
+                if (width == 0 || height == 0) return
+
+                val w = width.toFloat()
+                val h = height.toFloat()
+                val gw = w - leftPad - rightPad  // graph area width
+                val gh = h - topPad - bottomPad   // graph area height
+
+                if (gw <= 0 || gh <= 0) return
+
+                // Y-axis grid lines + labels
+                val ySteps = 4
+                for (i in 0..ySteps) {
+                    val y = topPad + gh * i / ySteps
+                    val bpmVal = maxBpm - (maxBpm - minBpm) * i / ySteps
+                    canvas.drawLine(leftPad, y, w - rightPad, y, gridPaint)
+                    canvas.drawText(
+                        bpmVal.toString(),
+                        leftPad - Ui.dpf(context, 4f),
+                        y + Ui.dpf(context, 4f),
+                        Paint().apply {
+                            color = Ui.TEXT_MUTED
+                            textSize = Ui.dpf(context, 9f)
+                            isAntiAlias = true
+                            textAlign = Paint.Align.RIGHT
+                        },
+                    )
+                }
+
+                // X-axis time labels
+                val xSteps = when {
+                    maxMin <= 30 -> 4
+                    maxMin <= 60 -> 6
+                    else -> 8
+                }
+                val stepMin = (maxMin / xSteps).coerceAtLeast(1)
+                for (t in 0..maxMin step stepMin) {
+                    val x = leftPad + gw * t / maxMin
+                    canvas.drawText(
+                        "${t}m",
+                        x,
+                        bottomPad - Ui.dpf(context, 2f),
+                        Paint().apply {
+                            color = Ui.TEXT_MUTED
+                            textSize = Ui.dpf(context, 9f)
+                            isAntiAlias = true
+                            textAlign = Paint.Align.CENTER
+                        },
+                    )
+                }
+
+                // Build smooth curve path
+                val path = Path()
+                val pts = samples.map { (t, bpm) ->
+                    val x = leftPad + gw * t / maxMin
+                    val y = topPad + gh - gh * (bpm - minBpm) / (maxBpm - minBpm)
+                    x to y
+                }
+
+                path.moveTo(pts[0].first, pts[0].second)
+                for (i in 1 until pts.size) {
+                    val (x1, y1) = pts[i - 1]
+                    val (x2, y2) = pts[i]
+                    val cx = (x1 + x2) / 2f
+                    path.cubicTo(cx, y1, cx, y2, x2, y2)
+                }
+                canvas.drawPath(path, linePaint)
+
+                // Fill under curve
+                if (pts.size >= 2) {
+                    val fillPath = Path(path)
+                    fillPath.lineTo(pts.last().first, topPad + gh)
+                    fillPath.lineTo(pts.first().first, topPad + gh)
+                    fillPath.close()
+                    canvas.drawPath(fillPath, fillPaint)
+                }
+
+                // Data point dots
+                val dotRadius = Ui.dpf(context, 3f)
+                for ((x, y) in pts) {
+                    canvas.drawCircle(x, y, dotRadius, dotPaint)
+                }
+            }
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                graphHeight,
+            ).also { it.setMargins(0, Ui.dp(ctx, 8), 0, Ui.dp(ctx, 4)) }
+            setBackgroundColor(Color.TRANSPARENT)
+        }
     }
 
     // ── Formatting ─────────────────────────────────────────────────────────
