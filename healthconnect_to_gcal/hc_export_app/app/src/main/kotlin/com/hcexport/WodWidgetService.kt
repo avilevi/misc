@@ -66,23 +66,25 @@ class WodWidgetService : RemoteViewsService() {
             val endTime = timeFmt.format(Date(wod.endMs))
             views.setTextViewText(R.id.item_time, "$startTime – $endTime")
 
-            // Description preview (strip HTML + sync marker, truncate)
+            // Description: convert <br> to newlines, strip HTML, clean up
             val desc = wod.description?.let { html ->
+                // Explicitly convert <br> tags to newlines before HTML processing
+                val withBreaks = html
+                    .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
                 val stripped = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString().trim()
+                    Html.fromHtml(withBreaks, Html.FROM_HTML_MODE_LEGACY).toString().trim()
                 } else {
                     @Suppress("DEPRECATION")
-                    Html.fromHtml(html).toString().trim()
+                    Html.fromHtml(withBreaks).toString().trim()
                 }
-                // Remove the sync marker line
-                val cleaned = stripped.replace("# populated by wod_sync", "").trim()
-                if (cleaned.isNotEmpty()) cleaned.take(250) else null
+                // Remove the sync marker line and clean up whitespace
+                stripped
+                    .replace("# populated by wod_sync", "")
+                    .replace(Regex("\n{3,}"), "\n\n")  // collapse excessive blank lines
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
             }
-            if (desc != null) {
-                views.setTextViewText(R.id.item_desc, desc)
-            } else {
-                views.setTextViewText(R.id.item_desc, "")
-            }
+            views.setTextViewText(R.id.item_desc, desc ?: "")
 
             // Fill-in intent for item click
             val fillInIntent = Intent().apply {
