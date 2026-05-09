@@ -1,7 +1,5 @@
 package com.hcexport
 
-import android.app.AlertDialog
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
@@ -9,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.ComponentActivity
-import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -28,8 +25,6 @@ class JournalActivity : ComponentActivity() {
 
     private val dateFmt    = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val headerFmt  = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
-    private val timeFmt    = SimpleDateFormat("h:mm a", Locale.getDefault())
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -261,290 +256,14 @@ class JournalActivity : ComponentActivity() {
 
         for ((i, entry) in entries.withIndex()) {
             if (i > 0) {
-                dayEntriesContainer.addView(ruleView())
+                dayEntriesContainer.addView(Ui.cardRule(this))
             }
-            dayEntriesContainer.addView(buildEntryBlock(entry))
-        }
-    }
-
-    private fun buildEntryBlock(entry: JournalEntry): View {
-        val block = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, Ui.dp(this@JournalActivity, 8), 0, Ui.dp(this@JournalActivity, 8))
-        }
-
-        // Time + type label
-        val metaRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 4))
-        }
-        val startMs = extractStartMs(entry)
-        val typeLabel = if (entry.entryType == "sleep") "Sleep" else {
-            try {
-                val tc = JSONObject(entry.originalDataJson).optInt("tc", -1)
-                CalendarHelper.EXERCISE_TYPES[tc]?.second ?: "Workout"
-            } catch (_: Exception) { "Workout" }
-        }
-        metaRow.addView(TextView(this).apply {
-            text = "${timeFmt.format(Date(startMs))}  ·  $typeLabel"
-            textSize = 11f
-            setTextColor(Ui.TEXT_MUTED)
-            letterSpacing = 0.04f
-        })
-        block.addView(metaRow)
-
-        // Narrative text
-        val narrative = entry.narrativeText()
-        block.addView(TextView(this).apply {
-            text = narrative
-            textSize = 15f
-            setTextColor(Ui.TEXT_PRIMARY)
-            setLineSpacing(Ui.dpf(this@JournalActivity, 4), 1f)
-            setPadding(0, 0, 0, Ui.dp(this@JournalActivity, 8))
-        })
-
-        // Edit links row
-        val linksRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 0, 0, 0)
-        }
-        if (entry.entryType == "exercise") {
-            linksRow.addView(editLink("edit data…") { showEditDataDialog(entry) })
-            linksRow.addView(TextView(this).apply {
-                text = "  "
-                textSize = 11f
-            })
-        }
-        linksRow.addView(editLink("edit text…") { showEditTextDialog(entry) })
-        if (entry.hasCustomizations()) {
-            linksRow.addView(TextView(this).apply {
-                text = "  "
-                textSize = 11f
-            })
-            linksRow.addView(editLink("revert") { showRevertDialog(entry) })
-        }
-        block.addView(linksRow)
-
-        return block
-    }
-
-    private fun editLink(label: String, onClick: () -> Unit): TextView =
-        TextView(this).apply {
-            text = label
-            textSize = 11f
-            setTextColor(Ui.TEXT_MUTED)
-            paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
-            setOnClickListener { onClick() }
-        }
-
-    private fun ruleView(): View =
-        View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                Ui.dp(this@JournalActivity, 1),
-            ).also { it.setMargins(0, Ui.dp(this@JournalActivity, 4), 0, Ui.dp(this@JournalActivity, 4)) }
-            setBackgroundColor(Ui.BORDER_FAINT)
-        }
-
-    // ── Edit Text dialog ─────────────────────────────────────────────────────
-
-    private fun showEditTextDialog(entry: JournalEntry) {
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 16), Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 8))
-        }
-        val input = EditText(this).apply {
-            setText(entry.narrativeText())
-            textSize = 15f
-            setTextColor(Ui.TEXT_PRIMARY)
-            minLines = 6
-            gravity = Gravity.START or Gravity.TOP
-            setPadding(Ui.dp(this@JournalActivity, 14), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 14), Ui.dp(this@JournalActivity, 12))
-            background = Ui.cardBg(Ui.dpf(this@JournalActivity, 10), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
-        }
-        container.addView(input)
-
-        AlertDialog.Builder(this)
-            .setTitle("Edit Text")
-            .setView(container)
-            .setPositiveButton("Save") { _, _ ->
-                val text = input.text.toString().trim()
-                // Check if text differs from auto-generated narrative
-                val autoNarrative = DiaryNarrator.generate(entry)
-                val updated = entry.copy(
-                    customNarrative = text.takeIf { it.isNotEmpty() && it != autoNarrative },
-                    updatedAtMs = System.currentTimeMillis(),
-                )
+            dayEntriesContainer.addView(JournalEntryView.build(this, entry) { updated ->
                 JournalStorage.updateEntry(this, updated)
                 refreshDayEntries()
                 refreshCalendar()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    // ── Edit Data dialog (exercise fields) ────────────────────────────────────
-
-    private fun showEditDataDialog(entry: JournalEntry) {
-        val json = JSONObject(entry.effectiveDataJson())
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 20), Ui.dp(this@JournalActivity, 8))
-        }
-
-        data class FieldSpec(val key: String, val label: String, val isNum: Boolean = false,
-                             val toDisplay: (JSONObject, String) -> String = { j, k -> j.optString(k, "") })
-
-        val fields = mutableListOf<Pair<FieldSpec, EditText>>()
-
-        // Exercise field specs
-        val fieldSpecs = listOf(
-            FieldSpec("tt", "Title"),
-            FieldSpec("dm", "Distance (km)", isNum = true,
-                toDisplay = { j, k -> if (j.has(k)) "%.2f".format(j.getDouble(k) / 1000.0) else "" }),
-            FieldSpec("ck", "Calories (kcal)", isNum = true,
-                toDisplay = { j, k -> if (j.has(k)) "%.0f".format(j.getDouble(k)) else "" }),
-            FieldSpec("ah", "Avg HR (bpm)", isNum = true,
-                toDisplay = { j, k -> if (j.has(k)) "%.0f".format(j.getDouble(k)) else "" }),
-            FieldSpec("mh", "Max HR (bpm)", isNum = true,
-                toDisplay = { j, k -> if (j.has(k)) "%.0f".format(j.getDouble(k)) else "" }),
-            FieldSpec("pp", "Pace (/km)", isNum = true,
-                toDisplay = { j, k ->
-                    if (!j.has(k)) "" else {
-                        val sec = j.getDouble(k).toInt()
-                        "%d:%02d".format(sec / 60, sec % 60)
-                    }
-                }),
-            FieldSpec("st", "Steps", isNum = true,
-                toDisplay = { j, k -> if (j.has(k)) j.getLong(k).toString() else "" }),
-            FieldSpec("nt", "Notes"),
-        )
-
-        for (spec in fieldSpecs) {
-            container.addView(TextView(this).apply {
-                text = spec.label.uppercase()
-                textSize = 10f
-                setTextColor(Ui.TEXT_MUTED)
-                typeface = Typeface.DEFAULT_BOLD
-                letterSpacing = 0.06f
-                setPadding(0, Ui.dp(this@JournalActivity, 8), 0, Ui.dp(this@JournalActivity, 4))
             })
-            val edit = EditText(this).apply {
-                setText(spec.toDisplay(json, spec.key))
-                textSize = 13f
-                setTextColor(Ui.TEXT_PRIMARY)
-                setPadding(Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 8), Ui.dp(this@JournalActivity, 12), Ui.dp(this@JournalActivity, 8))
-                background = Ui.cardBg(Ui.dpf(this@JournalActivity, 8), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER_FAINT)
-                if (spec.key == "nt") {
-                    minLines = 3
-                    gravity = Gravity.START or Gravity.TOP
-                }
-                if (spec.isNum) {
-                    inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-                }
-            }
-            container.addView(edit)
-            fields += spec to edit
         }
-
-        // Source (read-only)
-        container.addView(TextView(this).apply {
-            text = "SOURCE".uppercase()
-            textSize = 10f
-            setTextColor(Ui.TEXT_MUTED)
-            typeface = Typeface.DEFAULT_BOLD
-            letterSpacing = 0.06f
-            setPadding(0, Ui.dp(this@JournalActivity, 8), 0, Ui.dp(this@JournalActivity, 4))
-        })
-        container.addView(TextView(this).apply {
-            val pkg = json.optString("sp", "")
-            val name = when {
-                pkg.contains("samsung") -> "Samsung Health"
-                pkg.contains("fitbit")  -> "Fitbit"
-                pkg.contains("garmin")  -> "Garmin Connect"
-                pkg.contains("fitness") -> "Google Fit"
-                pkg.contains("huawei")  -> "Huawei Health"
-                pkg.contains("polar")   -> "Polar Flow"
-                pkg.contains("strava")  -> "Strava"
-                pkg.contains("withings")-> "Withings"
-                pkg.contains("whoop")   -> "WHOOP"
-                else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-            }
-            text = name
-            textSize = 13f
-            setTextColor(Ui.TEXT_SECONDARY)
-        })
-
-        val scrollContainer = ScrollView(this).apply {
-            addView(container)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                Ui.dp(this@JournalActivity, 480),
-            )
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Edit Data")
-            .setView(scrollContainer)
-            .setPositiveButton("Save") { _, _ ->
-                val updates = mutableMapOf<String, String?>()
-                val origJson = JSONObject(entry.originalDataJson)
-                for ((spec, edit) in fields) {
-                    val newVal = edit.text.toString().trim()
-                    if (newVal.isEmpty()) continue
-
-                    val parsedValue: Any? = when (spec.key) {
-                        "dm" -> newVal.toDoubleOrNull()?.times(1000.0)?.let {
-                            val origM = if (origJson.has("dm")) origJson.getDouble("dm") else null
-                            if (origM != null && kotlin.math.abs(it - origM) < 0.01) null else it
-                        }
-                        "pp" -> {
-                            val parts = newVal.split(":")
-                            if (parts.size == 2) {
-                                val totalSec = (parts[0].toIntOrNull() ?: 0) * 60 + (parts[1].toIntOrNull() ?: 0)
-                                totalSec.toDouble().takeIf { it > 0 }
-                            } else newVal.toDoubleOrNull()
-                        }
-                        "ck", "ah", "mh" -> newVal.toDoubleOrNull()
-                        "st" -> newVal.toLongOrNull()
-                        "tt", "nt" -> newVal
-                        else -> newVal
-                    }
-
-                    if (parsedValue != null) {
-                        // Check if value actually changed from original
-                        val origVal = if (origJson.has(spec.key)) origJson.get(spec.key) else null
-                        if (parsedValue != origVal) {
-                            updates[spec.key] = parsedValue.toString()
-                        }
-                    }
-                }
-
-                if (updates.isNotEmpty()) {
-                    val updated = entry.editDataFields(updates)
-                    JournalStorage.updateEntry(this, updated)
-                }
-                refreshDayEntries()
-                refreshCalendar()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    // ── Revert dialog ────────────────────────────────────────────────────────
-
-    private fun showRevertDialog(entry: JournalEntry) {
-        AlertDialog.Builder(this)
-            .setTitle("Revert to original?")
-            .setMessage("This will discard your custom data and text edits.")
-            .setPositiveButton("Revert") { _, _ ->
-                JournalStorage.updateEntry(this, entry.reverted())
-                refreshDayEntries()
-                refreshCalendar()
-            }
-            .setNegativeButton("Keep edits", null)
-            .show()
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -578,8 +297,4 @@ class JournalActivity : ComponentActivity() {
         try { return dateFmt.parse(dateStr)?.time ?: System.currentTimeMillis() }
         catch (_: Exception) { return System.currentTimeMillis() }
     }
-
-    private fun extractStartMs(entry: JournalEntry): Long =
-        try { JSONObject(entry.originalDataJson).getLong("sm") }
-        catch (_: Exception) { 0L }
 }

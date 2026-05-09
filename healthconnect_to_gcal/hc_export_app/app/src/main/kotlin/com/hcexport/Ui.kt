@@ -154,6 +154,119 @@ object Ui {
             })
         }
 
+    /** Section title within a card: bold, muted, uppercase label. */
+    fun sectionTitle(context: Context, text: String): TextView =
+        TextView(context).apply {
+            this.text = text.uppercase()
+            textSize = 11f
+            setTextColor(TEXT_MUTED)
+            typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.08f
+            setPadding(0, dp(context, 12), 0, dp(context, 8))
+        }
+
+    /** Tappable metric row: [label] … [value + unit], used in journal entry cards. */
+    fun metricRow(
+        context: Context,
+        label: String,
+        value: String,
+        unit: String,
+        onClick: (() -> Unit)?,
+    ): LinearLayout =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(context, 6), 0, dp(context, 6))
+
+            addView(TextView(context).apply {
+                text = label
+                textSize = 14f
+                setTextColor(TEXT_SECONDARY)
+            })
+            addView(View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+            })
+            addView(TextView(context).apply {
+                text = value
+                textSize = 14f
+                setTextColor(TEXT_PRIMARY)
+                typeface = Typeface.DEFAULT_BOLD
+            })
+            if (unit.isNotEmpty()) {
+                addView(TextView(context).apply {
+                    text = " $unit"
+                    textSize = 13f
+                    setTextColor(TEXT_MUTED)
+                })
+            }
+            if (onClick != null) {
+                isClickable = true
+                isFocusable = true
+                background = cardBg(dpf(context, 8), fillColor = android.graphics.Color.TRANSPARENT, borderColor = android.graphics.Color.TRANSPARENT)
+                setOnClickListener { onClick() }
+            }
+        }
+
+    /** Sleep stage row with colored indicator bar. */
+    fun sleepStageRow(
+        context: Context,
+        label: String,
+        color: Int,
+        durationStr: String,
+        barFraction: Float,
+        onClick: (() -> Unit)?,
+    ): LinearLayout =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(context, 6), 0, dp(context, 6))
+
+            // Colored dot
+            val dot = dp(context, 10)
+            addView(View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(dot, dot).also {
+                    it.setMargins(0, 0, dp(context, 10), 0)
+                }
+                background = GradientDrawable().apply {
+                    setColor(color)
+                    shape = GradientDrawable.OVAL
+                    setSize(dot, dot)
+                }
+            })
+
+            // Label
+            addView(TextView(context).apply {
+                text = label
+                textSize = 14f
+                setTextColor(TEXT_PRIMARY)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+
+            // Duration
+            addView(TextView(context).apply {
+                text = durationStr
+                textSize = 14f
+                setTextColor(TEXT_PRIMARY)
+                typeface = Typeface.DEFAULT_BOLD
+            })
+
+            if (onClick != null) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onClick() }
+            }
+        }
+
+    /** Thin horizontal rule used between entry cards. */
+    fun cardRule(context: Context): View =
+        View(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(context, 1),
+            ).also { it.setMargins(0, dp(context, 8), 0, dp(context, 8)) }
+            setBackgroundColor(BORDER_FAINT)
+        }
+
     /** Small colored dot + text, used for status indicators. */
     fun labeledDot(context: Context, color: Int, text: String): LinearLayout =
         LinearLayout(context).apply {
