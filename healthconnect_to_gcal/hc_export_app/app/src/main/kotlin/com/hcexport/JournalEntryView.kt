@@ -567,18 +567,19 @@ object JournalEntryView {
         if (samples.isEmpty()) return View(ctx)
 
         val graphHeight = Ui.dp(ctx, 150)
-        val leftPad     = Ui.dp(ctx, 36)
-        val rightPad    = Ui.dp(ctx, 12)
-        val topPad      = Ui.dp(ctx, 16)
-        val bottomPad   = Ui.dp(ctx, 28)
+        val leftPad     = Ui.dp(ctx, 36).toFloat()
+        val rightPad    = Ui.dp(ctx, 12).toFloat()
+        val topPad      = Ui.dp(ctx, 16).toFloat()
+        val bottomPad   = Ui.dp(ctx, 28).toFloat()
 
         val minBpm = (samples.minOf { it.second } / 10 * 10).coerceAtLeast(0)
         val maxBpm = ((samples.maxOf { it.second } + 9) / 10 * 10).coerceAtLeast(minBpm + 10)
         val maxMin = samples.maxOf { it.first }.coerceAtLeast(1)
 
+        val density = ctx.resources.displayMetrics.density
         val linePaint = Paint().apply {
             color = Ui.PRIMARY
-            strokeWidth = Ui.dpf(ctx, 2.5f)
+            strokeWidth = density * 2.5f
             style = Paint.Style.STROKE
             isAntiAlias = true
             strokeCap = Paint.Cap.ROUND
@@ -597,16 +598,10 @@ object JournalEntryView {
         }
         val gridPaint = Paint().apply {
             color = Ui.BORDER_FAINT
-            strokeWidth = Ui.dpf(ctx, 1f)
+            strokeWidth = Ui.dpf(ctx, 1)
             style = Paint.Style.STROKE
             isAntiAlias = true
         }
-        val textPaint = Paint().apply {
-            color = Ui.TEXT_MUTED
-            textSize = Ui.dpf(ctx, 10f)
-            isAntiAlias = true
-        }
-
         return object : View(ctx) {
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
@@ -627,11 +622,11 @@ object JournalEntryView {
                     canvas.drawLine(leftPad, y, w - rightPad, y, gridPaint)
                     canvas.drawText(
                         bpmVal.toString(),
-                        leftPad - Ui.dpf(context, 4f),
-                        y + Ui.dpf(context, 4f),
+                        leftPad - Ui.dpf(context, 4),
+                        y + Ui.dpf(context, 4),
                         Paint().apply {
                             color = Ui.TEXT_MUTED
-                            textSize = Ui.dpf(context, 9f)
+                            textSize = Ui.dpf(context, 9)
                             isAntiAlias = true
                             textAlign = Paint.Align.RIGHT
                         },
@@ -650,10 +645,10 @@ object JournalEntryView {
                     canvas.drawText(
                         "${t}m",
                         x,
-                        bottomPad - Ui.dpf(context, 2f),
+                        bottomPad - Ui.dpf(context, 2),
                         Paint().apply {
                             color = Ui.TEXT_MUTED
-                            textSize = Ui.dpf(context, 9f)
+                            textSize = Ui.dpf(context, 9)
                             isAntiAlias = true
                             textAlign = Paint.Align.CENTER
                         },
@@ -687,7 +682,7 @@ object JournalEntryView {
                 }
 
                 // Data point dots
-                val dotRadius = Ui.dpf(context, 3f)
+                val dotRadius = Ui.dpf(context, 3)
                 for ((x, y) in pts) {
                     canvas.drawCircle(x, y, dotRadius, dotPaint)
                 }
