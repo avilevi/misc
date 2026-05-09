@@ -471,18 +471,5 @@ class SettingsActivity : ComponentActivity() {
 
     private fun sourceSummary(sources: List<String>): String =
         if (sources.isEmpty()) "Run a sync first to discover sources."
-        else sources.mapIndexed { i, pkg -> "${i + 1}. ${friendlySource(pkg)}" }.joinToString("\n")
-
-    private fun friendlySource(pkg: String): String = when {
-        pkg.contains("samsung") -> "Samsung Health"
-        pkg.contains("fitbit")  -> "Fitbit"
-        pkg.contains("garmin")  -> "Garmin Connect"
-        pkg.contains("google.android.apps.fitness") -> "Google Fit"
-        pkg.contains("huawei")  -> "Huawei Health"
-        pkg.contains("polar")   -> "Polar Flow"
-        pkg.contains("strava")  -> "Strava"
-        pkg.contains("withings")-> "Withings"
-        pkg.contains("whoop")   -> "WHOOP"
-        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-    }
+        else sources.mapIndexed { i, pkg -> "${i + 1}. ${SourceBrands.displayName(pkg)}" }.joinToString("\n")
 }

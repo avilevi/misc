@@ -65,7 +65,8 @@ object JournalEntryView {
         val startMs   = json.getLong("sm")
         val endMs     = json.getLong("em")
         val typeCode  = json.optInt("tc", -1)
-        val source    = friendlySource(json.optString("sp", ""))
+        val sourcePkg = json.optString("sp", "")
+        val source    = SourceBrands.displayName(sourcePkg)
 
         val (emoji, typeLabel) = CalendarHelper.EXERCISE_TYPES[typeCode]
             ?: ("🏃" to "Workout")
@@ -80,7 +81,7 @@ object JournalEntryView {
         }
 
         // Header row
-        card.addView(entryHeader(ctx, emoji, typeLabel, startMs, source))
+        card.addView(entryHeader(ctx, emoji, typeLabel, startMs, source, sourcePkg))
 
         card.addView(Ui.sectionSpacer(ctx, 10))
 
@@ -177,8 +178,8 @@ object JournalEntryView {
             card.addView(buildHrGraph(ctx, hrArr))
         }
 
-        // Source (read-only display)
-        card.addView(Ui.metricRow(ctx, "Source", source, "", onClick = null))
+        // Source (icon + name)
+        card.addView(sourceRow(ctx, sourcePkg))
 
         // ── Notes section ──────────────────────────────────────────────────
 
@@ -210,7 +211,8 @@ object JournalEntryView {
         val json = JSONObject(entry.effectiveDataJson())
         val startMs = json.getLong("sm")
         val endMs   = json.getLong("em")
-        val source  = friendlySource(json.optString("sp", ""))
+        val sourcePkg = json.optString("sp", "")
+        val source    = SourceBrands.displayName(sourcePkg)
         val totalMin = (endMs - startMs) / 60_000
 
         val card = LinearLayout(ctx).apply {
@@ -223,7 +225,7 @@ object JournalEntryView {
         }
 
         // Header
-        card.addView(entryHeader(ctx, "😴", "Sleep", startMs, source))
+        card.addView(entryHeader(ctx, "😴", "Sleep", startMs, source, sourcePkg))
 
         card.addView(Ui.sectionSpacer(ctx, 10))
 
@@ -295,8 +297,8 @@ object JournalEntryView {
             }
         }
 
-        // Source
-        card.addView(Ui.metricRow(ctx, "Source", source, "", onClick = null))
+        // Source (icon + name)
+        card.addView(sourceRow(ctx, sourcePkg))
 
         // ── Notes section ──────────────────────────────────────────────────
 
@@ -420,7 +422,8 @@ object JournalEntryView {
     ): View {
         val json = JSONObject(entry.effectiveDataJson())
         val startMs = json.optLong("sm", 0L)
-        val source  = friendlySource(json.optString("sp", ""))
+        val sourcePkg = json.optString("sp", "")
+        val source    = SourceBrands.displayName(sourcePkg)
 
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -431,7 +434,7 @@ object JournalEntryView {
             background = Ui.cardBg(Ui.dpf(ctx, 16))
         }
 
-        card.addView(entryHeader(ctx, "📋", "Activity", startMs, source))
+        card.addView(entryHeader(ctx, "📋", "Activity", startMs, source, sourcePkg))
         card.addView(Ui.sectionTitle(ctx, "Notes"))
         card.addView(TextView(ctx).apply {
             text = entry.narrativeText()
@@ -450,6 +453,7 @@ object JournalEntryView {
         typeLabel: String,
         timeMs: Long,
         source: String,
+        sourcePkg: String,
     ): LinearLayout =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -469,11 +473,54 @@ object JournalEntryView {
                 layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
             })
             addView(TextView(ctx).apply {
-                text = "${timeFmt.format(Date(timeMs))}  ·  $source"
+                text = "${timeFmt.format(Date(timeMs))}  ·  "
                 textSize = 11f
                 setTextColor(Ui.TEXT_MUTED)
             })
+            val iconSize = Ui.dp(ctx, 14)
+            addView(android.widget.ImageView(ctx).apply {
+                setImageResource(SourceBrands.iconResId(sourcePkg))
+                layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            })
         }
+
+    private fun sourceRow(
+        ctx: android.content.Context,
+        sourcePkg: String,
+    ): LinearLayout {
+        val brand = SourceBrands.forPackage(sourcePkg)
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, Ui.dp(ctx, 4))
+
+            addView(TextView(ctx).apply {
+                text = "Source"
+                textSize = 12f
+                setTextColor(Ui.TEXT_MUTED)
+                typeface = Typeface.DEFAULT_BOLD
+            })
+            addView(View(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+            })
+            val iconSize = Ui.dp(ctx, 16)
+            addView(android.widget.ImageView(ctx).apply {
+                setImageResource(brand.iconResId)
+                layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply {
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            })
+            addView(TextView(ctx).apply {
+                text = "  ${brand.displayName}"
+                textSize = 13f
+                setTextColor(Ui.TEXT_SECONDARY)
+            })
+        }
+    }
 
     private fun actionLinks(
         ctx: android.content.Context,
@@ -828,16 +875,4 @@ object JournalEntryView {
         return raw.toLongOrNull()
     }
 
-    private fun friendlySource(pkg: String): String = when {
-        pkg.contains("samsung") -> "Samsung Health"
-        pkg.contains("fitbit")  -> "Fitbit"
-        pkg.contains("garmin")  -> "Garmin Connect"
-        pkg.contains("fitness") -> "Google Fit"
-        pkg.contains("huawei")  -> "Huawei Health"
-        pkg.contains("polar")   -> "Polar Flow"
-        pkg.contains("strava")  -> "Strava"
-        pkg.contains("withings")-> "Withings"
-        pkg.contains("whoop")   -> "WHOOP"
-        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-    }
 }

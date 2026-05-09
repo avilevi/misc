@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#E60000">
+    <!-- Polar pulse / heart-rate waveform -->
+    <path
+        android:pathData="M3,12h3l2,-8 3,16 3,-11 2,3h5"
+        android:strokeWidth="2"
+        android:strokeColor="#E60000"
+        android:fillColor="@android:color/transparent" />
+</vector>

@@ -195,7 +195,7 @@ object CalendarHelper {
         if (event.notes.isNotBlank()) { appendLine(); appendLine("Notes: ${event.notes}") }
 
         appendLine()
-        append("Source: ${friendlySource(event.sourcePkg)}")
+        append("Source: ${SourceBrands.displayName(event.sourcePkg)}")
     }.trimEnd()
 
     fun sleepTitle(event: SleepEvent): String =
@@ -223,7 +223,7 @@ object CalendarHelper {
         }
 
         appendLine()
-        append("Source: ${friendlySource(event.sourcePkg)}")
+        append("Source: ${SourceBrands.displayName(event.sourcePkg)}")
     }.trimEnd()
 
     // ── WOD events ────────────────────────────────────────────────────────
@@ -299,16 +299,4 @@ object CalendarHelper {
         return "%d:%02d".format(total / 60, total % 60)
     }
 
-    private fun friendlySource(pkg: String): String = when {
-        pkg.contains("samsung") -> "Samsung Health"
-        pkg.contains("fitbit")  -> "Fitbit"
-        pkg.contains("garmin")  -> "Garmin Connect"
-        pkg.contains("google.android.apps.fitness") -> "Google Fit"
-        pkg.contains("huawei")  -> "Huawei Health"
-        pkg.contains("polar")   -> "Polar Flow"
-        pkg.contains("strava")  -> "Strava"
-        pkg.contains("withings")-> "Withings"
-        pkg.contains("whoop")   -> "WHOOP"
-        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-    }
 }

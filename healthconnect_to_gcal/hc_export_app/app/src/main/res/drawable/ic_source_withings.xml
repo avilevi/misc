@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#4A90D9">
+    <!-- Withings: stylized W / health metric -->
+    <path
+        android:fillColor="#4A90D9"
+        android:pathData="M7,7h4v10H7V7zM13,7h4v4h-4V7zM16,13h-3v4h3v-4z" />
+</vector>

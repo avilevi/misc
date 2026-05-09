@@ -21,13 +21,13 @@ object DiaryNarrator {
         val typeLabel = CalendarHelper.EXERCISE_TYPES[j.optInt("tc", -1)]?.second ?: "Workout"
         val title = j.optString("tt", "").trim()
         val name = title.ifBlank { typeLabel }
-        val source = friendlySource(j.optString("sp", ""))
+        val source = SourceBrands.displayName(j.optString("sp", ""))
         return "${fmtDur(durMin)} of ${name.lowercase()}. Tracked by $source."
     }
 
     private fun generateSleep(j: JSONObject): String {
         val totalMin = (j.getLong("em") - j.getLong("sm")) / 60_000
-        val source = friendlySource(j.optString("sp", ""))
+        val source = SourceBrands.displayName(j.optString("sp", ""))
         return "Slept ${fmtDur(totalMin)}. Tracked by $source."
     }
 
@@ -40,16 +40,4 @@ object DiaryNarrator {
         else -> "${totalMin}m"
     }
 
-    private fun friendlySource(pkg: String): String = when {
-        pkg.contains("samsung") -> "Samsung Health"
-        pkg.contains("fitbit")  -> "Fitbit"
-        pkg.contains("garmin")  -> "Garmin Connect"
-        pkg.contains("fitness") -> "Google Fit"
-        pkg.contains("huawei")  -> "Huawei Health"
-        pkg.contains("polar")   -> "Polar Flow"
-        pkg.contains("strava")  -> "Strava"
-        pkg.contains("withings")-> "Withings"
-        pkg.contains("whoop")   -> "WHOOP"
-        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-    }
 }

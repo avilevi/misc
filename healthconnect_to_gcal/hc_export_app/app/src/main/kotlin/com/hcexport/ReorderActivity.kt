@@ -109,41 +109,53 @@ class SourceAdapter(
 
     var touchHelper: ItemTouchHelper? = null
 
-    inner class VH(row: View, val label: TextView, val handle: TextView) : RecyclerView.ViewHolder(row)
+    inner class VH(row: View, val icon: android.widget.ImageView, val label: TextView, val handle: TextView) : RecyclerView.ViewHolder(row)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val row = LinearLayout(parent.context).apply {
+        val ctx = parent.context
+        val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
-            val p = Ui.dp(parent.context, 16)
+            val p = Ui.dp(ctx, 14)
             setPadding(p, p, p, p)
             layoutParams = RecyclerView.LayoutParams(
                 RecyclerView.LayoutParams.MATCH_PARENT,
                 RecyclerView.LayoutParams.WRAP_CONTENT,
             )
-            val margin = Ui.dp(parent.context, 6)
+            val margin = Ui.dp(ctx, 6)
             (layoutParams as RecyclerView.LayoutParams).setMargins(0, margin, 0, margin)
-            background = Ui.cardBg(Ui.dpf(parent.context, 12))
+            background = Ui.cardBg(Ui.dpf(ctx, 12))
         }
-        val label = TextView(parent.context).apply {
+        val iconSize = Ui.dp(ctx, 22)
+        val icon = android.widget.ImageView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply {
+                setMargins(0, 0, Ui.dp(ctx, 10), 0)
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        }
+        val label = TextView(ctx).apply {
             textSize = 14f
             setTextColor(Ui.TEXT_PRIMARY)
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        val handle = TextView(parent.context).apply {
+        val handle = TextView(ctx).apply {
             text = "≡"
             textSize = 22f
             setTextColor(Ui.TEXT_MUTED)
-            setPadding(Ui.dp(parent.context, 12), 0, 0, 0)
+            setPadding(Ui.dp(ctx, 12), 0, 0, 0)
         }
+        row.addView(icon)
         row.addView(label)
         row.addView(handle)
-        return VH(row, label, handle)
+        return VH(row, icon, label, handle)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.label.text = friendlyName(sources[position])
+        val pkg = sources[position]
+        holder.icon.setImageResource(SourceBrands.iconResId(pkg))
+        holder.label.text = SourceBrands.displayName(pkg)
         holder.handle.setOnTouchListener { _, event ->
             if (event.actionMasked == MotionEvent.ACTION_DOWN) touchHelper?.startDrag(holder)
             false
@@ -158,16 +170,4 @@ class SourceAdapter(
         onChanged(sources.toList())
     }
 
-    private fun friendlyName(pkg: String): String = when {
-        pkg.contains("samsung") -> "Samsung Health"
-        pkg.contains("fitbit")  -> "Fitbit"
-        pkg.contains("garmin")  -> "Garmin Connect"
-        pkg.contains("google.android.apps.fitness") -> "Google Fit"
-        pkg.contains("huawei")  -> "Huawei Health"
-        pkg.contains("polar")   -> "Polar Flow"
-        pkg.contains("strava")  -> "Strava"
-        pkg.contains("withings")-> "Withings"
-        pkg.contains("whoop")   -> "WHOOP"
-        else -> pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
-    }
 }
