@@ -62,7 +62,7 @@ class WodWidgetService : RemoteViewsService() {
             val endTime = timeFmt.format(Date(wod.endMs))
             views.setTextViewText(R.id.item_time, "$startTime – $endTime")
 
-            // Description preview (strip HTML, truncate)
+            // Description preview (strip HTML + sync marker, truncate)
             val desc = wod.description?.let { html ->
                 val stripped = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                     Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY).toString().trim()
@@ -70,7 +70,9 @@ class WodWidgetService : RemoteViewsService() {
                     @Suppress("DEPRECATION")
                     Html.fromHtml(html).toString().trim()
                 }
-                stripped.take(200)
+                // Remove the sync marker line
+                stripped.replace("# populated by wod_sync", "").trim()
+                    .take(200)
             } ?: ""
             views.setTextViewText(R.id.item_desc, desc)
 
