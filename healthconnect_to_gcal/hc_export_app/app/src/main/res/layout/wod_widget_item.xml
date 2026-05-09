@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#FF1D2A42"
-    android:padding="10dp">
+    android:padding="8dp"
+    android:background="#00000000">
 
     <!-- Date + time row -->
     <LinearLayout
@@ -12,41 +12,39 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingBottom="4dp">
+        android:paddingBottom="2dp">
 
         <TextView
             android:id="@+id/item_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FF00D4C3"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/item_time"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="end"
+            android:text="Mon, May 12"
+            android:textColor="#FF00D4C3"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/item_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="7:00 – 8:00 AM"
             android:textColor="#FF8B9EC0"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            android:gravity="end" />
     </LinearLayout>
 
-    <!-- Orange accent divider -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#FFF5A623" />
-
-    <!-- WOD content -->
+    <!-- Description preview -->
     <TextView
         android:id="@+id/item_desc"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Warm-up, 3 rounds..."
         android:textColor="#FFECF1F8"
         android:textSize="12sp"
-        android:maxLines="4"
-        android:ellipsize="end"
-        android:paddingTop="5dp" />
+        android:maxLines="3"
+        android:ellipsize="end" />
 
 </LinearLayout>
