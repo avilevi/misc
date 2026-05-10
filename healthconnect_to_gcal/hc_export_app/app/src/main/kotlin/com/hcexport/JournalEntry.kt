@@ -91,9 +91,10 @@ data class JournalEntry(
         }
 
         fun fromSleepEvent(event: SleepEvent): JournalEntry {
+            // Sleep is placed on the day it ends, not when it starts
             return JournalEntry(
                 id               = UUID.randomUUID().toString(),
-                date             = dateFmt.format(Date(event.startMs)),
+                date             = dateFmt.format(Date(event.endMs)),
                 entryType        = "sleep",
                 originalDataJson = event.toJson().toString(),
                 customDataJson   = null,

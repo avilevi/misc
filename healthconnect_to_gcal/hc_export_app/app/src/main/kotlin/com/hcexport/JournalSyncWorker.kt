@@ -45,6 +45,7 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
             var created = 0
             var skipped = 0
+            val merges = mutableListOf<Pair<String, String>>()
 
             // ── Exercises ──────────────────────────────────────────────────
             val allExercise = client.readRecords(
@@ -149,6 +150,7 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     mergedWod += if (mergedWod.isNotEmpty()) "\n\n" else ""
                     mergedWod += wodJson.optString("wod", "")
                     JournalStorage.deleteEntry(applicationContext, wodEntry.id)
+                    merges += eventTitle to wodEntry.date
                     SyncLogger.log(applicationContext, "  MERGE WOD ${wodEntry.date} into exercise")
                 }
                 val finalNotes = if (mergedWod.isNotEmpty()) {
@@ -246,6 +248,9 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             SyncLogger.log(applicationContext, "=== Journal sync done: $created new, $skipped skipped ===")
 
             WodWidgetProvider.notifyDataChanged(applicationContext)
+
+            if (merges.isNotEmpty())
+                NotificationHelper.notifyMerge(applicationContext, merges)
 
             Result.success()
         } catch (e: Exception) {
