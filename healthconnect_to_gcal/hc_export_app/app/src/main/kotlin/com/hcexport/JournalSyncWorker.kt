@@ -145,6 +145,7 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 val overlapping = JournalStorage.findOverlappingWod(
                     applicationContext, event.startMs, event.endMs
                 )
+                val eventTitle = CalendarHelper.exerciseTitle(event)
                 for (wodEntry in overlapping) {
                     val wodJson = org.json.JSONObject(wodEntry.effectiveDataJson())
                     mergedWod += if (mergedWod.isNotEmpty()) "\n\n" else ""
@@ -160,7 +161,6 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 val mergedEvent = event.copy(notes = finalNotes)
 
                 val entry = JournalEntry.fromExerciseEvent(mergedEvent)
-                val eventTitle = CalendarHelper.exerciseTitle(mergedEvent)
                 if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
                     created++
                     SyncLogger.log(applicationContext, "  NEW  journal exercise: $eventTitle (${dateFmt.format(Date(mergedEvent.startMs))})")
