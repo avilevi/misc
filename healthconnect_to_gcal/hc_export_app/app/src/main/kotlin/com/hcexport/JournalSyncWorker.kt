@@ -141,24 +141,30 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 )
 
                 // Merge overlapping WOD entries
-                var mergedWod = ""
                 val overlapping = JournalStorage.findOverlappingWod(
                     applicationContext, event.startMs, event.endMs
                 )
                 val eventTitle = CalendarHelper.exerciseTitle(event)
+                val mergedWodInfos = mutableListOf<MergedWodInfo>()
+                var mergedNotes = ""
                 for (wodEntry in overlapping) {
-                    val wodJson = org.json.JSONObject(wodEntry.effectiveDataJson())
-                    mergedWod += if (mergedWod.isNotEmpty()) "\n\n" else ""
-                    mergedWod += wodJson.optString("wod", "")
+                    val wodContent = org.json.JSONObject(wodEntry.effectiveDataJson())
+                        .optString("wod", "")
+                    mergedWodInfos += MergedWodInfo(
+                        dateStr = wodEntry.date,
+                        content = wodContent,
+                    )
+                    mergedNotes += if (mergedNotes.isNotEmpty()) "\n\n" else ""
+                    mergedNotes += wodContent
                     JournalStorage.deleteEntry(applicationContext, wodEntry.id)
                     merges += eventTitle to wodEntry.date
                     SyncLogger.log(applicationContext, "  MERGE WOD ${wodEntry.date} into exercise")
                 }
-                val finalNotes = if (mergedWod.isNotEmpty()) {
+                val finalNotes = if (mergedNotes.isNotEmpty()) {
                     val existing = event.notes
-                    if (existing.isNotBlank()) "$existing\n\n---\n$mergedWod" else mergedWod
+                    if (existing.isNotBlank()) "$existing\n\n---\n$mergedNotes" else mergedNotes
                 } else event.notes
-                val mergedEvent = event.copy(notes = finalNotes)
+                val mergedEvent = event.copy(notes = finalNotes, mergedWods = mergedWodInfos)
 
                 val entry = JournalEntry.fromExerciseEvent(mergedEvent)
                 if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {

@@ -195,6 +195,55 @@ object JournalEntryView {
             setPadding(0, 0, 0, Ui.dp(ctx, 8))
         })
 
+        // ── Merged WOD section ────────────────────────────────────────────
+        val mwArr = json.optJSONArray("mw")
+        if (mwArr != null && mwArr.length() > 0) {
+            for (i in 0 until mwArr.length()) {
+                val mw = mwArr.getJSONObject(i)
+                val wodDate = mw.getString("d")
+                val wodContent = mw.getString("w")
+
+                // Inner card with amber accent
+                val wodCard = LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(
+                        Ui.dp(ctx, 14), Ui.dp(ctx, 12),
+                        Ui.dp(ctx, 14), Ui.dp(ctx, 12),
+                    )
+                    background = GradientDrawable().apply {
+                        setColor(Ui.SURFACE_ELEVATED)
+                        cornerRadius = Ui.dpf(ctx, 10)
+                        setStroke(Ui.dp(ctx, 1), Ui.ACCENT)
+                    }
+                }
+                (wodCard.layoutParams as? LinearLayout.LayoutParams)?.setMargins(
+                    0, Ui.dp(ctx, 10), 0, 0,
+                )
+
+                // Header: 🔥 WOD · date
+                wodCard.addView(TextView(ctx).apply {
+                    text = "🔥  WOD  ·  $wodDate"
+                    textSize = 13f
+                    setTextColor(Ui.ACCENT)
+                    typeface = Typeface.DEFAULT_BOLD
+                    setPadding(0, 0, 0, Ui.dp(ctx, 6))
+                })
+
+                // WOD content
+                wodCard.addView(TextView(ctx).apply {
+                    text = wodContent
+                    textSize = 14f
+                    setTextColor(Ui.TEXT_PRIMARY)
+                    setLineSpacing(Ui.dpf(ctx, 4), 1f)
+                    setPadding(0, 0, 0, Ui.dp(ctx, 2))
+                    Linkify.addLinks(this, Linkify.WEB_URLS)
+                    movementMethod = LinkMovementMethod.getInstance()
+                })
+
+                card.addView(wodCard)
+            }
+        }
+
         // Action links
         card.addView(actionLinks(ctx, entry, onEntryChanged))
 

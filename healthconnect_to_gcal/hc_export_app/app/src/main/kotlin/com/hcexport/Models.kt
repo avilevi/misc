@@ -3,6 +3,20 @@ package com.hcexport
 import org.json.JSONArray
 import org.json.JSONObject
 
+data class MergedWodInfo(
+    val dateStr: String,
+    val content: String,
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("d", dateStr)
+        put("w", content)
+    }
+    companion object {
+        fun fromJson(obj: JSONObject): MergedWodInfo =
+            MergedWodInfo(obj.getString("d"), obj.getString("w"))
+    }
+}
+
 data class HrSample(val offsetMin: Int, val bpm: Int) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("o", offsetMin)
@@ -28,6 +42,7 @@ data class ExerciseEvent(
     val stepsCount: Long?,
     val notes: String,
     val sourcePkg: String,
+    val mergedWods: List<MergedWodInfo> = emptyList(),
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("sm", startMs)
@@ -45,6 +60,9 @@ data class ExerciseEvent(
         stepsCount?.let { put("st", it) }
         put("nt", notes)
         put("sp", sourcePkg)
+        if (mergedWods.isNotEmpty()) {
+            put("mw", JSONArray(mergedWods.map { it.toJson() }))
+        }
     }
 }
 
