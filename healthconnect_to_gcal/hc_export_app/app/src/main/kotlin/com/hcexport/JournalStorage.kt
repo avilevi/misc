@@ -50,13 +50,25 @@ object JournalStorage {
         val all = readAll(ctx).toMutableList()
         val entryStartMs = extractStartMs(entry)
         val entrySrcPkg  = extractSourcePkg(entry)
-        val exists = all.any {
+        val idx = all.indexOfFirst {
             extractStartMs(it) == entryStartMs && extractSourcePkg(it) == entrySrcPkg
         }
-        if (exists) return false
+        if (idx >= 0) return false
         all.add(entry)
         writeAll(ctx, all)
         return true
+    }
+
+    /** Insert or replace an entry matching by start time + source package. */
+    fun upsertEntry(ctx: Context, entry: JournalEntry) {
+        val all = readAll(ctx).toMutableList()
+        val entryStartMs = extractStartMs(entry)
+        val entrySrcPkg  = extractSourcePkg(entry)
+        val idx = all.indexOfFirst {
+            extractStartMs(it) == entryStartMs && extractSourcePkg(it) == entrySrcPkg
+        }
+        if (idx >= 0) all[idx] = entry else all.add(entry)
+        writeAll(ctx, all)
     }
 
     fun updateEntry(ctx: Context, entry: JournalEntry) {

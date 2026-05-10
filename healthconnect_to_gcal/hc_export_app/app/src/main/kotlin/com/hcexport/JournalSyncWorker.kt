@@ -179,13 +179,9 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 val mergedEvent = event.copy(notes = finalNotes, mergedWods = mergedWodInfos)
 
                 val entry = JournalEntry.fromExerciseEvent(mergedEvent)
-                if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
-                    created++
-                    SyncLogger.log(applicationContext, "  NEW  journal exercise: $eventTitle (${dateFmt.format(Date(mergedEvent.startMs))})")
-                } else {
-                    skipped++
-                    SyncLogger.log(applicationContext, "  SKIP journal exercise: $eventTitle (${dateFmt.format(Date(mergedEvent.startMs))})")
-                }
+                JournalStorage.upsertEntry(applicationContext, entry)
+                created++
+                SyncLogger.log(applicationContext, "  NEW  journal exercise: $eventTitle (${dateFmt.format(Date(mergedEvent.startMs))})")
             }
 
             // ── Sleep sessions ─────────────────────────────────────────────
