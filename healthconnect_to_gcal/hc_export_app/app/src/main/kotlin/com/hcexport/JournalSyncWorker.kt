@@ -47,6 +47,19 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             var skipped = 0
             val merges = mutableListOf<Pair<String, String>>()
 
+            // ── WOD entries (first — raw data persisted before merge) ──────
+            val wods = WodSync.getWodsForJournal(applicationContext)
+            for (wod in wods) {
+                val entry = JournalEntry.fromWod(wod.dateStr, wod.startMs, wod.endMs, wod.content)
+                if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
+                    created++
+                    SyncLogger.log(applicationContext, "  NEW  journal WOD: ${wod.dateStr}")
+                } else {
+                    skipped++
+                    SyncLogger.log(applicationContext, "  SKIP journal WOD: ${wod.dateStr}")
+                }
+            }
+
             // ── Exercises ──────────────────────────────────────────────────
             val allExercise = client.readRecords(
                 ReadRecordsRequest(ExerciseSessionRecord::class, range)
@@ -156,7 +169,6 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     )
                     mergedNotes += if (mergedNotes.isNotEmpty()) "\n\n" else ""
                     mergedNotes += wodContent
-                    JournalStorage.deleteEntry(applicationContext, wodEntry.id)
                     merges += eventTitle to wodEntry.date
                     SyncLogger.log(applicationContext, "  MERGE WOD ${wodEntry.date} into exercise")
                 }
@@ -221,25 +233,6 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 } else {
                     skipped++
                     SyncLogger.log(applicationContext, "  SKIP journal sleep: $eventTitle (${dateFmt.format(Date(event.startMs))})")
-                }
-            }
-
-            // ── WOD entries ───────────────────────────────────────────────
-            val wods = WodSync.getWodsForJournal(applicationContext)
-            for (wod in wods) {
-                // Skip if an HC entry already covers this WOD time slot (merged)
-                if (JournalStorage.hasOverlappingEntry(applicationContext, wod.startMs, wod.endMs)) {
-                    skipped++
-                    SyncLogger.log(applicationContext, "  SKIP journal WOD: ${wod.dateStr} (already covered)")
-                    continue
-                }
-                val entry = JournalEntry.fromWod(wod.dateStr, wod.startMs, wod.endMs, wod.content)
-                if (JournalStorage.addEntryIfAbsent(applicationContext, entry)) {
-                    created++
-                    SyncLogger.log(applicationContext, "  NEW  journal WOD: ${wod.dateStr}")
-                } else {
-                    skipped++
-                    SyncLogger.log(applicationContext, "  SKIP journal WOD: ${wod.dateStr}")
                 }
             }
 

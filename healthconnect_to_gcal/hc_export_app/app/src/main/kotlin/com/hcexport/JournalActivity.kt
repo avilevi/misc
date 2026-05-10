@@ -163,7 +163,7 @@ class JournalActivity : ComponentActivity() {
         val selDay = if (selectedDate.startsWith("%04d-%02d".format(currentYear, currentMonth + 1)))
             selectedDate.substringAfterLast('-').toIntOrNull() else null
 
-        val entries = JournalStorage.getEntriesForMonth(this, currentYear, currentMonth)
+        val entries = JournalStorage.getVisibleEntriesForMonth(this, currentYear, currentMonth)
         val dayMap  = JournalStorage.buildDayMap(entries)
 
         var cell = 0
@@ -242,7 +242,7 @@ class JournalActivity : ComponentActivity() {
         dayHeaderText.text = headerFmt.format(Date(dayMs))
         dayEntriesContainer.removeAllViews()
 
-        val entries = JournalStorage.getEntriesForDay(this, selectedDate)
+        val entries = JournalStorage.getVisibleEntriesForDay(this, selectedDate)
 
         if (entries.isEmpty()) {
             dayEntriesContainer.addView(TextView(this).apply {

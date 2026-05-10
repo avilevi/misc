@@ -103,6 +103,16 @@ object JournalStorage {
         return map
     }
 
+    // ── Display filtering ────────────────────────────────────────────────────
+
+    /** Return entries for a day, excluding WOD entries that overlap with non-WOD entries. */
+    fun getVisibleEntriesForDay(ctx: Context, dayDate: String): List<JournalEntry> =
+        filterCoveredWods(getEntriesForDay(ctx, dayDate))
+
+    /** Return entries for a month, excluding WOD entries that overlap with non-WOD entries. */
+    fun getVisibleEntriesForMonth(ctx: Context, year: Int, month: Int): List<JournalEntry> =
+        filterCoveredWods(getEntriesForMonth(ctx, year, month))
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private fun extractStartMs(entry: JournalEntry): Long =
@@ -112,4 +122,25 @@ object JournalStorage {
     private fun extractSourcePkg(entry: JournalEntry): String =
         try { JSONObject(entry.originalDataJson).optString("sp", "") }
         catch (_: Exception) { "" }
+
+    private fun extractEndMs(entry: JournalEntry): Long =
+        try { JSONObject(entry.originalDataJson).getLong("em") }
+        catch (_: Exception) { 0L }
+
+    /** True if entry's time range overlaps [startMs, endMs]. */
+    private fun overlapsEntry(entry: JournalEntry, startMs: Long, endMs: Long): Boolean = try {
+        val j = JSONObject(entry.originalDataJson)
+        j.getLong("sm") < endMs && j.getLong("em") > startMs
+    } catch (_: Exception) { false }
+
+    /** Exclude WOD entries whose time range is covered by any non-WOD entry. */
+    private fun filterCoveredWods(entries: List<JournalEntry>): List<JournalEntry> {
+        val nonWod = entries.filter { it.entryType != "wod" }
+        return entries.filter { entry ->
+            if (entry.entryType != "wod") return@filter true
+            val ws = extractStartMs(entry)
+            val we = extractEndMs(entry)
+            nonWod.none { overlapsEntry(it, ws, we) }
+        }
+    }
 }
