@@ -5,15 +5,17 @@ import org.json.JSONObject
 
 data class MergedWodInfo(
     val dateStr: String,
+    val title: String,
     val content: String,
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("d", dateStr)
+        put("t", title)
         put("w", content)
     }
     companion object {
         fun fromJson(obj: JSONObject): MergedWodInfo =
-            MergedWodInfo(obj.getString("d"), obj.getString("w"))
+            MergedWodInfo(obj.getString("d"), obj.getString("t"), obj.getString("w"))
     }
 }
 

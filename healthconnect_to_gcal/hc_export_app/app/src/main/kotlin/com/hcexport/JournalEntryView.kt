@@ -201,6 +201,7 @@ object JournalEntryView {
             for (i in 0 until mwArr.length()) {
                 val mw = mwArr.getJSONObject(i)
                 val wodDate = mw.getString("d")
+                val wodTitle = mw.optString("t", "WOD")
                 val wodContent = mw.getString("w")
 
                 // Inner card with amber accent
@@ -220,9 +221,9 @@ object JournalEntryView {
                     0, Ui.dp(ctx, 10), 0, 0,
                 )
 
-                // Header: 🔥 WOD · date
+                // Header: 📅 Title · date
                 wodCard.addView(TextView(ctx).apply {
-                    text = "🔥  WOD  ·  $wodDate"
+                    text = "📅  $wodTitle  ·  $wodDate"
                     textSize = 13f
                     setTextColor(Ui.ACCENT)
                     typeface = Typeface.DEFAULT_BOLD

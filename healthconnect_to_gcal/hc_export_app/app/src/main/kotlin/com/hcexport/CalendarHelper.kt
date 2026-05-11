@@ -228,7 +228,7 @@ object CalendarHelper {
 
     // ── WOD events ────────────────────────────────────────────────────────
 
-    data class WodEventInfo(val id: Long, val dateStr: String, val startMs: Long, val endMs: Long, val description: String?)
+    data class WodEventInfo(val id: Long, val dateStr: String, val startMs: Long, val endMs: Long, val title: String, val description: String?)
 
     fun findWodEvents(context: Context, daysAhead: Int): List<WodEventInfo> {
         val todayStart = Instant.now().truncatedTo(ChronoUnit.DAYS)
@@ -266,7 +266,60 @@ object CalendarHelper {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
                     .format(DateTimeFormatter.ISO_LOCAL_DATE)
-                results += WodEventInfo(id, date, startMs, endMs, desc)
+                results += WodEventInfo(id, date, startMs, endMs, "WOD", desc)
+            }
+        }
+        return results
+    }
+
+    /** Find any calendar events overlapping [startMs, endMs], excluding the Fitness calendar. */
+    fun findOverlappingEvents(context: Context, startMs: Long, endMs: Long): List<WodEventInfo> {
+        val fitnessId = findCalendarId(context, "Fitness")
+        val selection = if (fitnessId != null) {
+            "${CalendarContract.Events.DTSTART} < ? AND ${CalendarContract.Events.DTEND} > ? " +
+            "AND ${CalendarContract.Events.DELETED} = 0 " +
+            "AND ${CalendarContract.Events.CALENDAR_ID} != ?"
+        } else {
+            "${CalendarContract.Events.DTSTART} < ? AND ${CalendarContract.Events.DTEND} > ? " +
+            "AND ${CalendarContract.Events.DELETED} = 0"
+        }
+        val selArgs = if (fitnessId != null) {
+            arrayOf(endMs.toString(), startMs.toString(), fitnessId.toString())
+        } else {
+            arrayOf(endMs.toString(), startMs.toString())
+        }
+
+        val projection = arrayOf(
+            CalendarContract.Events._ID,
+            CalendarContract.Events.TITLE,
+            CalendarContract.Events.DTSTART,
+            CalendarContract.Events.DTEND,
+            CalendarContract.Events.DESCRIPTION,
+        )
+        val results = mutableListOf<WodEventInfo>()
+        context.contentResolver.query(
+            CalendarContract.Events.CONTENT_URI,
+            projection,
+            selection,
+            selArgs,
+            null,
+        )?.use { cursor ->
+            val idCol    = cursor.getColumnIndex(CalendarContract.Events._ID)
+            val titleCol = cursor.getColumnIndex(CalendarContract.Events.TITLE)
+            val startCol = cursor.getColumnIndex(CalendarContract.Events.DTSTART)
+            val endCol   = cursor.getColumnIndex(CalendarContract.Events.DTEND)
+            val descCol  = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION)
+            while (cursor.moveToNext()) {
+                val id      = cursor.getLong(idCol)
+                val title   = cursor.getString(titleCol) ?: ""
+                val sMs     = cursor.getLong(startCol)
+                val eMs     = cursor.getLong(endCol)
+                val desc    = cursor.getString(descCol)
+                val date    = Instant.ofEpochMilli(sMs)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                results += WodEventInfo(id, date, sMs, eMs, title, desc)
             }
         }
         return results

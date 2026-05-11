@@ -153,30 +153,24 @@ class JournalSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     sourcePkg    = session.metadata.dataOrigin.packageName,
                 )
 
-                // Merge overlapping WOD entries
-                val overlapping = JournalStorage.findOverlappingWod(
+                // Merge overlapping calendar events
+                val overlapping = CalendarHelper.findOverlappingEvents(
                     applicationContext, event.startMs, event.endMs
                 )
                 val eventTitle = CalendarHelper.exerciseTitle(event)
                 val mergedWodInfos = mutableListOf<MergedWodInfo>()
-                var mergedNotes = ""
-                for (wodEntry in overlapping) {
-                    val wodContent = org.json.JSONObject(wodEntry.effectiveDataJson())
-                        .optString("wod", "")
+                for (calEvent in overlapping) {
                     mergedWodInfos += MergedWodInfo(
-                        dateStr = wodEntry.date,
-                        content = wodContent,
+                        dateStr = calEvent.dateStr,
+                        title   = calEvent.title,
+                        content = calEvent.description ?: "",
                     )
-                    mergedNotes += if (mergedNotes.isNotEmpty()) "\n\n" else ""
-                    mergedNotes += wodContent
-                    merges += eventTitle to wodEntry.date
-                    SyncLogger.log(applicationContext, "  MERGE WOD ${wodEntry.date} into exercise")
+                    merges += eventTitle to calEvent.title
+                    SyncLogger.log(applicationContext, "  MERGE ${calEvent.title} ${calEvent.dateStr} into exercise")
                 }
-                val finalNotes = if (mergedNotes.isNotEmpty()) {
-                    val existing = event.notes
-                    if (existing.isNotBlank()) "$existing\n\n---\n$mergedNotes" else mergedNotes
-                } else event.notes
-                val mergedEvent = event.copy(notes = finalNotes, mergedWods = mergedWodInfos)
+                val mergedEvent = if (mergedWodInfos.isNotEmpty()) {
+                    event.copy(mergedWods = mergedWodInfos)
+                } else event
 
                 val entry = JournalEntry.fromExerciseEvent(mergedEvent)
                 JournalStorage.upsertEntry(applicationContext, entry)
