@@ -221,9 +221,10 @@ object JournalEntryView {
                     0, Ui.dp(ctx, 10), 0, 0,
                 )
 
-                // Header: 📅 Title · date
+                // Header: icon + Title · date
+                val icon = if (wodTitle.equals("WOD", ignoreCase = true)) "🔥" else "📅"
                 wodCard.addView(TextView(ctx).apply {
-                    text = "📅  $wodTitle  ·  $wodDate"
+                    text = "$icon  $wodTitle  ·  $wodDate"
                     textSize = 13f
                     setTextColor(Ui.ACCENT)
                     typeface = Typeface.DEFAULT_BOLD
