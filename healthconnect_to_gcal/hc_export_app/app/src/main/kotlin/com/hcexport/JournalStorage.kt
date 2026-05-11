@@ -59,7 +59,9 @@ object JournalStorage {
         return true
     }
 
-    /** Insert or replace an entry matching by start time + source package. */
+    /** Insert or replace an entry matching by start time + source package.
+     *  Preserves user customizations (customNarrative, customDataJson) from the
+     *  existing entry when replacing. */
     fun upsertEntry(ctx: Context, entry: JournalEntry) {
         val all = readAll(ctx).toMutableList()
         val entryStartMs = extractStartMs(entry)
@@ -67,7 +69,16 @@ object JournalStorage {
         val idx = all.indexOfFirst {
             extractStartMs(it) == entryStartMs && extractSourcePkg(it) == entrySrcPkg
         }
-        if (idx >= 0) all[idx] = entry else all.add(entry)
+        if (idx >= 0) {
+            val existing = all[idx]
+            all[idx] = entry.copy(
+                id = existing.id,
+                customDataJson = existing.customDataJson,
+                customNarrative = existing.customNarrative,
+            )
+        } else {
+            all.add(entry)
+        }
         writeAll(ctx, all)
     }
 
