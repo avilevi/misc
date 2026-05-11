@@ -580,35 +580,39 @@ object JournalEntryView {
     ): LinearLayout =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, Ui.dp(ctx, 4), 0, 0)
+            setPadding(0, Ui.dp(ctx, 8), 0, 0)
 
-            addView(linkButton(ctx, "edit notes") {
+            addView(actionChip(ctx, "edit notes") {
                 showEditNotesDialog(ctx, entry, onEntryChanged)
             })
             if (entry.hasCustomizations()) {
-                addView(TextView(ctx).apply {
-                    text = "  "
-                    textSize = 11f
-                })
-                addView(linkButton(ctx, "revert") {
+                addView(actionChip(ctx, "revert") {
                     showRevertDialog(ctx, entry, onEntryChanged)
                 })
             }
-            addView(TextView(ctx).apply {
-                text = "  "
-                textSize = 11f
-            })
-            addView(linkButton(ctx, "delete") {
+            addView(actionChip(ctx, "delete") {
                 showDeleteDialog(ctx, entry, onEntryChanged)
             })
         }
 
-    private fun linkButton(ctx: android.content.Context, label: String, onClick: () -> Unit): TextView =
+    private fun actionChip(ctx: android.content.Context, label: String, onClick: () -> Unit): TextView =
         TextView(ctx).apply {
             text = label
-            textSize = 11f
-            setTextColor(Ui.TEXT_MUTED)
-            paintFlags = paintFlags or Paint.UNDERLINE_TEXT_FLAG
+            textSize = 13f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(
+                Ui.dp(ctx, 14), Ui.dp(ctx, 9),
+                Ui.dp(ctx, 14), Ui.dp(ctx, 9),
+            )
+            background = Ui.cardBg(
+                Ui.dpf(ctx, 20),
+                fillColor = Ui.SURFACE_ELEVATED,
+                borderColor = Ui.BORDER,
+            )
+            (layoutParams as? LinearLayout.LayoutParams)?.setMargins(
+                0, 0, Ui.dp(ctx, 8), 0,
+            )
             setOnClickListener { onClick() }
         }
 
