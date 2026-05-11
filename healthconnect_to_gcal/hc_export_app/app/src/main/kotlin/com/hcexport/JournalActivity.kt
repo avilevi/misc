@@ -259,7 +259,11 @@ class JournalActivity : ComponentActivity() {
                 dayEntriesContainer.addView(Ui.cardRule(this))
             }
             dayEntriesContainer.addView(JournalEntryView.build(this, entry) { updated ->
-                JournalStorage.updateEntry(this, updated)
+                if (updated != null) {
+                    JournalStorage.updateEntry(this, updated)
+                } else {
+                    JournalStorage.deleteEntry(this, entry.id)
+                }
                 refreshDayEntries()
                 refreshCalendar()
             })

@@ -44,7 +44,7 @@ object JournalEntryView {
     fun build(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ): View {
         return when (entry.entryType) {
             "exercise" -> buildExerciseCard(ctx, entry, onEntryChanged)
@@ -59,7 +59,7 @@ object JournalEntryView {
     private fun buildExerciseCard(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ): View {
         val json = JSONObject(entry.effectiveDataJson())
         val startMs   = json.getLong("sm")
@@ -257,7 +257,7 @@ object JournalEntryView {
     private fun buildSleepCard(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ): View {
         val json = JSONObject(entry.effectiveDataJson())
         val startMs = json.getLong("sm")
@@ -378,7 +378,7 @@ object JournalEntryView {
     private fun buildWodCard(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ): View {
         val json = JSONObject(entry.effectiveDataJson())
         val startMs = json.optLong("sm", 0L)
@@ -469,7 +469,7 @@ object JournalEntryView {
     private fun buildUnknownCard(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ): View {
         val json = JSONObject(entry.effectiveDataJson())
         val startMs = json.optLong("sm", 0L)
@@ -576,7 +576,7 @@ object JournalEntryView {
     private fun actionLinks(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ): LinearLayout =
         LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -594,6 +594,13 @@ object JournalEntryView {
                     showRevertDialog(ctx, entry, onEntryChanged)
                 })
             }
+            addView(TextView(ctx).apply {
+                text = "  "
+                textSize = 11f
+            })
+            addView(linkButton(ctx, "delete") {
+                showDeleteDialog(ctx, entry, onEntryChanged)
+            })
         }
 
     private fun linkButton(ctx: android.content.Context, label: String, onClick: () -> Unit): TextView =
@@ -659,7 +666,7 @@ object JournalEntryView {
     private fun showEditNotesDialog(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ) {
         val container = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -683,7 +690,11 @@ object JournalEntryView {
                 val text = input.text.toString().trim()
                 val autoNarrative = DiaryNarrator.generate(entry)
                 val updated = entry.copy(
-                    customNarrative = text.takeIf { it.isNotEmpty() && it != autoNarrative },
+                    customNarrative = when {
+                        text.isEmpty() -> ""
+                        text != autoNarrative -> text
+                        else -> null
+                    },
                     updatedAtMs = System.currentTimeMillis(),
                 )
                 onEntryChanged(updated)
@@ -696,7 +707,7 @@ object JournalEntryView {
     private fun showRevertDialog(
         ctx: android.content.Context,
         entry: JournalEntry,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ) {
         AlertDialog.Builder(ctx)
             .setTitle("Revert to original?")
@@ -708,13 +719,29 @@ object JournalEntryView {
             .show()
     }
 
+    /** Delete confirmation dialog. */
+    private fun showDeleteDialog(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onEntryChanged: (JournalEntry?) -> Unit,
+    ) {
+        AlertDialog.Builder(ctx)
+            .setTitle("Delete entry?")
+            .setMessage("This will permanently remove this journal entry.")
+            .setPositiveButton("Delete") { _, _ ->
+                onEntryChanged(null)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     // ── Data helpers ───────────────────────────────────────────────────────
 
     private fun updateEntryField(
         entry: JournalEntry,
         key: String,
         value: String,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ) {
         val updated = entry.editDataField(key, value)
         onEntryChanged(updated)
@@ -724,7 +751,7 @@ object JournalEntryView {
         entry: JournalEntry,
         stageName: String,
         newDurationMin: Long,
-        onEntryChanged: (JournalEntry) -> Unit,
+        onEntryChanged: (JournalEntry?) -> Unit,
     ) {
         val json = JSONObject(entry.effectiveDataJson())
         val stagesArr = json.optJSONArray("sg") ?: return
