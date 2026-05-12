@@ -178,7 +178,7 @@ object Ui {
         label: String,
         value: String,
         unit: String,
-        onClick: (() -> Unit)?,
+        onClick: (() -> Unit)? = null,
     ): LinearLayout =
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -221,7 +221,7 @@ object Ui {
         color: Int,
         durationStr: String,
         barFraction: Float,
-        onClick: (() -> Unit)?,
+        onClick: (() -> Unit)? = null,
     ): LinearLayout =
         LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL

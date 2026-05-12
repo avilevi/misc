@@ -799,7 +799,6 @@ object JournalEntryView {
             setTextColor(textColor)
             setLineSpacing(Ui.dpf(ctx, 4), 1f)
             setPadding(Ui.dp(ctx, 4), Ui.dp(ctx, 6), Ui.dp(ctx, 4), Ui.dp(ctx, 6))
-            setOnClickListener { enterEdit() }
         }
 
         lateinit var editText: EditText
@@ -826,6 +825,9 @@ object JournalEntryView {
                 onChanged(newText)
             }
         }
+
+        // Set click listener after local functions are defined to avoid forward-reference
+        textView.setOnClickListener { enterEdit() }
 
         editText = EditText(ctx).apply {
             setText(text)
