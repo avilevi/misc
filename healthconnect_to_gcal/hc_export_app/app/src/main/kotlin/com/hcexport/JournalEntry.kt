@@ -14,6 +14,7 @@ data class JournalEntry(
     val originalDataJson: String,
     val customDataJson: String?,
     val customNarrative: String?,
+    val customTitle: String? = null,
     val createdAtMs: Long,
     val updatedAtMs: Long,
 ) {
@@ -67,6 +68,7 @@ data class JournalEntry(
         put("oj", originalDataJson)
         customDataJson?.let { put("cj", it) }
         customNarrative?.let { put("cn", it) }
+        customTitle?.let { put("ct", it) }
         put("ca", createdAtMs)
         put("ua", updatedAtMs)
     }
@@ -81,6 +83,7 @@ data class JournalEntry(
             originalDataJson = obj.getString("oj"),
             customDataJson   = if (obj.has("cj")) obj.getString("cj") else null,
             customNarrative  = if (obj.has("cn")) obj.getString("cn") else null,
+            customTitle     = if (obj.has("ct")) obj.getString("ct") else null,
             createdAtMs      = obj.getLong("ca"),
             updatedAtMs      = obj.getLong("ua"),
         )

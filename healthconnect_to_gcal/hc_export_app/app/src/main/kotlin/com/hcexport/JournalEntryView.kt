@@ -56,6 +56,21 @@ object JournalEntryView {
         }
     }
 
+    // ── Collapsible entry point (for journal list) ──────────────────────────
+
+    fun buildCollapsible(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onOpenEditor: () -> Unit,
+    ): View {
+        return when (entry.entryType) {
+            "exercise" -> buildCollapsibleExerciseCard(ctx, entry, onOpenEditor)
+            "sleep"    -> buildCollapsibleSleepCard(ctx, entry, onOpenEditor)
+            "wod"      -> buildCollapsibleWodCard(ctx, entry, onOpenEditor)
+            else       -> buildCollapsibleUnknownCard(ctx, entry, onOpenEditor)
+        }
+    }
+
     // ── Exercise card ──────────────────────────────────────────────────────
 
     private fun buildExerciseCard(
@@ -431,6 +446,489 @@ object JournalEntryView {
             textSize = 14f
             setTextColor(Ui.TEXT_PRIMARY)
         })
+        return card
+    }
+
+    // ── Collapsible exercise card ────────────────────────────────────────────
+
+    private fun buildCollapsibleExerciseCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onOpenEditor: () -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs   = json.getLong("sm")
+        val endMs     = json.getLong("em")
+        val typeCode  = json.optInt("tc", -1)
+        val sourcePkg = json.optString("sp", "")
+        val source    = SourceBrands.displayName(sourcePkg)
+        val (emoji, typeLabel) = CalendarHelper.EXERCISE_TYPES[typeCode] ?: ("🏃" to "Workout")
+        val displayTitle = entry.customTitle ?: typeLabel
+
+        var collapseState = 0
+        lateinit var chevron: TextView
+        lateinit var metricsSection: LinearLayout
+        lateinit var notesSection: LinearLayout
+
+        fun toggle() {
+            collapseState = (collapseState + 1) % 3
+            when (collapseState) {
+                0 -> { metricsSection.visibility = View.GONE; notesSection.visibility = View.GONE; chevron.text = "▶" }
+                1 -> { metricsSection.visibility = View.VISIBLE; notesSection.visibility = View.GONE; chevron.text = "▼" }
+                2 -> { metricsSection.visibility = View.VISIBLE; notesSection.visibility = View.VISIBLE; chevron.text = "⏬" }
+            }
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = Ui.cardBg(Ui.dpf(ctx, 16))
+            isClickable = true
+            setOnClickListener { onOpenEditor() }
+        }
+
+        // ── Header ──────────────────────────────────────────────────────────
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = emoji; textSize = 20f })
+        header.addView(TextView(ctx).apply {
+            text = "  $displayTitle"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        header.addView(TextView(ctx).apply {
+            text = "${timeFmt.format(Date(startMs))}  ·  "
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        val iconSize = Ui.dp(ctx, 14)
+        header.addView(android.widget.ImageView(ctx).apply {
+            setImageResource(SourceBrands.iconResId(sourcePkg))
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { gravity = Gravity.CENTER_VERTICAL }
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        })
+        chevron = TextView(ctx).apply {
+            text = "▶"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(Ui.dp(ctx, 8), 0, 0, 0)
+            setOnClickListener { toggle() }
+        }
+        header.addView(chevron)
+        card.addView(header)
+
+        // ── Metrics section (initially GONE) ─────────────────────────────────
+        metricsSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        metricsSection.addView(Ui.sectionSpacer(ctx, 10))
+        metricsSection.addView(Ui.sectionTitle(ctx, "Metrics"))
+        metricsSection.addView(Ui.metricRow(ctx, "Duration", fmtDur((endMs - startMs) / 60_000), ""))
+        if (json.has("dm")) {
+            val km = json.getDouble("dm") / 1000.0
+            metricsSection.addView(Ui.metricRow(ctx, "Distance", distFormat(km), "km"))
+        }
+        if (json.has("pp")) {
+            val pace = json.getDouble("pp")
+            metricsSection.addView(Ui.metricRow(ctx, "Pace", fmtPace(pace), "/km"))
+        }
+        if (json.has("ck")) {
+            val kcal = json.getDouble("ck").toInt()
+            metricsSection.addView(Ui.metricRow(ctx, "Calories", kcal.toString(), "kcal"))
+        }
+        if (json.has("ah")) {
+            val avgHr = json.getDouble("ah").toInt()
+            metricsSection.addView(Ui.metricRow(ctx, "Avg HR", avgHr.toString(), "bpm"))
+        }
+        if (json.has("mh")) {
+            val maxHr = json.getDouble("mh").toInt()
+            metricsSection.addView(Ui.metricRow(ctx, "Max HR", maxHr.toString(), "bpm"))
+        }
+        if (json.has("st")) {
+            val steps = json.getLong("st")
+            metricsSection.addView(Ui.metricRow(ctx, "Steps", "%,d".format(steps), ""))
+        }
+        val hrArr = json.optJSONArray("hr")
+        if (hrArr != null && hrArr.length() > 1) {
+            metricsSection.addView(Ui.sectionSpacer(ctx, 4))
+            metricsSection.addView(Ui.sectionTitle(ctx, "Heart Rate"))
+            metricsSection.addView(buildHrGraph(ctx, hrArr))
+        }
+        metricsSection.addView(sourceRow(ctx, sourcePkg))
+        card.addView(metricsSection)
+
+        // ── Notes section (initially GONE) ───────────────────────────────────
+        notesSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        notesSection.addView(Ui.sectionTitle(ctx, "Notes"))
+        notesSection.addView(TextView(ctx).apply {
+            text = entry.narrativeText()
+            textSize = 14f
+            setTextColor(Ui.TEXT_PRIMARY)
+            setLineSpacing(Ui.dpf(ctx, 4), 1f)
+            setPadding(0, 0, 0, Ui.dp(ctx, 8))
+        })
+        val mwArr = json.optJSONArray("mw")
+        if (mwArr != null && mwArr.length() > 0) {
+            for (i in 0 until mwArr.length()) {
+                val mw = mwArr.getJSONObject(i)
+                val wodDate = mw.getString("d")
+                val wodTitle = mw.optString("t", "WOD")
+                val wodContent = mw.getString("w")
+                val wodCard = LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 12), Ui.dp(ctx, 14), Ui.dp(ctx, 12))
+                    background = GradientDrawable().apply {
+                        setColor(Ui.SURFACE_ELEVATED)
+                        cornerRadius = Ui.dpf(ctx, 10)
+                        setStroke(Ui.dp(ctx, 1), Ui.ACCENT)
+                    }
+                }
+                (wodCard.layoutParams as? LinearLayout.LayoutParams)?.setMargins(0, Ui.dp(ctx, 10), 0, 0)
+                val wodIcon = if (wodTitle.equals("WOD", ignoreCase = true)) "🔥" else "📅"
+                wodCard.addView(TextView(ctx).apply {
+                    text = "$wodIcon  $wodTitle  ·  $wodDate"
+                    textSize = 13f
+                    setTextColor(Ui.ACCENT)
+                    typeface = Typeface.DEFAULT_BOLD
+                    setPadding(0, 0, 0, Ui.dp(ctx, 6))
+                })
+                wodCard.addView(TextView(ctx).apply {
+                    text = wodContent
+                    textSize = 14f
+                    setTextColor(Ui.TEXT_PRIMARY)
+                    setLineSpacing(Ui.dpf(ctx, 4), 1f)
+                    setPadding(0, 0, 0, Ui.dp(ctx, 2))
+                })
+                notesSection.addView(wodCard)
+            }
+        }
+        card.addView(notesSection)
+
+        return card
+    }
+
+    // ── Collapsible sleep card ───────────────────────────────────────────────
+
+    private fun buildCollapsibleSleepCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onOpenEditor: () -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.getLong("sm")
+        val endMs   = json.getLong("em")
+        val sourcePkg = json.optString("sp", "")
+        val source    = SourceBrands.displayName(sourcePkg)
+        val totalMin = (endMs - startMs) / 60_000
+        val displayTitle = entry.customTitle ?: "Sleep"
+
+        var collapseState = 0
+        lateinit var chevron: TextView
+        lateinit var metricsSection: LinearLayout
+        lateinit var notesSection: LinearLayout
+
+        fun toggle() {
+            collapseState = (collapseState + 1) % 3
+            when (collapseState) {
+                0 -> { metricsSection.visibility = View.GONE; notesSection.visibility = View.GONE; chevron.text = "▶" }
+                1 -> { metricsSection.visibility = View.VISIBLE; notesSection.visibility = View.GONE; chevron.text = "▼" }
+                2 -> { metricsSection.visibility = View.VISIBLE; notesSection.visibility = View.VISIBLE; chevron.text = "⏬" }
+            }
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = Ui.cardBg(Ui.dpf(ctx, 16))
+            isClickable = true
+            setOnClickListener { onOpenEditor() }
+        }
+
+        // ── Header ──────────────────────────────────────────────────────────
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = "😴"; textSize = 20f })
+        header.addView(TextView(ctx).apply {
+            text = "  $displayTitle"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        header.addView(TextView(ctx).apply {
+            text = "${timeFmt.format(Date(startMs))}  ·  "
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        val iconSize = Ui.dp(ctx, 14)
+        header.addView(android.widget.ImageView(ctx).apply {
+            setImageResource(SourceBrands.iconResId(sourcePkg))
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { gravity = Gravity.CENTER_VERTICAL }
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        })
+        chevron = TextView(ctx).apply {
+            text = "▶"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(Ui.dp(ctx, 8), 0, 0, 0)
+            setOnClickListener { toggle() }
+        }
+        header.addView(chevron)
+        card.addView(header)
+
+        // ── Metrics section (initially GONE) ─────────────────────────────────
+        metricsSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        metricsSection.addView(Ui.sectionSpacer(ctx, 10))
+        metricsSection.addView(Ui.sectionTitle(ctx, "Metrics"))
+        metricsSection.addView(Ui.metricRow(ctx, "Duration", fmtDur(totalMin), ""))
+
+        val stagesArr = json.optJSONArray("sg")
+        if (stagesArr != null && stagesArr.length() > 0) {
+            metricsSection.addView(Ui.sectionTitle(ctx, "Sleep Stages"))
+            val stageTotals = linkedMapOf<String, Long>()
+            for (i in 0 until stagesArr.length()) {
+                val s = stagesArr.getJSONObject(i)
+                val stageStart = s.getLong("sm")
+                val stageEnd   = s.getLong("em")
+                val name = CalendarHelper.SLEEP_STAGES[s.optInt("sc", 0)] ?: "Unknown"
+                stageTotals[name] = (stageTotals[name] ?: 0L) + (stageEnd - stageStart) / 60_000
+            }
+            val totalStageMin = stageTotals.values.sum().coerceAtLeast(1L)
+
+            val barHeight = Ui.dp(ctx, 8)
+            val bar = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, barHeight
+                ).also { it.setMargins(0, Ui.dp(ctx, 4), 0, Ui.dp(ctx, 8)) }
+                background = Ui.cardBg(Ui.dpf(ctx, 4), fillColor = Ui.SURFACE_ELEVATED, borderColor = android.graphics.Color.TRANSPARENT)
+                clipChildren = true
+            }
+            val stageOrder = listOf("Deep Sleep", "REM", "Light Sleep", "Awake", "Out of Bed", "Sleeping", "Unknown")
+            for (name in stageOrder) {
+                val dur = stageTotals[name] ?: continue
+                val weight = (dur.toFloat() / totalStageMin).coerceAtLeast(0.02f)
+                val segment = View(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, barHeight, weight)
+                    setBackgroundColor(stageColor(name))
+                }
+                bar.addView(segment)
+            }
+            metricsSection.addView(bar)
+
+            for (name in stageOrder) {
+                val durMin = stageTotals[name] ?: continue
+                metricsSection.addView(Ui.sleepStageRow(ctx, name, stageColor(name), fmtDur(durMin), durMin.toFloat() / totalStageMin))
+            }
+        }
+        metricsSection.addView(sourceRow(ctx, sourcePkg))
+        card.addView(metricsSection)
+
+        // ── Notes section (initially GONE) ───────────────────────────────────
+        notesSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        notesSection.addView(Ui.sectionTitle(ctx, "Notes"))
+        notesSection.addView(TextView(ctx).apply {
+            text = entry.narrativeText()
+            textSize = 14f
+            setTextColor(Ui.TEXT_PRIMARY)
+            setLineSpacing(Ui.dpf(ctx, 4), 1f)
+            setPadding(0, 0, 0, Ui.dp(ctx, 8))
+        })
+        card.addView(notesSection)
+
+        return card
+    }
+
+    // ── Collapsible WOD card ─────────────────────────────────────────────────
+
+    private fun buildCollapsibleWodCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onOpenEditor: () -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.optLong("sm", 0L)
+        val isFuture = startMs > System.currentTimeMillis()
+        val displayTitle = entry.customTitle ?: "WOD"
+
+        var expanded = false
+        lateinit var chevron: TextView
+        lateinit var contentSection: LinearLayout
+
+        fun toggle() {
+            expanded = !expanded
+            contentSection.visibility = if (expanded) View.VISIBLE else View.GONE
+            chevron.text = if (expanded) "▼" else "▶"
+        }
+
+        val cardBg = if (isFuture) {
+            GradientDrawable().apply {
+                setColor(POTENTIAL_BG)
+                cornerRadius = Ui.dpf(ctx, 16)
+                setStroke(Ui.dp(ctx, 1), Ui.ACCENT)
+            }
+        } else {
+            Ui.cardBg(Ui.dpf(ctx, 16))
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = cardBg
+            isClickable = true
+            setOnClickListener { onOpenEditor() }
+        }
+
+        // ── Header ──────────────────────────────────────────────────────────
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = "🔥"; textSize = 20f })
+        header.addView(TextView(ctx).apply {
+            text = "  $displayTitle"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        if (isFuture) {
+            header.addView(TextView(ctx).apply {
+                text = "  POTENTIAL"
+                textSize = 9f
+                setTextColor(Ui.ACCENT)
+                typeface = Typeface.DEFAULT_BOLD
+                letterSpacing = 0.08f
+                setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 2), Ui.dp(ctx, 8), Ui.dp(ctx, 2))
+                background = GradientDrawable().apply {
+                    setColor(Ui.ACCENT and 0x20FFFFFF.toInt())
+                    cornerRadius = Ui.dpf(ctx, 4)
+                }
+            })
+        }
+        val dateStr = json.optString("date", entry.date)
+        val timeStr = if (startMs > 0) "  ${timeFmt.format(Date(startMs))}" else ""
+        header.addView(TextView(ctx).apply {
+            text = "$dateStr$timeStr"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        chevron = TextView(ctx).apply {
+            text = "▶"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(Ui.dp(ctx, 8), 0, 0, 0)
+            setOnClickListener { toggle() }
+        }
+        header.addView(chevron)
+        card.addView(header)
+
+        // ── Content section (initially GONE) ─────────────────────────────────
+        contentSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        contentSection.addView(Ui.sectionSpacer(ctx, 10))
+        contentSection.addView(TextView(ctx).apply {
+            text = entry.narrativeText()
+            textSize = 14f
+            setTextColor(if (isFuture) Ui.TEXT_SECONDARY else Ui.TEXT_PRIMARY)
+            setLineSpacing(Ui.dpf(ctx, 4), 1f)
+            setPadding(0, 0, 0, Ui.dp(ctx, 8))
+        })
+        card.addView(contentSection)
+
+        return card
+    }
+
+    // ── Collapsible unknown card ─────────────────────────────────────────────
+
+    private fun buildCollapsibleUnknownCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        onOpenEditor: () -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.optLong("sm", 0L)
+        val sourcePkg = json.optString("sp", "")
+        val source    = SourceBrands.displayName(sourcePkg)
+        val displayTitle = entry.customTitle ?: "Activity"
+
+        var expanded = false
+        lateinit var chevron: TextView
+        lateinit var notesSection: LinearLayout
+
+        fun toggle() {
+            expanded = !expanded
+            notesSection.visibility = if (expanded) View.VISIBLE else View.GONE
+            chevron.text = if (expanded) "▼" else "▶"
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = Ui.cardBg(Ui.dpf(ctx, 16))
+            isClickable = true
+            setOnClickListener { onOpenEditor() }
+        }
+
+        // ── Header ──────────────────────────────────────────────────────────
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = "📋"; textSize = 20f })
+        header.addView(TextView(ctx).apply {
+            text = "  $displayTitle"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        header.addView(TextView(ctx).apply {
+            text = if (startMs > 0) timeFmt.format(Date(startMs)) else ""
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        chevron = TextView(ctx).apply {
+            text = "▶"
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(Ui.dp(ctx, 8), 0, 0, 0)
+            setOnClickListener { toggle() }
+        }
+        header.addView(chevron)
+        card.addView(header)
+
+        // ── Notes section (initially GONE) ───────────────────────────────────
+        notesSection = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        notesSection.addView(Ui.sectionTitle(ctx, "Notes"))
+        notesSection.addView(TextView(ctx).apply {
+            text = entry.narrativeText()
+            textSize = 14f
+            setTextColor(Ui.TEXT_PRIMARY)
+        })
+        card.addView(notesSection)
+
         return card
     }
 
@@ -913,6 +1411,7 @@ object JournalEntryView {
         val sourcePkg = json.optString("sp", "")
         val source = SourceBrands.displayName(sourcePkg)
         val (emoji, typeLabel) = CalendarHelper.EXERCISE_TYPES[typeCode] ?: ("🏃" to "Workout")
+        val displayTitle = entry.customTitle ?: typeLabel
 
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -920,7 +1419,32 @@ object JournalEntryView {
             background = Ui.cardBg(Ui.dpf(ctx, 16))
         }
 
-        card.addView(entryHeader(ctx, emoji, typeLabel, startMs, source, sourcePkg))
+        // Editable header
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = emoji; textSize = 20f })
+        header.addView(editableField(ctx, displayTitle, 16f, Ui.TEXT_PRIMARY,
+            InputType.TYPE_CLASS_TEXT,
+            onChanged = { v ->
+                val newTitle = v.trim().ifEmpty { null }
+                update(entry.copy(customTitle = newTitle, updatedAtMs = System.currentTimeMillis()))
+            }))
+        header.addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
+        header.addView(TextView(ctx).apply {
+            text = "${timeFmt.format(Date(startMs))}  ·  "
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        val iconSize = Ui.dp(ctx, 14)
+        header.addView(android.widget.ImageView(ctx).apply {
+            setImageResource(SourceBrands.iconResId(sourcePkg))
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { gravity = Gravity.CENTER_VERTICAL }
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        })
+        card.addView(header)
+
         card.addView(Ui.sectionSpacer(ctx, 10))
         card.addView(Ui.sectionTitle(ctx, "Metrics — tap a value to edit"))
 
@@ -1071,6 +1595,7 @@ object JournalEntryView {
         val sourcePkg = json.optString("sp", "")
         val source = SourceBrands.displayName(sourcePkg)
         val totalMin = (endMs - startMs) / 60_000
+        val displayTitle = entry.customTitle ?: "Sleep"
 
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -1078,7 +1603,31 @@ object JournalEntryView {
             background = Ui.cardBg(Ui.dpf(ctx, 16))
         }
 
-        card.addView(entryHeader(ctx, "😴", "Sleep", startMs, source, sourcePkg))
+        // Editable header
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = "😴"; textSize = 20f })
+        header.addView(editableField(ctx, displayTitle, 16f, Ui.TEXT_PRIMARY,
+            InputType.TYPE_CLASS_TEXT,
+            onChanged = { v ->
+                val newTitle = v.trim().ifEmpty { null }
+                update(entry.copy(customTitle = newTitle, updatedAtMs = System.currentTimeMillis()))
+            }))
+        header.addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
+        header.addView(TextView(ctx).apply {
+            text = "${timeFmt.format(Date(startMs))}  ·  "
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        val iconSize = Ui.dp(ctx, 14)
+        header.addView(android.widget.ImageView(ctx).apply {
+            setImageResource(SourceBrands.iconResId(sourcePkg))
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { gravity = Gravity.CENTER_VERTICAL }
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        })
+        card.addView(header)
         card.addView(Ui.sectionSpacer(ctx, 10))
         card.addView(Ui.sectionTitle(ctx, "Metrics — tap a value to edit"))
 
@@ -1206,18 +1755,19 @@ object JournalEntryView {
             background = cardBg
         }
 
-        // Header
+        // Editable header
+        val displayTitle = entry.customTitle ?: "WOD"
         val header = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
         header.addView(TextView(ctx).apply { text = "🔥"; textSize = 20f })
-        header.addView(TextView(ctx).apply {
-            text = "  WOD"
-            textSize = 16f
-            setTextColor(Ui.TEXT_PRIMARY)
-            typeface = Typeface.DEFAULT_BOLD
-        })
+        header.addView(editableField(ctx, displayTitle, 16f, Ui.TEXT_PRIMARY,
+            InputType.TYPE_CLASS_TEXT,
+            onChanged = { v ->
+                val newTitle = v.trim().ifEmpty { null }
+                update(entry.copy(customTitle = newTitle, updatedAtMs = System.currentTimeMillis()))
+            }))
         if (isFuture) {
             header.addView(TextView(ctx).apply {
                 text = "  POTENTIAL"
@@ -1271,13 +1821,40 @@ object JournalEntryView {
         val sourcePkg = json.optString("sp", "")
         val source = SourceBrands.displayName(sourcePkg)
 
+        val displayTitle = entry.customTitle ?: "Activity"
+
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
             background = Ui.cardBg(Ui.dpf(ctx, 16))
         }
 
-        card.addView(entryHeader(ctx, "📋", "Activity", startMs, source, sourcePkg))
+        // Editable header
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = "📋"; textSize = 20f })
+        header.addView(editableField(ctx, displayTitle, 16f, Ui.TEXT_PRIMARY,
+            InputType.TYPE_CLASS_TEXT,
+            onChanged = { v ->
+                val newTitle = v.trim().ifEmpty { null }
+                update(entry.copy(customTitle = newTitle, updatedAtMs = System.currentTimeMillis()))
+            }))
+        header.addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
+        header.addView(TextView(ctx).apply {
+            text = if (startMs > 0) timeFmt.format(Date(startMs)) else ""
+            textSize = 11f
+            setTextColor(Ui.TEXT_MUTED)
+        })
+        val iconSize = Ui.dp(ctx, 14)
+        header.addView(android.widget.ImageView(ctx).apply {
+            setImageResource(SourceBrands.iconResId(sourcePkg))
+            layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply { gravity = Gravity.CENTER_VERTICAL }
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        })
+        card.addView(header)
+
         card.addView(Ui.sectionTitle(ctx, "Notes — tap to edit"))
         card.addView(editableTextArea(ctx, entry.narrativeText(), 14f, Ui.TEXT_PRIMARY,
             onChanged = { v ->

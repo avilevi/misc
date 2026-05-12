@@ -281,17 +281,7 @@ class JournalActivity : ComponentActivity() {
             if (i > 0) {
                 dayEntriesContainer.addView(Ui.cardRule(this))
             }
-            val cardView = JournalEntryView.build(this, entry) { updated ->
-                if (updated != null) {
-                    JournalStorage.updateEntry(this, updated)
-                } else {
-                    JournalStorage.deleteEntry(this, entry.id)
-                }
-                refreshDayEntries()
-                refreshCalendar()
-            }
-            cardView.isClickable = true
-            cardView.setOnClickListener {
+            val cardView = JournalEntryView.buildCollapsible(this, entry) {
                 val intent = Intent(this, EntryEditActivity::class.java).apply {
                     putExtra("entryJson", entry.toJson().toString())
                 }
