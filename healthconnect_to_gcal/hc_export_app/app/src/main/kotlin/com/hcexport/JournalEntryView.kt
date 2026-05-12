@@ -991,6 +991,8 @@ object JournalEntryView {
     ): FrameLayout {
         var isEditing = false
         val container = FrameLayout(ctx)
+        val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
         val textView = TextView(ctx).apply {
             this.text = text
             this.textSize = textSize
@@ -998,7 +1000,31 @@ object JournalEntryView {
             if (bold) typeface = Typeface.DEFAULT_BOLD
             setPadding(Ui.dp(ctx, 6), Ui.dp(ctx, 4), Ui.dp(ctx, 6), Ui.dp(ctx, 4))
         }
-        val editText = EditText(ctx).apply {
+
+        lateinit var editText: EditText
+
+        fun enterEdit() {
+            if (isEditing) return
+            isEditing = true
+            textView.visibility = View.GONE
+            editText.visibility = View.VISIBLE
+            editText.requestFocus()
+            editText.setSelection(editText.text.length)
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        fun exitEdit() {
+            if (!isEditing) return
+            isEditing = false
+            val newText = editText.text.toString().trim()
+            textView.text = newText
+            editText.visibility = View.GONE
+            textView.visibility = View.VISIBLE
+            imm.hideSoftInputFromWindow(editText.windowToken, 0)
+            if (newText != text) onChanged(newText)
+        }
+
+        editText = EditText(ctx).apply {
             setText(text)
             this.textSize = textSize
             setTextColor(Ui.TEXT_PRIMARY)
@@ -1013,29 +1039,6 @@ object JournalEntryView {
             setOnFocusChangeListener { _, hasFocus ->
                 if (!hasFocus && isEditing) exitEdit()
             }
-        }
-
-        fun enterEdit() {
-            if (isEditing) return
-            isEditing = true
-            textView.visibility = View.GONE
-            editText.visibility = View.VISIBLE
-            editText.requestFocus()
-            editText.setSelection(editText.text.length)
-            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
-        }
-
-        fun exitEdit() {
-            if (!isEditing) return
-            isEditing = false
-            val newText = editText.text.toString().trim()
-            textView.text = newText
-            editText.visibility = View.GONE
-            textView.visibility = View.VISIBLE
-            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(editText.windowToken, 0)
-            if (newText != text) onChanged(newText)
         }
 
         container.addView(textView)
@@ -1056,6 +1059,8 @@ object JournalEntryView {
     ): FrameLayout {
         var isEditing = false
         val container = FrameLayout(ctx)
+        val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
         val textView = TextView(ctx).apply {
             this.text = text
             this.textSize = textSize
@@ -1065,7 +1070,33 @@ object JournalEntryView {
             movementMethod = LinkMovementMethod.getInstance()
             setPadding(Ui.dp(ctx, 4), Ui.dp(ctx, 6), Ui.dp(ctx, 4), Ui.dp(ctx, 6))
         }
-        val editText = EditText(ctx).apply {
+
+        lateinit var editText: EditText
+
+        fun enterEdit() {
+            if (isEditing) return
+            isEditing = true
+            textView.visibility = View.GONE
+            editText.visibility = View.VISIBLE
+            editText.requestFocus()
+            editText.setSelection(editText.text.length)
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        fun exitEdit() {
+            if (!isEditing) return
+            isEditing = false
+            val newText = editText.text.toString().trim()
+            textView.text = newText
+            editText.visibility = View.GONE
+            textView.visibility = View.VISIBLE
+            imm.hideSoftInputFromWindow(editText.windowToken, 0)
+            if (newText != text) {
+                onChanged(newText)
+            }
+        }
+
+        editText = EditText(ctx).apply {
             setText(text)
             this.textSize = textSize
             setTextColor(Ui.TEXT_PRIMARY)
@@ -1080,33 +1111,6 @@ object JournalEntryView {
             }
         }
 
-        fun enterEdit() {
-            if (isEditing) return
-            isEditing = true
-            textView.visibility = View.GONE
-            editText.visibility = View.VISIBLE
-            editText.requestFocus()
-            editText.setSelection(editText.text.length)
-            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
-        }
-
-        fun exitEdit() {
-            if (!isEditing) return
-            isEditing = false
-            val newText = editText.text.toString().trim()
-            textView.text = newText
-            editText.visibility = View.GONE
-            textView.visibility = View.VISIBLE
-            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(editText.windowToken, 0)
-            if (newText != text) {
-                onChanged(newText)
-            }
-        }
-
-        // Tap the whole container to enter edit (but links in the textView still work
-        // because the link movement method intercepts those touches)
         container.addView(textView)
         container.addView(editText)
         container.isClickable = true
