@@ -49,6 +49,17 @@ data class JournalEntry(
         )
     }
 
+    fun editMergedWod(index: Int, newContent: String): JournalEntry {
+        val base = JSONObject(effectiveDataJson())
+        val mwArr = base.getJSONArray("mw")
+        val obj = mwArr.getJSONObject(index)
+        obj.put("w", newContent)
+        return copy(
+            customDataJson = base.toString(),
+            updatedAtMs = System.currentTimeMillis(),
+        )
+    }
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)
         put("dt", date)

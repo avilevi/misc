@@ -13,7 +13,10 @@ import android.text.util.Linkify
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import org.json.JSONArray
@@ -954,6 +957,619 @@ object JournalEntryView {
             return min * 60 + sec
         }
         return raw.toLongOrNull()
+    }
+
+    // ── Editable card builders (for EntryEditActivity) ─────────────────────
+
+    fun buildEditable(
+        ctx: android.content.Context,
+        initialEntry: JournalEntry,
+        onEntryUpdated: (JournalEntry) -> Unit,
+    ): View {
+        var entry = initialEntry
+        fun update(e: JournalEntry) { entry = e; onEntryUpdated(e) }
+
+        return when (entry.entryType) {
+            "exercise" -> buildEditableExerciseCard(ctx, entry, ::update)
+            "sleep"    -> buildEditableSleepCard(ctx, entry, ::update)
+            "wod"      -> buildEditableWodCard(ctx, entry, ::update)
+            else       -> buildEditableUnknownCard(ctx, entry, ::update)
+        }
+    }
+
+    // ── Inline editing primitives ──────────────────────────────────────────
+
+    /** FrameLayout that swaps a TextView for a highlighted EditText on tap. */
+    private fun editableField(
+        ctx: android.content.Context,
+        text: String,
+        textSize: Float,
+        textColor: Int,
+        inputType: Int,
+        bold: Boolean = true,
+        onChanged: (String) -> Unit,
+    ): FrameLayout {
+        var isEditing = false
+        val container = FrameLayout(ctx)
+        val textView = TextView(ctx).apply {
+            this.text = text
+            this.textSize = textSize
+            setTextColor(textColor)
+            if (bold) typeface = Typeface.DEFAULT_BOLD
+            setPadding(Ui.dp(ctx, 6), Ui.dp(ctx, 4), Ui.dp(ctx, 6), Ui.dp(ctx, 4))
+        }
+        val editText = EditText(ctx).apply {
+            setText(text)
+            this.textSize = textSize
+            setTextColor(Ui.TEXT_PRIMARY)
+            this.inputType = inputType
+            setPadding(Ui.dp(ctx, 10), Ui.dp(ctx, 10), Ui.dp(ctx, 10), Ui.dp(ctx, 10))
+            background = Ui.editFieldBg(Ui.dpf(ctx, 10))
+            visibility = View.GONE
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) { exitEdit(); true }
+                else false
+            }
+            setOnFocusChangeListener { _, hasFocus ->
+                if (!hasFocus && isEditing) exitEdit()
+            }
+        }
+
+        fun enterEdit() {
+            if (isEditing) return
+            isEditing = true
+            textView.visibility = View.GONE
+            editText.visibility = View.VISIBLE
+            editText.requestFocus()
+            editText.setSelection(editText.text.length)
+            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        fun exitEdit() {
+            if (!isEditing) return
+            isEditing = false
+            val newText = editText.text.toString().trim()
+            textView.text = newText
+            editText.visibility = View.GONE
+            textView.visibility = View.VISIBLE
+            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(editText.windowToken, 0)
+            if (newText != text) onChanged(newText)
+        }
+
+        container.addView(textView)
+        container.addView(editText)
+        container.isClickable = true
+        container.setOnClickListener { enterEdit() }
+
+        return container
+    }
+
+    /** Multiline editable area for notes / WOD content. Exits edit on focus loss. */
+    private fun editableTextArea(
+        ctx: android.content.Context,
+        text: String,
+        textSize: Float,
+        textColor: Int,
+        onChanged: (String) -> Unit,
+    ): FrameLayout {
+        var isEditing = false
+        val container = FrameLayout(ctx)
+        val textView = TextView(ctx).apply {
+            this.text = text
+            this.textSize = textSize
+            setTextColor(textColor)
+            setLineSpacing(Ui.dpf(ctx, 4), 1f)
+            Linkify.addLinks(this, Linkify.WEB_URLS)
+            movementMethod = LinkMovementMethod.getInstance()
+            setPadding(Ui.dp(ctx, 4), Ui.dp(ctx, 6), Ui.dp(ctx, 4), Ui.dp(ctx, 6))
+        }
+        val editText = EditText(ctx).apply {
+            setText(text)
+            this.textSize = textSize
+            setTextColor(Ui.TEXT_PRIMARY)
+            minLines = 4
+            gravity = Gravity.START or Gravity.TOP
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            setPadding(Ui.dp(ctx, 12), Ui.dp(ctx, 12), Ui.dp(ctx, 12), Ui.dp(ctx, 12))
+            background = Ui.editFieldBg(Ui.dpf(ctx, 10))
+            visibility = View.GONE
+            setOnFocusChangeListener { _, hasFocus ->
+                if (!hasFocus && isEditing) exitEdit()
+            }
+        }
+
+        fun enterEdit() {
+            if (isEditing) return
+            isEditing = true
+            textView.visibility = View.GONE
+            editText.visibility = View.VISIBLE
+            editText.requestFocus()
+            editText.setSelection(editText.text.length)
+            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        fun exitEdit() {
+            if (!isEditing) return
+            isEditing = false
+            val newText = editText.text.toString().trim()
+            textView.text = newText
+            editText.visibility = View.GONE
+            textView.visibility = View.VISIBLE
+            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(editText.windowToken, 0)
+            if (newText != text) {
+                onChanged(newText)
+            }
+        }
+
+        // Tap the whole container to enter edit (but links in the textView still work
+        // because the link movement method intercepts those touches)
+        container.addView(textView)
+        container.addView(editText)
+        container.isClickable = true
+        container.setOnClickListener { enterEdit() }
+
+        return container
+    }
+
+    /** Metric row where the value is editable inline. */
+    private fun editableMetricRow(
+        ctx: android.content.Context,
+        label: String,
+        value: String,
+        unit: String,
+        inputType: Int = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL,
+        onChanged: (String) -> Unit,
+    ): LinearLayout {
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, Ui.dp(ctx, 6), 0, Ui.dp(ctx, 6))
+        }
+
+        row.addView(TextView(ctx).apply {
+            text = label
+            textSize = 14f
+            setTextColor(Ui.TEXT_SECONDARY)
+        })
+        row.addView(View(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+        })
+
+        val editField = editableField(ctx, value, 14f, Ui.TEXT_PRIMARY, inputType, bold = true, onChanged = onChanged)
+        row.addView(editField)
+
+        if (unit.isNotEmpty()) {
+            row.addView(TextView(ctx).apply {
+                text = " $unit"
+                textSize = 13f
+                setTextColor(Ui.TEXT_MUTED)
+            })
+        }
+
+        row.isClickable = true
+        row.isFocusable = true
+        row.setOnClickListener {
+            val childAt = editField.getChildAt(0)
+            if (childAt != null && childAt.visibility == View.VISIBLE) {
+                editField.performClick()
+            }
+        }
+
+        return row
+    }
+
+    // ── Editable exercise card ─────────────────────────────────────────────
+
+    private fun buildEditableExerciseCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        update: (JournalEntry) -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.getLong("sm")
+        val endMs = json.getLong("em")
+        val typeCode = json.optInt("tc", -1)
+        val sourcePkg = json.optString("sp", "")
+        val source = SourceBrands.displayName(sourcePkg)
+        val (emoji, typeLabel) = CalendarHelper.EXERCISE_TYPES[typeCode] ?: ("🏃" to "Workout")
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = Ui.cardBg(Ui.dpf(ctx, 16))
+        }
+
+        card.addView(entryHeader(ctx, emoji, typeLabel, startMs, source, sourcePkg))
+        card.addView(Ui.sectionSpacer(ctx, 10))
+        card.addView(Ui.sectionTitle(ctx, "Metrics — tap a value to edit"))
+
+        // Duration
+        card.addView(editableMetricRow(ctx, "Duration", fmtDurMinutesRaw((endMs - startMs) / 60_000), "min",
+            onChanged = { v ->
+                val m = v.toLongOrNull() ?: return@editableMetricRow
+                update(entry.editDataField("em", (startMs + m * 60_000).toString()))
+            }))
+
+        // Distance
+        if (json.has("dm")) {
+            val km = json.getDouble("dm") / 1000.0
+            card.addView(editableMetricRow(ctx, "Distance", "%.2f".format(km), "km",
+                onChanged = { v ->
+                    val k = v.toDoubleOrNull() ?: return@editableMetricRow
+                    update(entry.editDataField("dm", (k * 1000).toString()))
+                }))
+        }
+
+        // Pace
+        if (json.has("pp")) {
+            val pace = json.getDouble("pp")
+            card.addView(editableMetricRow(ctx, "Pace", fmtPaceRaw(pace), "/km",
+                inputType = InputType.TYPE_CLASS_TEXT,
+                onChanged = { v ->
+                    val sec = parsePaceToSec(v) ?: return@editableMetricRow
+                    update(entry.editDataField("pp", sec.toString()))
+                }))
+        }
+
+        // Calories
+        if (json.has("ck")) {
+            val kcal = json.getDouble("ck").toInt()
+            card.addView(editableMetricRow(ctx, "Calories", kcal.toString(), "kcal",
+                onChanged = { v ->
+                    val k = v.toDoubleOrNull() ?: return@editableMetricRow
+                    update(entry.editDataField("ck", k.toString()))
+                }))
+        }
+
+        // Avg HR
+        if (json.has("ah")) {
+            val avgHr = json.getDouble("ah").toInt()
+            card.addView(editableMetricRow(ctx, "Avg HR", avgHr.toString(), "bpm",
+                onChanged = { v ->
+                    val h = v.toDoubleOrNull() ?: return@editableMetricRow
+                    update(entry.editDataField("ah", h.toString()))
+                }))
+        }
+
+        // Max HR
+        if (json.has("mh")) {
+            val maxHr = json.getDouble("mh").toInt()
+            card.addView(editableMetricRow(ctx, "Max HR", maxHr.toString(), "bpm",
+                onChanged = { v ->
+                    val h = v.toDoubleOrNull() ?: return@editableMetricRow
+                    update(entry.editDataField("mh", h.toString()))
+                }))
+        }
+
+        // Steps
+        if (json.has("st")) {
+            val steps = json.getLong("st")
+            card.addView(editableMetricRow(ctx, "Steps", "%,d".format(steps), "",
+                onChanged = { v ->
+                    val s = v.toLongOrNull() ?: return@editableMetricRow
+                    update(entry.editDataField("st", s.toString()))
+                }))
+        }
+
+        // HR graph (read-only)
+        val hrArr = json.optJSONArray("hr")
+        if (hrArr != null && hrArr.length() > 1) {
+            card.addView(Ui.sectionSpacer(ctx, 4))
+            card.addView(Ui.sectionTitle(ctx, "Heart Rate"))
+            card.addView(buildHrGraph(ctx, hrArr))
+        }
+
+        // Source
+        card.addView(sourceRow(ctx, sourcePkg))
+
+        // Notes
+        card.addView(Ui.sectionTitle(ctx, "Notes — tap to edit"))
+        card.addView(editableTextArea(ctx, entry.narrativeText(), 14f, Ui.TEXT_PRIMARY,
+            onChanged = { v ->
+                val autoNarrative = DiaryNarrator.generate(entry)
+                val cn = when {
+                    v.isEmpty() -> ""
+                    v != autoNarrative -> v
+                    else -> null
+                }
+                update(entry.copy(customNarrative = cn, updatedAtMs = System.currentTimeMillis()))
+            }))
+
+        // Merged WOD section
+        val mwArr = json.optJSONArray("mw")
+        if (mwArr != null && mwArr.length() > 0) {
+            for (i in 0 until mwArr.length()) {
+                val mw = mwArr.getJSONObject(i)
+                val wodDate = mw.getString("d")
+                val wodTitle = mw.optString("t", "WOD")
+                val wodContent = mw.getString("w")
+                val wodIdx = i // capture for lambda
+
+                val wodCard = LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 12), Ui.dp(ctx, 14), Ui.dp(ctx, 12))
+                    background = GradientDrawable().apply {
+                        setColor(Ui.SURFACE_ELEVATED)
+                        cornerRadius = Ui.dpf(ctx, 10)
+                        setStroke(Ui.dp(ctx, 1), Ui.ACCENT)
+                    }
+                }
+                (wodCard.layoutParams as? LinearLayout.LayoutParams)?.setMargins(0, Ui.dp(ctx, 10), 0, 0)
+
+                val icon = if (wodTitle.equals("WOD", ignoreCase = true)) "🔥" else "📅"
+                wodCard.addView(TextView(ctx).apply {
+                    text = "$icon  $wodTitle  ·  $wodDate  — tap content to edit"
+                    textSize = 13f
+                    setTextColor(Ui.ACCENT)
+                    typeface = Typeface.DEFAULT_BOLD
+                    setPadding(0, 0, 0, Ui.dp(ctx, 6))
+                })
+
+                wodCard.addView(editableTextArea(ctx, wodContent, 14f, Ui.TEXT_PRIMARY,
+                    onChanged = { v ->
+                        update(entry.editMergedWod(wodIdx, v))
+                    }))
+
+                card.addView(wodCard)
+            }
+        }
+
+        return card
+    }
+
+    // ── Editable sleep card ────────────────────────────────────────────────
+
+    private fun buildEditableSleepCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        update: (JournalEntry) -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.getLong("sm")
+        val endMs = json.getLong("em")
+        val sourcePkg = json.optString("sp", "")
+        val source = SourceBrands.displayName(sourcePkg)
+        val totalMin = (endMs - startMs) / 60_000
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = Ui.cardBg(Ui.dpf(ctx, 16))
+        }
+
+        card.addView(entryHeader(ctx, "😴", "Sleep", startMs, source, sourcePkg))
+        card.addView(Ui.sectionSpacer(ctx, 10))
+        card.addView(Ui.sectionTitle(ctx, "Metrics — tap a value to edit"))
+
+        // Total duration
+        card.addView(editableMetricRow(ctx, "Duration", totalMin.toString(), "min",
+            onChanged = { v ->
+                val m = v.toLongOrNull() ?: return@editableMetricRow
+                update(entry.editDataField("em", (startMs + m * 60_000).toString()))
+            }))
+
+        // Sleep stages
+        val stagesArr = json.optJSONArray("sg")
+        if (stagesArr != null && stagesArr.length() > 0) {
+            card.addView(Ui.sectionTitle(ctx, "Sleep Stages"))
+
+            val stageTotals = linkedMapOf<String, Long>()
+            for (i in 0 until stagesArr.length()) {
+                val s = stagesArr.getJSONObject(i)
+                val stageStart = s.getLong("sm")
+                val stageEnd = s.getLong("em")
+                val name = CalendarHelper.SLEEP_STAGES[s.optInt("sc", 0)] ?: "Unknown"
+                stageTotals[name] = (stageTotals[name] ?: 0L) + (stageEnd - stageStart) / 60_000
+            }
+            val totalStageMin = stageTotals.values.sum().coerceAtLeast(1L)
+
+            // Stacked bar (read-only decoration)
+            val barHeight = Ui.dp(ctx, 8)
+            val bar = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, barHeight
+                ).also { it.setMargins(0, Ui.dp(ctx, 4), 0, Ui.dp(ctx, 8)) }
+                background = Ui.cardBg(Ui.dpf(ctx, 4), fillColor = Ui.SURFACE_ELEVATED, borderColor = android.graphics.Color.TRANSPARENT)
+                clipChildren = true
+            }
+            val stageOrder = listOf("Deep Sleep", "REM", "Light Sleep", "Awake", "Out of Bed", "Sleeping", "Unknown")
+            for (name in stageOrder) {
+                val dur = stageTotals[name] ?: continue
+                val weight = (dur.toFloat() / totalStageMin).coerceAtLeast(0.02f)
+                val segment = View(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, barHeight, weight)
+                    setBackgroundColor(stageColor(name))
+                }
+                bar.addView(segment)
+            }
+            card.addView(bar)
+
+            // Per-stage editable rows
+            for (name in stageOrder) {
+                val durMin = stageTotals[name] ?: continue
+                val row = LinearLayout(ctx).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, Ui.dp(ctx, 6), 0, Ui.dp(ctx, 6))
+                }
+                // Colored dot
+                val dot = Ui.dp(ctx, 10)
+                row.addView(View(ctx).apply {
+                    layoutParams = LinearLayout.LayoutParams(dot, dot).also { it.setMargins(0, 0, Ui.dp(ctx, 10), 0) }
+                    background = GradientDrawable().apply { setColor(stageColor(name)); shape = GradientDrawable.OVAL; setSize(dot, dot) }
+                })
+                // Label
+                row.addView(TextView(ctx).apply {
+                    text = name; textSize = 14f; setTextColor(Ui.TEXT_PRIMARY)
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                })
+                // Editable duration
+                val editField = editableField(ctx, durMin.toString(), 14f, Ui.TEXT_PRIMARY,
+                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL,
+                    onChanged = { v ->
+                        val m = v.toLongOrNull() ?: return@editableField
+                        update(updateSleepStageInline(entry, name, m))
+                    })
+                row.addView(editField)
+                row.addView(TextView(ctx).apply { text = " min"; textSize = 13f; setTextColor(Ui.TEXT_MUTED) })
+                row.isClickable = true; row.isFocusable = true
+                row.setOnClickListener { editField.performClick() }
+                card.addView(row)
+            }
+        }
+
+        // Source
+        card.addView(sourceRow(ctx, sourcePkg))
+
+        // Notes
+        card.addView(Ui.sectionTitle(ctx, "Notes — tap to edit"))
+        card.addView(editableTextArea(ctx, entry.narrativeText(), 14f, Ui.TEXT_PRIMARY,
+            onChanged = { v ->
+                val autoNarrative = DiaryNarrator.generate(entry)
+                val cn = when {
+                    v.isEmpty() -> ""
+                    v != autoNarrative -> v
+                    else -> null
+                }
+                update(entry.copy(customNarrative = cn, updatedAtMs = System.currentTimeMillis()))
+            }))
+
+        return card
+    }
+
+    // ── Editable WOD card ──────────────────────────────────────────────────
+
+    private fun buildEditableWodCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        update: (JournalEntry) -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.optLong("sm", 0L)
+        val isFuture = startMs > System.currentTimeMillis()
+
+        val cardBg = if (isFuture) {
+            GradientDrawable().apply {
+                setColor(POTENTIAL_BG)
+                cornerRadius = Ui.dpf(ctx, 16)
+                setStroke(Ui.dp(ctx, 1), Ui.ACCENT)
+            }
+        } else {
+            Ui.cardBg(Ui.dpf(ctx, 16))
+        }
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = cardBg
+        }
+
+        // Header
+        val header = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(TextView(ctx).apply { text = "🔥"; textSize = 20f })
+        header.addView(TextView(ctx).apply {
+            text = "  WOD"
+            textSize = 16f
+            setTextColor(Ui.TEXT_PRIMARY)
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        if (isFuture) {
+            header.addView(TextView(ctx).apply {
+                text = "  POTENTIAL"
+                textSize = 9f
+                setTextColor(Ui.ACCENT)
+                typeface = Typeface.DEFAULT_BOLD
+                letterSpacing = 0.08f
+                setPadding(Ui.dp(ctx, 8), Ui.dp(ctx, 2), Ui.dp(ctx, 8), Ui.dp(ctx, 2))
+                background = GradientDrawable().apply {
+                    setColor(Ui.ACCENT and 0x20FFFFFF.toInt())
+                    cornerRadius = Ui.dpf(ctx, 4)
+                }
+            })
+        }
+        header.addView(View(ctx).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
+        header.addView(TextView(ctx).apply {
+            val dateStr = json.optString("date", entry.date)
+            val timeStr = if (startMs > 0) "  ${timeFmt.format(Date(startMs))}" else ""
+            text = "$dateStr$timeStr"
+            textSize = 11f; setTextColor(Ui.TEXT_MUTED)
+        })
+        card.addView(header)
+        card.addView(Ui.sectionSpacer(ctx, 10))
+
+        // WOD content — editable
+        card.addView(Ui.sectionTitle(ctx, "Content — tap to edit"))
+        card.addView(editableTextArea(ctx, entry.narrativeText(), 14f,
+            if (isFuture) Ui.TEXT_SECONDARY else Ui.TEXT_PRIMARY,
+            onChanged = { v ->
+                val autoNarrative = DiaryNarrator.generate(entry)
+                val cn = when {
+                    v.isEmpty() -> ""
+                    v != autoNarrative -> v
+                    else -> null
+                }
+                update(entry.copy(customNarrative = cn, updatedAtMs = System.currentTimeMillis()))
+            }))
+
+        return card
+    }
+
+    // ── Editable unknown card ──────────────────────────────────────────────
+
+    private fun buildEditableUnknownCard(
+        ctx: android.content.Context,
+        entry: JournalEntry,
+        update: (JournalEntry) -> Unit,
+    ): View {
+        val json = JSONObject(entry.effectiveDataJson())
+        val startMs = json.optLong("sm", 0L)
+        val sourcePkg = json.optString("sp", "")
+        val source = SourceBrands.displayName(sourcePkg)
+
+        val card = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 18), Ui.dp(ctx, 14))
+            background = Ui.cardBg(Ui.dpf(ctx, 16))
+        }
+
+        card.addView(entryHeader(ctx, "📋", "Activity", startMs, source, sourcePkg))
+        card.addView(Ui.sectionTitle(ctx, "Notes — tap to edit"))
+        card.addView(editableTextArea(ctx, entry.narrativeText(), 14f, Ui.TEXT_PRIMARY,
+            onChanged = { v ->
+                val autoNarrative = DiaryNarrator.generate(entry)
+                val cn = when {
+                    v.isEmpty() -> ""
+                    v != autoNarrative -> v
+                    else -> null
+                }
+                update(entry.copy(customNarrative = cn, updatedAtMs = System.currentTimeMillis()))
+            }))
+
+        return card
+    }
+
+    /** Variant of updateSleepStage that works with an entry copy (no callback). */
+    private fun updateSleepStageInline(entry: JournalEntry, stageName: String, newDurationMin: Long): JournalEntry {
+        val json = JSONObject(entry.effectiveDataJson())
+        val stagesArr = json.optJSONArray("sg") ?: return entry
+        for (i in 0 until stagesArr.length()) {
+            val s = stagesArr.getJSONObject(i)
+            val name = CalendarHelper.SLEEP_STAGES[s.optInt("sc", 0)] ?: "Unknown"
+            if (name == stageName) {
+                val oldStart = s.getLong("sm")
+                s.put("em", oldStart + newDurationMin * 60_000)
+                break
+            }
+        }
+        return entry.copy(customDataJson = json.toString(), updatedAtMs = System.currentTimeMillis())
     }
 
 }

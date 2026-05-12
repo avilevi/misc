@@ -48,6 +48,13 @@ object Ui {
             setStroke(1, borderColor)
         }
 
+    fun editFieldBg(cornerPx: Float): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(SURFACE_ELEVATED)
+            cornerRadius = cornerPx
+            setStroke(2, ACCENT)
+        }
+
     fun pillBg(fillColor: Int): GradientDrawable =
         GradientDrawable().apply {
             setColor(fillColor)

@@ -65,6 +65,10 @@
             android:name=".JournalActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".EntryEditActivity"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.hcexport.fileprovider"

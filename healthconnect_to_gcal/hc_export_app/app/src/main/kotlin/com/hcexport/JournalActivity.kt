@@ -1,5 +1,6 @@
 package com.hcexport
 
+import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
@@ -7,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -25,6 +28,26 @@ class JournalActivity : ComponentActivity() {
 
     private val dateFmt    = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val headerFmt  = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+
+    private val editEntryLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) return@registerForActivityResult
+        val data = result.data ?: return@registerForActivityResult
+        if (data.getBooleanExtra("deleted", false)) {
+            val entryId = data.getStringExtra("entryId") ?: return@registerForActivityResult
+            JournalStorage.deleteEntry(this, entryId)
+        } else {
+            val entryJson = data.getStringExtra("entryJson") ?: return@registerForActivityResult
+            try {
+                val entry = JournalEntry.fromJson(JSONObject(entryJson))
+                JournalStorage.updateEntry(this, entry)
+            } catch (_: Exception) {}
+        }
+        refreshDayEntries()
+        refreshCalendar()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -258,7 +281,7 @@ class JournalActivity : ComponentActivity() {
             if (i > 0) {
                 dayEntriesContainer.addView(Ui.cardRule(this))
             }
-            dayEntriesContainer.addView(JournalEntryView.build(this, entry) { updated ->
+            val cardView = JournalEntryView.build(this, entry) { updated ->
                 if (updated != null) {
                     JournalStorage.updateEntry(this, updated)
                 } else {
@@ -266,7 +289,15 @@ class JournalActivity : ComponentActivity() {
                 }
                 refreshDayEntries()
                 refreshCalendar()
-            })
+            }
+            cardView.isClickable = true
+            cardView.setOnClickListener {
+                val intent = Intent(this, EntryEditActivity::class.java).apply {
+                    putExtra("entryJson", entry.toJson().toString())
+                }
+                editEntryLauncher.launch(intent)
+            }
+            dayEntriesContainer.addView(cardView)
         }
     }
 
