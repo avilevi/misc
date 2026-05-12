@@ -1,6 +1,5 @@
 package com.hcexport
 
-import android.app.AlertDialog
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -93,84 +92,42 @@ object JournalEntryView {
         card.addView(Ui.sectionTitle(ctx, "Metrics"))
 
         // Duration
-        card.addView(Ui.metricRow(ctx, "Duration", fmtDur((endMs - startMs) / 60_000), "", onClick = {
-            showSimpleEditDialog(ctx, "Edit Duration", fmtDurMinutesRaw((endMs - startMs) / 60_000), "minutes", isNumeric = true,
-                onSave = { newVal ->
-                    val newMin = newVal.toLongOrNull() ?: return@showSimpleEditDialog
-                    updateEntryField(entry, "em", (startMs + newMin * 60_000).toString(), onEntryChanged)
-                })
-        }))
+        card.addView(Ui.metricRow(ctx, "Duration", fmtDur((endMs - startMs) / 60_000), ""))
 
         // Distance
         if (json.has("dm")) {
             val km = json.getDouble("dm") / 1000.0
-            card.addView(Ui.metricRow(ctx, "Distance", distFormat(km), "km", onClick = {
-                showSimpleEditDialog(ctx, "Edit Distance", "%.2f".format(km), "km", isNumeric = true,
-                    onSave = { newVal ->
-                        val newKm = newVal.toDoubleOrNull() ?: return@showSimpleEditDialog
-                        updateEntryField(entry, "dm", (newKm * 1000).toString(), onEntryChanged)
-                    })
-            }))
+            card.addView(Ui.metricRow(ctx, "Distance", distFormat(km), "km"))
         }
 
         // Pace
         if (json.has("pp")) {
             val pace = json.getDouble("pp")
-            card.addView(Ui.metricRow(ctx, "Pace", fmtPace(pace), "/km", onClick = {
-                showSimpleEditDialog(ctx, "Edit Pace", fmtPaceRaw(pace), "m:ss per km", isNumeric = false,
-                    onSave = { newVal ->
-                        val totalSec = parsePaceToSec(newVal) ?: return@showSimpleEditDialog
-                        updateEntryField(entry, "pp", totalSec.toString(), onEntryChanged)
-                    })
-            }))
+            card.addView(Ui.metricRow(ctx, "Pace", fmtPace(pace), "/km"))
         }
 
         // Calories
         if (json.has("ck")) {
             val kcal = json.getDouble("ck").toInt()
-            card.addView(Ui.metricRow(ctx, "Calories", kcal.toString(), "kcal", onClick = {
-                showSimpleEditDialog(ctx, "Edit Calories", kcal.toString(), "kcal", isNumeric = true,
-                    onSave = { newVal ->
-                        val newKcal = newVal.toDoubleOrNull() ?: return@showSimpleEditDialog
-                        updateEntryField(entry, "ck", newKcal.toString(), onEntryChanged)
-                    })
-            }))
+            card.addView(Ui.metricRow(ctx, "Calories", kcal.toString(), "kcal"))
         }
 
         // Avg HR
         if (json.has("ah")) {
             val avgHr = json.getDouble("ah").toInt()
-            card.addView(Ui.metricRow(ctx, "Avg HR", avgHr.toString(), "bpm", onClick = {
-                showSimpleEditDialog(ctx, "Edit Avg HR", avgHr.toString(), "bpm", isNumeric = true,
-                    onSave = { newVal ->
-                        val newHr = newVal.toDoubleOrNull() ?: return@showSimpleEditDialog
-                        updateEntryField(entry, "ah", newHr.toString(), onEntryChanged)
-                    })
-            }))
+            card.addView(Ui.metricRow(ctx, "Avg HR", avgHr.toString(), "bpm"))
         }
 
         // Max HR
         if (json.has("mh")) {
             val maxHr = json.getDouble("mh").toInt()
-            card.addView(Ui.metricRow(ctx, "Max HR", maxHr.toString(), "bpm", onClick = {
-                showSimpleEditDialog(ctx, "Edit Max HR", maxHr.toString(), "bpm", isNumeric = true,
-                    onSave = { newVal ->
-                        val newHr = newVal.toDoubleOrNull() ?: return@showSimpleEditDialog
-                        updateEntryField(entry, "mh", newHr.toString(), onEntryChanged)
-                    })
-            }))
+            card.addView(Ui.metricRow(ctx, "Max HR", maxHr.toString(), "bpm"))
         }
 
         // Steps
         if (json.has("st")) {
             val steps = json.getLong("st")
-            card.addView(Ui.metricRow(ctx, "Steps", "%,d".format(steps), "", onClick = {
-                showSimpleEditDialog(ctx, "Edit Steps", steps.toString(), "steps", isNumeric = true,
-                    onSave = { newVal ->
-                        val newSteps = newVal.toLongOrNull() ?: return@showSimpleEditDialog
-                        updateEntryField(entry, "st", newSteps.toString(), onEntryChanged)
-                    })
-            }))
+            card.addView(Ui.metricRow(ctx, "Steps", "%,d".format(steps), ""))
         }
 
         // HR graph
@@ -249,9 +206,6 @@ object JournalEntryView {
             }
         }
 
-        // Action links
-        card.addView(actionLinks(ctx, entry, onEntryChanged))
-
         return card
     }
 
@@ -288,13 +242,7 @@ object JournalEntryView {
         card.addView(Ui.sectionTitle(ctx, "Metrics"))
 
         // Total duration
-        card.addView(Ui.metricRow(ctx, "Duration", fmtDur(totalMin), "", onClick = {
-            showSimpleEditDialog(ctx, "Edit Duration", totalMin.toString(), "minutes", isNumeric = true,
-                onSave = { newVal ->
-                    val newMin = newVal.toLongOrNull() ?: return@showSimpleEditDialog
-                    updateEntryField(entry, "em", (startMs + newMin * 60_000).toString(), onEntryChanged)
-                })
-        }))
+        card.addView(Ui.metricRow(ctx, "Duration", fmtDur(totalMin), ""))
 
         // ── Sleep stages ───────────────────────────────────────────────────
 
@@ -341,13 +289,7 @@ object JournalEntryView {
             // Per-stage rows
             for (name in stageOrder) {
                 val durMin = stageTotals[name] ?: continue
-                card.addView(Ui.sleepStageRow(ctx, name, stageColor(name), fmtDur(durMin), durMin.toFloat() / totalStageMin, onClick = {
-                    showSimpleEditDialog(ctx, "Edit $name", durMin.toString(), "minutes", isNumeric = true,
-                        onSave = { newVal ->
-                            val newMin = newVal.toLongOrNull() ?: return@showSimpleEditDialog
-                            updateSleepStage(entry, name, newMin, onEntryChanged)
-                        })
-                }))
+                card.addView(Ui.sleepStageRow(ctx, name, stageColor(name), fmtDur(durMin), durMin.toFloat() / totalStageMin))
             }
         }
 
@@ -367,9 +309,6 @@ object JournalEntryView {
             Linkify.addLinks(this, Linkify.WEB_URLS)
             movementMethod = LinkMovementMethod.getInstance()
         })
-
-        // Action links
-        card.addView(actionLinks(ctx, entry, onEntryChanged))
 
         return card
     }
@@ -461,9 +400,6 @@ object JournalEntryView {
             movementMethod = LinkMovementMethod.getInstance()
         })
 
-        // Action links
-        card.addView(actionLinks(ctx, entry, onEntryChanged))
-
         return card
     }
 
@@ -495,7 +431,6 @@ object JournalEntryView {
             textSize = 14f
             setTextColor(Ui.TEXT_PRIMARY)
         })
-        card.addView(actionLinks(ctx, entry, onEntryChanged))
         return card
     }
 
@@ -574,209 +509,6 @@ object JournalEntryView {
                 setTextColor(Ui.TEXT_SECONDARY)
             })
         }
-    }
-
-    private fun actionLinks(
-        ctx: android.content.Context,
-        entry: JournalEntry,
-        onEntryChanged: (JournalEntry?) -> Unit,
-    ): LinearLayout =
-        LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, Ui.dp(ctx, 8), 0, 0)
-
-            addView(actionChip(ctx, "edit notes") {
-                showEditNotesDialog(ctx, entry, onEntryChanged)
-            })
-            if (entry.hasCustomizations()) {
-                addView(actionChip(ctx, "revert") {
-                    showRevertDialog(ctx, entry, onEntryChanged)
-                })
-            }
-            addView(actionChip(ctx, "delete") {
-                showDeleteDialog(ctx, entry, onEntryChanged)
-            })
-        }
-
-    private fun actionChip(ctx: android.content.Context, label: String, onClick: () -> Unit): TextView =
-        TextView(ctx).apply {
-            text = label
-            textSize = 13f
-            setTextColor(Ui.TEXT_PRIMARY)
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(
-                Ui.dp(ctx, 14), Ui.dp(ctx, 9),
-                Ui.dp(ctx, 14), Ui.dp(ctx, 9),
-            )
-            background = Ui.cardBg(
-                Ui.dpf(ctx, 20),
-                fillColor = Ui.SURFACE_ELEVATED,
-                borderColor = Ui.BORDER,
-            )
-            (layoutParams as? LinearLayout.LayoutParams)?.setMargins(
-                0, 0, Ui.dp(ctx, 8), 0,
-            )
-            setOnClickListener { onClick() }
-        }
-
-    // ── Dialogs ────────────────────────────────────────────────────────────
-
-    /** Simple single-value edit dialog for a metric. */
-    private fun showSimpleEditDialog(
-        ctx: android.content.Context,
-        title: String,
-        currentValue: String,
-        unit: String,
-        isNumeric: Boolean,
-        onSave: (String) -> Unit,
-    ) {
-        val container = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(
-                Ui.dp(ctx, 22), Ui.dp(ctx, 16),
-                Ui.dp(ctx, 22), Ui.dp(ctx, 4),
-            )
-        }
-        val input = EditText(ctx).apply {
-            setText(currentValue)
-            textSize = 16f
-            setTextColor(Ui.TEXT_PRIMARY)
-            if (isNumeric) {
-                inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            }
-            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 12), Ui.dp(ctx, 14), Ui.dp(ctx, 12))
-            background = Ui.cardBg(Ui.dpf(ctx, 10), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER)
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        container.addView(input)
-        if (unit.isNotEmpty()) {
-            container.addView(TextView(ctx).apply {
-                text = " $unit"
-                textSize = 15f
-                setTextColor(Ui.TEXT_SECONDARY)
-                setPadding(Ui.dp(ctx, 8), 0, 0, 0)
-            })
-        }
-
-        AlertDialog.Builder(ctx)
-            .setTitle(title)
-            .setView(container)
-            .setPositiveButton("Save") { _, _ ->
-                onSave(input.text.toString().trim())
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    /** Full free-text notes editing dialog. */
-    private fun showEditNotesDialog(
-        ctx: android.content.Context,
-        entry: JournalEntry,
-        onEntryChanged: (JournalEntry?) -> Unit,
-    ) {
-        val container = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(Ui.dp(ctx, 20), Ui.dp(ctx, 16), Ui.dp(ctx, 20), Ui.dp(ctx, 8))
-        }
-        val input = EditText(ctx).apply {
-            setText(entry.narrativeText())
-            textSize = 15f
-            setTextColor(Ui.TEXT_PRIMARY)
-            minLines = 6
-            gravity = Gravity.START or Gravity.TOP
-            setPadding(Ui.dp(ctx, 14), Ui.dp(ctx, 12), Ui.dp(ctx, 14), Ui.dp(ctx, 12))
-            background = Ui.cardBg(Ui.dpf(ctx, 10), fillColor = Ui.SURFACE_ELEVATED, borderColor = Ui.BORDER)
-        }
-        container.addView(input)
-
-        AlertDialog.Builder(ctx)
-            .setTitle("Edit Notes")
-            .setView(container)
-            .setPositiveButton("Save") { _, _ ->
-                val text = input.text.toString().trim()
-                val autoNarrative = DiaryNarrator.generate(entry)
-                val updated = entry.copy(
-                    customNarrative = when {
-                        text.isEmpty() -> ""
-                        text != autoNarrative -> text
-                        else -> null
-                    },
-                    updatedAtMs = System.currentTimeMillis(),
-                )
-                onEntryChanged(updated)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    /** Revert confirmation dialog. */
-    private fun showRevertDialog(
-        ctx: android.content.Context,
-        entry: JournalEntry,
-        onEntryChanged: (JournalEntry?) -> Unit,
-    ) {
-        AlertDialog.Builder(ctx)
-            .setTitle("Revert to original?")
-            .setMessage("This will discard your custom data and text edits.")
-            .setPositiveButton("Revert") { _, _ ->
-                onEntryChanged(entry.reverted())
-            }
-            .setNegativeButton("Keep edits", null)
-            .show()
-    }
-
-    /** Delete confirmation dialog. */
-    private fun showDeleteDialog(
-        ctx: android.content.Context,
-        entry: JournalEntry,
-        onEntryChanged: (JournalEntry?) -> Unit,
-    ) {
-        AlertDialog.Builder(ctx)
-            .setTitle("Delete entry?")
-            .setMessage("This will permanently remove this journal entry.")
-            .setPositiveButton("Delete") { _, _ ->
-                onEntryChanged(null)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    // ── Data helpers ───────────────────────────────────────────────────────
-
-    private fun updateEntryField(
-        entry: JournalEntry,
-        key: String,
-        value: String,
-        onEntryChanged: (JournalEntry?) -> Unit,
-    ) {
-        val updated = entry.editDataField(key, value)
-        onEntryChanged(updated)
-    }
-
-    private fun updateSleepStage(
-        entry: JournalEntry,
-        stageName: String,
-        newDurationMin: Long,
-        onEntryChanged: (JournalEntry?) -> Unit,
-    ) {
-        val json = JSONObject(entry.effectiveDataJson())
-        val stagesArr = json.optJSONArray("sg") ?: return
-        // Find first stage of matching type and adjust its endMs
-        for (i in 0 until stagesArr.length()) {
-            val s = stagesArr.getJSONObject(i)
-            val name = CalendarHelper.SLEEP_STAGES[s.optInt("sc", 0)] ?: "Unknown"
-            if (name == stageName) {
-                val oldStart = s.getLong("sm")
-                s.put("em", oldStart + newDurationMin * 60_000)
-                break
-            }
-        }
-        val updated = entry.copy(
-            customDataJson = json.toString(),
-            updatedAtMs = System.currentTimeMillis(),
-        )
-        onEntryChanged(updated)
     }
 
     // ── HR Graph ───────────────────────────────────────────────────────────
@@ -1066,9 +798,8 @@ object JournalEntryView {
             this.textSize = textSize
             setTextColor(textColor)
             setLineSpacing(Ui.dpf(ctx, 4), 1f)
-            Linkify.addLinks(this, Linkify.WEB_URLS)
-            movementMethod = LinkMovementMethod.getInstance()
             setPadding(Ui.dp(ctx, 4), Ui.dp(ctx, 6), Ui.dp(ctx, 4), Ui.dp(ctx, 6))
+            setOnClickListener { enterEdit() }
         }
 
         lateinit var editText: EditText
