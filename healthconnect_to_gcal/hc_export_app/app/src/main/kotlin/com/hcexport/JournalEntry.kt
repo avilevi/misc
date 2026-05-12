@@ -68,8 +68,8 @@ data class JournalEntry(
             date             = obj.getString("dt"),
             entryType        = obj.getString("et"),
             originalDataJson = obj.getString("oj"),
-            customDataJson   = obj.optString("cj", "").ifEmpty { null },
-            customNarrative  = obj.optString("cn", "").ifEmpty { null },
+            customDataJson   = if (obj.has("cj")) obj.getString("cj") else null,
+            customNarrative  = if (obj.has("cn")) obj.getString("cn") else null,
             createdAtMs      = obj.getLong("ca"),
             updatedAtMs      = obj.getLong("ua"),
         )
