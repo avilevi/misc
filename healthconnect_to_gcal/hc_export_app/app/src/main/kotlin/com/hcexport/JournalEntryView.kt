@@ -771,7 +771,6 @@ object JournalEntryView {
         }
         val updated = entry.copy(
             customDataJson = json.toString(),
-            customNarrative = null,
             updatedAtMs = System.currentTimeMillis(),
         )
         onEntryChanged(updated)

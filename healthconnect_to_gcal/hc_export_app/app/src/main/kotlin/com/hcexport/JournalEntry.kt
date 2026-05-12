@@ -34,7 +34,6 @@ data class JournalEntry(
         base.put(key, value)
         return copy(
             customDataJson = base.toString(),
-            customNarrative = null,
             updatedAtMs = System.currentTimeMillis(),
         )
     }
@@ -46,7 +45,6 @@ data class JournalEntry(
         }
         return copy(
             customDataJson = base.toString(),
-            customNarrative = null,
             updatedAtMs = System.currentTimeMillis(),
         )
     }
