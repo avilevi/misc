@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Screener</title>
+<style>
+:root {
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface2: #f9f9f9;
+  --border: #e0e0e5;
+  --text: #1c1c1e;
+  --subtext: #6c6c70;
+  --accent: #0071e3;
+  --accent-hover: #005bb5;
+  --red: #ff3b30;
+  --orange: #ff9500;
+  --green: #34c759;
+  --blue: #007aff;
+  --purple: #af52de;
+  --radius: 12px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ---- Header ---- */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+header h1 { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+header h1 span { font-size: 20px; }
+.btn-settings {
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; font-size: 13px; color: var(--subtext);
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-settings:hover { background: var(--bg); color: var(--text); }
+
+/* ---- Main layout ---- */
+main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  header { padding: 10px 14px; }
+  header h1 { font-size: 15px; }
+  main { padding: 12px 10px; }
+  .controls-grid { grid-template-columns: 1fr; }
+  .field-full { grid-column: span 1; }
+  .email-card { padding: 11px 12px; }
+  .email-card-actions { flex-wrap: wrap; gap: 5px; }
+  .btn-open, .btn-mark-read, .btn-pin, .btn-unpin, .btn-feedback { font-size: 11px; padding: 5px 9px; }
+  .modal { padding: 16px; border-radius: 12px; }
+  .section-header { font-size: 12px; padding: 8px 12px; }
+  .noise-list li { flex-wrap: wrap; gap: 4px; }
+}
+
+/* ---- Outlook status banner ---- */
+.outlook-banner {
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
+  font-size: 13px; display: flex; align-items: center; gap: 8px;
+  display: none;
+}
+.outlook-banner.ok { background: #e8fdf0; color: #1a7f37; border: 1px solid #a3e8b8; }
+.outlook-banner.error { background: #ffeaea; color: #b00020; border: 1px solid #f5b8b8; }
+.outlook-banner .banner-icon { font-size: 16px; flex-shrink: 0; }
+.outlook-banner .banner-msg { flex: 1; }
+.outlook-banner a { color: inherit; font-weight: 600; }
+
+/* ---- Card ---- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title { font-size: 13px; font-weight: 600; color: var(--subtext); text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 14px; }
+
+/* ---- Control panel ---- */
+.controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; font-weight: 500; color: var(--subtext); }
+.field input[type=text], .field input[type=date] {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; font-size: 14px; font-family: inherit;
+  background: var(--surface2); color: var(--text);
+  outline: none; transition: border-color .15s;
+}
+.field input:focus { border-color: var(--accent); }
+.field-full { grid-column: span 2; }
+
+.radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-group label {
+  display: flex; align-items: center; gap: 5px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; font-size: 13px;
+  transition: all .15s;
+}
+.radio-group input[type=radio] { accent-color: var(--accent); }
+.radio-group label:has(input:checked) { background: #e8f0fd; border-color: var(--accent); color: var(--accent); }
+
+.check-label { display: flex; align-items: center; gap: 7px; cursor: pointer;
+  font-size: 13px; user-select: none; }
+.check-label input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+.btn-run {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; letter-spacing: .01em; transition: background .15s, transform .1s;
+  margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-run:hover { background: var(--accent-hover); }
+.btn-run:active { transform: scale(.99); }
+.btn-run:disabled { background: #b0b8c4; cursor: not-allowed; }
+
+/* ---- Progress ---- */
+#progress-section { display: none; }
+.progress-bar-wrap { background: var(--bg); border-radius: 99px; height: 6px; overflow: hidden; margin: 10px 0; }
+.progress-bar { height: 100%; background: var(--accent); border-radius: 99px;
+  transition: width .3s ease; width: 0%; }
+#log { font-size: 12px; color: var(--subtext); font-family: ui-monospace, monospace;
+  max-height: 90px; overflow-y: auto; margin-top: 4px; }
+#log p { margin: 1px 0; }
+
+/* ---- Results ---- */
+#results-section { display: none; }
+.results-summary { font-size: 13px; color: var(--subtext); margin-bottom: 16px; }
+.results-summary strong { color: var(--text); }
+
+.section-header {
+  font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  margin: 24px 0 10px; padding: 10px 16px;
+  border-radius: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-header.action  { background: #ffeaea; color: #b00020; border-left: 4px solid var(--red); }
+.section-header.interesting { background: #fff4e0; color: #8a4500; border-left: 4px solid var(--orange); }
+.section-header.noise   { background: #e8fdf0; color: #1a5c33; border-left: 4px solid var(--green); }
+.section-header.pinned  { background: #fff8ec; color: #8a4500; border-left: 4px solid var(--orange); }
+.badge { display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff; border-radius: 99px;
+  font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; }
+.badge.red { background: var(--red); }
+.badge.green { background: var(--green); }
+.badge.orange { background: var(--orange); }
+
+/* ---- Email card ---- */
+.email-card {
+  background: var(--surface); border-radius: 10px; box-shadow: var(--shadow);
+  padding: 14px 16px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px;
+}
+.email-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.email-meta { display: flex; flex-direction: column; gap: 2px; }
+.email-subject { font-weight: 600; font-size: 14px; }
+.email-from { font-size: 12px; color: var(--subtext); }
+.email-date { font-size: 11px; color: var(--subtext); }
+.email-reason { font-size: 12px; color: var(--subtext); margin-top: 5px; font-style: italic; }
+.email-summary {
+  font-size: 13px; color: var(--text); margin-top: 6px;
+  line-height: 1.45;
+}
+.email-summary-raw {
+  color: var(--subtext);
+  background: var(--bg); border-radius: 6px; padding: 6px 8px;
+  border-left: 3px solid var(--border);
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 80px; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+.email-actions-list { margin-top: 6px; }
+.email-actions-list li {
+  font-size: 12px; color: var(--text); padding: 3px 0 3px 14px;
+  position: relative; list-style: none;
+}
+.email-actions-list li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+
+.urgency-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  border-radius: 99px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+  margin-top: 4px; margin-right: 4px;
+}
+.urgency-high { background: #ffeaea; color: var(--red); }
+.urgency-medium { background: #fff4e0; color: #b25000; }
+.urgency-low { background: #e8fdf0; color: #1a7f37; }
+
+.email-card-actions {
+  display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; align-items: center;
+  border-top: 1px solid var(--border); padding-top: 8px;
+}
+.btn-open {
+  background: var(--accent); color: #fff; border: none; border-radius: 7px;
+  padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  display: flex; align-items: center; gap: 4px; transition: all .15s; font-weight: 500;
+}
+.btn-open:hover { background: var(--accent-hover); }
+.btn-open.opening { background: #b0b8c4; }
+.btn-mark-read {
+  background: var(--green); color: #fff; border: none; border-radius: 7px;
+  padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  transition: all .15s; font-weight: 500;
+}
+.btn-mark-read:hover { background: #28a745; }
+.btn-pin {
+  background: var(--orange); color: #fff; border: none; border-radius: 7px;
+  padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  transition: all .15s; font-weight: 500;
+}
+.btn-pin:hover { background: #e08400; }
+.btn-pin.pinned { background: #c07000; }
+.btn-unpin {
+  background: #34c759; color: #fff; border: none; border-radius: 7px;
+  padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  transition: all .15s; font-weight: 500;
+}
+.btn-unpin:hover { background: #28a745; }
+.btn-feedback {
+  background: var(--purple); color: #fff; border: none; border-radius: 7px;
+  padding: 5px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  transition: all .15s; font-weight: 500; margin-left: auto;
+}
+.btn-feedback:hover { background: #9b3ecb; }
+.conf-pill {
+  font-size: 11px; color: var(--subtext); background: var(--bg);
+  padding: 3px 7px; border-radius: 99px;
+}
+
+/* ---- Pinned section ---- */
+.pinned-section-header {
+  font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  margin: 0 0 10px; padding: 10px 16px;
+  border-radius: 8px; background: #fff8ec; color: #8a4500;
+  border-left: 4px solid var(--orange);
+  display: flex; align-items: center; gap: 8px;
+}
+.badge.pin { background: var(--orange); }
+.email-card.pinned-card { border-left: 3px solid var(--orange); }
+
+/* noise list */
+.noise-list { list-style: none; }
+.noise-list li {
+  font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  color: var(--subtext);
+}
+.noise-list li:last-child { border-bottom: none; }
+.noise-list .noise-subject { color: var(--text); font-weight: 500; flex: 1; }
+.noise-list .btn-open { padding: 3px 8px; }
+
+/* ---- Config modal ---- */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 200; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border-radius: 16px; width: 500px; max-width: 95vw;
+  max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  padding: 24px;
+}
+.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+.modal .field { margin-bottom: 12px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.btn-secondary {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 16px; font-size: 14px; cursor: pointer;
+}
+.btn-primary {
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  padding: 8px 16px; font-size: 14px; cursor: pointer; font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.save-msg { font-size: 12px; color: var(--green); display: none; }
+
+.empty-state { text-align: center; padding: 24px; color: var(--subtext); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <h1><span>📧</span> Email Screener</h1>
+  <button class="btn-settings" onclick="openConfig()">⚙ Settings</button>
+</header>
+
+<main>
+
+<!-- Outlook mode banner -->
+<div class="outlook-banner" id="outlook-banner">
+  <span class="banner-icon" id="banner-icon"></span>
+  <span class="banner-msg" id="banner-msg"></span>
+</div>
+
+<!-- Control Panel -->
+<div class="card">
+  <div class="card-title">Screening Options</div>
+  <div class="controls-grid">
+
+    <div class="field">
+      <label>From</label>
+      <input type="date" id="start" value="{{ default_start }}">
+    </div>
+    <div class="field">
+      <label>To</label>
+      <input type="date" id="end" value="{{ today }}">
+    </div>
+
+    <div class="field">
+      <label>Outlook Folder</label>
+      <input type="text" id="folder" value="{{ cfg.outlook_folder }}">
+    </div>
+    <div class="field" style="justify-content: flex-end; padding-top: 18px;">
+      <label class="check-label">
+        <input type="checkbox" id="unread" checked> Unread emails only
+      </label>
+    </div>
+
+    <div class="field field-full">
+      <label>LLM Provider</label>
+      <div class="radio-group">
+        <label><input type="radio" name="provider" value="github" {% if cfg.llm_provider == 'github' %}checked{% endif %}> GitHub Copilot</label>
+        <label><input type="radio" name="provider" value="ollama" {% if cfg.llm_provider == 'ollama' %}checked{% endif %}> Ollama (local)</label>
+        <label><input type="radio" name="provider" value="no_llm"> Rule-based (no LLM)</label>
+      </div>
+    </div>
+
+    <div class="field field-full" id="model-field">
+      <label>Model</label>
+      <input type="text" id="model" value="{{ cfg.github_model if cfg.llm_provider == 'github' else cfg.ollama_model }}" placeholder="gpt-4o-mini">
+    </div>
+
+    <div class="field-full">
+      <button class="btn-run" id="run-btn" onclick="startScreening()">
+        <span id="run-icon">🔍</span> Screen My Inbox
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="card" id="progress-section">
+  <div class="card-title">Progress</div>
+  <div id="status-text" style="font-size:13px; margin-bottom:6px;">Starting…</div>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="log"></div>
+</div>
+
+<!-- Results -->
+<div id="results-section">
+  <div class="results-summary" id="results-summary"></div>
+
+  <!-- Pinned / Todo section (always visible if pins exist) -->
+  <div id="pinned-section" style="display:none; margin-bottom:8px;">
+    <div class="pinned-section-header">📌 Pinned / Todo <span class="badge pin" id="pin-badge">0</span></div>
+    <div id="pinned-items"></div>
+  </div>
+
+  <div id="action-section">
+    <div class="section-header action">🔔 Action Required <span class="badge red" id="action-badge">0</span></div>
+    <div id="action-items"></div>
+  </div>
+
+  <div id="interesting-section">
+    <div class="section-header interesting">💡 Worth Reading <span class="badge orange" id="interesting-badge">0</span></div>
+    <div id="interesting-items"></div>
+  </div>
+
+  <div id="noise-section">
+    <div class="section-header noise">✅ Noise / No Action Needed <span class="badge green" id="noise-badge">0</span></div>
+    <div class="card"><ul class="noise-list" id="noise-items"></ul></div>
+  </div>
+</div>
+
+</main>
+
+<!-- Config Modal -->
+<div class="modal-overlay" id="config-modal">
+  <div class="modal">
+    <h2>⚙ Settings</h2>
+
+    <div class="field"><label>Your Name (used to detect actions assigned to you)</label>
+      <input type="text" id="cfg-user-name"></div>
+    <div class="field"><label>GitHub Model</label>
+      <input type="text" id="cfg-github-model"></div>
+    <div class="field"><label>Ollama URL</label>
+      <input type="text" id="cfg-ollama-url"></div>
+    <div class="field"><label>Ollama Model</label>
+      <input type="text" id="cfg-ollama-model"></div>
+    <div class="field"><label>Default Lookback (days)</label>
+      <input type="text" id="cfg-date-range-days"></div>
+    <div class="field"><label>Confidence Threshold (0–1)</label>
+      <input type="text" id="cfg-confidence-threshold"></div>
+    <div class="field"><label>Max Body Characters sent to LLM</label>
+      <input type="text" id="cfg-max-body-chars"></div>
+    <div class="field"><label>Default Outlook Folder</label>
+      <input type="text" id="cfg-outlook-folder"></div>
+    <div class="field"><label>AppleScript Timeout (seconds)</label>
+      <input type="text" id="cfg-timeout"></div>
+    <div class="field"><label>Messages to scan (tail of mailbox)</label>
+      <input type="text" id="cfg-fetch-tail"></div>
+    <div class="field"><label>Fetch Email Body</label>
+      <label class="check-label"><input type="checkbox" id="cfg-include-body"> Include email body in screening</label>
+    </div>
+
+    <div class="modal-footer">
+      <span class="save-msg" id="save-msg">✓ Saved</span>
+      <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
+      <button class="btn-primary" onclick="saveConfig()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal-overlay" id="feedback-modal">
+  <div class="modal">
+    <h2>💬 Feedback</h2>
+    <p style="font-size:13px;color:var(--subtext);margin-bottom:14px;">
+      Help train the screener. Your feedback is saved and used to improve future classifications.
+    </p>
+
+    <div class="field">
+      <label>Subject</label>
+      <input type="text" id="fb-subject" readonly style="background:var(--bg);color:var(--subtext);">
+    </div>
+    <div class="field">
+      <label>Original classification</label>
+      <input type="text" id="fb-original" readonly style="background:var(--bg);color:var(--subtext);">
+    </div>
+    <div class="field">
+      <label>Correct classification</label>
+      <select id="fb-correct">
+        <option value="">— no change, just add a note —</option>
+        <option value="action_required">Action Required</option>
+        <option value="worth_reading">Worth Reading</option>
+        <option value="noise">Noise / Not relevant</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Note (optional — explain why the classification was wrong)</label>
+      <textarea id="fb-note" rows="3" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px;font-size:13px;resize:vertical;"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <span class="save-msg" id="fb-save-msg">✓ Feedback saved</span>
+      <button class="btn-secondary" onclick="closeFeedback()">Cancel</button>
+      <button class="btn-primary" onclick="submitFeedback()">Save Feedback</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _total = 0;
+let _sse = null;
+let _resultsMap = {};  // msg_id -> full result object, for pin lookup
+
+// Check Outlook mode on page load
+(function checkOutlookMode() {
+  fetch('/check-outlook')
+    .then(r => r.json())
+    .then(d => {
+      const banner = document.getElementById('outlook-banner');
+      const icon = document.getElementById('banner-icon');
+      const msg = document.getElementById('banner-msg');
+      banner.style.display = 'flex';
+      if (d.ok) {
+        banner.className = 'outlook-banner ok';
+        icon.textContent = '✓';
+        msg.textContent = d.msg;
+        // auto-hide after 4s if all good
+        setTimeout(() => { banner.style.display = 'none'; }, 4000);
+      } else {
+        banner.className = 'outlook-banner error';
+        icon.textContent = '⚠';
+        msg.innerHTML = d.msg +
+          ' &nbsp;<a href="#" onclick="recheckOutlook(event)">Re-check ↻</a>';
+        document.getElementById('run-btn').disabled = true;
+        document.getElementById('run-btn').title = d.error
+          ? 'Mac is unreachable — check that it is on and Mac Agent is running'
+          : 'Outlook must be in Classic mode to screen emails';
+      }
+    })
+    .catch(() => {/* server not ready yet */});
+})();
+
+function recheckOutlook(e) {
+  e.preventDefault();
+  const banner = document.getElementById('outlook-banner');
+  document.getElementById('banner-icon').textContent = '…';
+  document.getElementById('banner-msg').textContent = 'Checking Outlook…';
+  fetch('/check-outlook')
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        banner.className = 'outlook-banner ok';
+        document.getElementById('banner-icon').textContent = '✓';
+        document.getElementById('banner-msg').textContent = d.msg;
+        document.getElementById('run-btn').disabled = false;
+        document.getElementById('run-btn').title = '';
+        setTimeout(() => { banner.style.display = 'none'; }, 4000);
+      } else {
+        banner.className = 'outlook-banner error';
+        document.getElementById('banner-icon').textContent = '⚠';
+        document.getElementById('banner-msg').innerHTML = d.msg +
+          ' &nbsp;<a href="#" onclick="recheckOutlook(event)">Re-check ↻</a>';
+      }
+    });
+}
+
+// Show/hide model field based on provider
+document.querySelectorAll('input[name=provider]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('model-field').style.display =
+      r.value === 'no_llm' ? 'none' : '';
+    if (r.value === 'github') document.getElementById('model').placeholder = 'gpt-4o-mini';
+    if (r.value === 'ollama') document.getElementById('model').placeholder = 'llama3';
+  });
+});
+
+function startScreening() {
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('run-icon').textContent = '⏳';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('progress-section').style.display = 'block';
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('status-text').textContent = 'Connecting to Outlook…';
+
+  const provider = document.querySelector('input[name=provider]:checked').value;
+  const payload = {
+    start: document.getElementById('start').value,
+    end: document.getElementById('end').value,
+    folder: document.getElementById('folder').value,
+    unread: document.getElementById('unread').checked,
+    provider: provider === 'no_llm' ? 'github' : provider,
+    no_llm: provider === 'no_llm',
+    model: document.getElementById('model').value,
+  };
+
+  fetch('/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.running) {
+        // Job already in progress — reconnect to the existing stream
+        document.getElementById('status-text').textContent = 'Reconnecting to running job…';
+        _sse = new EventSource('/stream');
+        _sse.onmessage = handleEvent;
+        _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
+        return;
+      }
+      if (d.error) { showError(d.error); return; }
+      _sse = new EventSource('/stream');
+      _sse.onmessage = handleEvent;
+      _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
+    })
+    .catch(e => showError(e.message));
+}
+
+function handleEvent(e) {
+  const data = JSON.parse(e.data);
+  if (data.type === 'ping') return;
+
+  if (data.type === 'log') {
+    appendLog(data.msg);
+  } else if (data.type === 'total') {
+    _total = data.total;
+  } else if (data.type === 'progress') {
+    const pct = Math.round((data.current / data.total) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('status-text').textContent =
+      `Screening ${data.current} / ${data.total}: ${data.subject}`;
+  } else if (data.type === 'done') {
+    _sse.close();
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('run-icon').textContent = '🔍';
+    document.getElementById('progress-bar').style.width = '100%';
+    document.getElementById('status-text').textContent = '✓ Done';
+    renderResults(data);
+  } else if (data.type === 'error') {
+    _sse.close();
+    showError(data.msg);
+  }
+}
+
+function appendLog(msg) {
+  const log = document.getElementById('log');
+  const p = document.createElement('p');
+  p.textContent = '› ' + msg;
+  log.appendChild(p);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showError(msg) {
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('run-icon').textContent = '🔍';
+  document.getElementById('status-text').textContent = '⚠ Error: ' + msg;
+  appendLog('Error: ' + msg);
+}
+
+function renderResults(data) {
+  const results = data.results || [];
+  // Populate the results map for pin lookups
+  _resultsMap = {};
+  results.forEach(r => { _resultsMap[r.email.id] = r; });
+
+  // Filter out any results that are already pinned (they show in the pinned section)
+  const pinnedIds = new Set(Object.keys(_pins));
+  const unpinned = results.filter(r => !pinnedIds.has(r.email.id));
+
+  const actions = unpinned.filter(r => r.screening.needs_action);
+  const interesting = unpinned.filter(r => !r.screening.needs_action && r.screening.interesting);
+  const noise = unpinned.filter(r => !r.screening.needs_action && !r.screening.interesting);
+
+  document.getElementById('results-summary').innerHTML =
+    `Screened <strong>${results.length}</strong> emails — ` +
+    `<strong style="color:var(--red)">${actions.length}</strong> need action, ` +
+    `<strong style="color:var(--orange)">${interesting.length}</strong> worth reading, ` +
+    `<strong style="color:var(--subtext)">${noise.length}</strong> noise`;
+
+  document.getElementById('action-badge').textContent = actions.length;
+  document.getElementById('interesting-badge').textContent = interesting.length;
+  document.getElementById('noise-badge').textContent = noise.length;
+
+  actions.sort((a,b) => {
+    const uOrder = {high:0, medium:1, low:2};
+    return (uOrder[a.screening.urgency]||2) - (uOrder[b.screening.urgency]||2)
+        || b.screening.confidence - a.screening.confidence;
+  });
+
+  document.getElementById('action-items').innerHTML =
+    actions.length ? actions.map(r => emailCard(r, true, false)).join('') :
+    '<div class="empty-state">No action items found.</div>';
+
+  document.getElementById('interesting-items').innerHTML =
+    interesting.length ? interesting.map(r => emailCard(r, false, false)).join('') :
+    '<div class="empty-state">Nothing flagged as interesting.</div>';
+
+  const noiseList = document.getElementById('noise-items');
+  noiseList.innerHTML = noise.map(r => `
+    <li>
+      <span class="noise-subject">${esc(r.email.subject || '(no subject)')}</span>
+      <span class="email-from">${esc(r.email.from || '?')}</span>
+      <button class="btn-open" onclick="openEmail('${r.email.id}','${esc(r.folder)}',${r.email.index||0},this)">↗ Open</button>
+    </li>`).join('');
+
+  document.getElementById('results-section').style.display = 'block';
+  renderPinnedSection();
+  document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function emailCard(r, showActions, isPinned) {
+  const s = r.screening;
+  const e = r.email;
+  const urgencyClass = {high:'urgency-high', medium:'urgency-medium', low:'urgency-low'}[s.urgency] || 'urgency-low';
+  const urgencyLabel = {high:'🔴 HIGH', medium:'🟡 MEDIUM', low:'🟢 LOW'}[s.urgency] || '⚪';
+  const conf = s.confidence ? Math.round(s.confidence * 100) + '%' : '';
+  const cardClass = isPinned ? 'email-card pinned-card' : 'email-card';
+  const cardId = isPinned ? `pin-card-${e.id}` : `card-${e.id}`;
+
+  let actionsHtml = '';
+  if ((showActions || isPinned) && s.actions && s.actions.length) {
+    actionsHtml = '<ul class="email-actions-list">' +
+      s.actions.map(a => {
+        const due = a.due_date ? ` <em>(due ${a.due_date})</em>` : '';
+        return `<li>${esc(a.description)}${due}</li>`;
+      }).join('') + '</ul>';
+  }
+
+  // summary: LLM-generated description of the email. Fall back to raw preview if absent.
+  const summaryHtml = s.summary
+    ? `<div class="email-summary">${esc(s.summary)}</div>`
+    : (e.preview ? `<div class="email-summary email-summary-raw">${esc(e.preview)}</div>` : '');
+
+  // reason: shown only when it adds value (action cards and interesting cards)
+  const reasonHtml = s.reason
+    ? `<div class="email-reason">${esc(s.reason)}</div>` : '';
+  const interestHtml = (!showActions && !isPinned && s.interest_reason)
+    ? `<div class="email-reason">${esc(s.interest_reason)}</div>` : '';
+
+  const pinBtn = isPinned
+    ? `<button class="btn-unpin" onclick="unpinEmail('${e.id}',this)">✓ Done</button>`
+    : `<button class="btn-pin" onclick="pinEmail('${e.id}',this)">📌 Pin</button>`;
+  const markReadBtn = !isPinned
+    ? `<button class="btn-mark-read" onclick="markRead('${e.id}','${esc(r.folder)}',${e.index||0},'${cardId}',this)">✓ Mark read</button>`
+    : '';
+  const category = isPinned ? 'pinned' : (r.screening.needs_action ? 'action_required' : (r.screening.interesting ? 'worth_reading' : 'noise'));
+  const feedbackBtn = `<button class="btn-feedback" onclick="openFeedback('${e.id}',this)">💬 Feedback</button>`;
+
+  return `<div class="${cardClass}" id="${cardId}">
+    <div class="email-meta">
+      <div class="email-subject">${esc(e.subject || '(no subject)')}</div>
+      <div class="email-from">${esc(e.from || '?')}</div>
+      <div class="email-date">${esc(e.date || '')}</div>
+      ${(showActions || isPinned) ? `<span class="urgency-pill ${urgencyClass}">${urgencyLabel}</span>` : ''}
+      ${summaryHtml}${actionsHtml}${reasonHtml}${interestHtml}
+    </div>
+    <div class="email-card-actions">
+      <button class="btn-open" onclick="openEmail('${e.id}','${esc(r.folder)}',${e.index||0},this)">↗ Open</button>
+      ${pinBtn}
+      ${markReadBtn}
+      ${conf ? `<span class="conf-pill">${conf}</span>` : ''}
+      ${feedbackBtn}
+    </div>
+  </div>`;
+}
+
+// ---- Mark as read ----
+function markRead(msgId, folder, idx, cardId, btn) {
+  btn.textContent = '…';
+  btn.disabled = true;
+  fetch(`/mark-read/${encodeURIComponent(msgId)}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder, index: idx})
+  }).then(r => r.json()).then(d => {
+    if (d.success) {
+      const card = document.getElementById(cardId);
+      if (card) {
+        card.style.transition = 'opacity .3s';
+        card.style.opacity = '0';
+        setTimeout(() => card.remove(), 300);
+      }
+    } else {
+      btn.textContent = '✓ Mark read';
+      btn.disabled = false;
+    }
+  });
+}
+
+// ---- Pin / Unpin ----
+let _pins = {};  // msg_id -> full result payload
+
+function loadPins() {
+  fetch('/pins').then(r => r.json()).then(list => {
+    _pins = {};
+    list.forEach(p => { _pins[p.email.id] = p; });
+    renderPinnedSection();
+    document.getElementById('results-section').style.display =
+      Object.keys(_pins).length > 0 ? 'block' : document.getElementById('results-section').style.display;
+  });
+}
+
+function renderPinnedSection() {
+  const pinned = Object.values(_pins);
+  const sec = document.getElementById('pinned-section');
+  const container = document.getElementById('pinned-items');
+  document.getElementById('pin-badge').textContent = pinned.length;
+  if (pinned.length === 0) {
+    sec.style.display = 'none';
+    return;
+  }
+  sec.style.display = 'block';
+  container.innerHTML = pinned.map(r => emailCard(r, true, true)).join('');
+}
+
+function pinEmail(msgId, btn) {
+  const payload = _resultsMap[msgId] || (_pins[msgId]);
+  if (!payload) { console.warn('No result found for', msgId); return; }
+  // Grab the original card reference NOW, before renderPinnedSection creates a new one
+  const originalCard = document.getElementById(`card-${msgId}`);
+  btn.textContent = '📌 Pinned';
+  btn.classList.add('pinned');
+  btn.disabled = true;
+  fetch(`/pins/${encodeURIComponent(msgId)}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(() => {
+    _pins[msgId] = payload;
+    renderPinnedSection();
+    // Now fade out the original card in the regular section
+    if (originalCard) {
+      originalCard.style.transition = 'opacity .3s';
+      originalCard.style.opacity = '0';
+      setTimeout(() => originalCard.remove(), 300);
+    }
+  });
+}
+
+function unpinEmail(msgId, btn) {
+  btn.textContent = '…';
+  btn.disabled = true;
+  const r = _pins[msgId];
+  const folder = r ? r.folder : 'Inbox';
+  const idx = r ? (r.email.index || 0) : 0;
+
+  // Mark as read in Outlook, then delete pin
+  fetch(`/mark-read/${encodeURIComponent(msgId)}`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder, index: idx})
+  }).finally(() => {
+    fetch(`/pins/${encodeURIComponent(msgId)}`, { method: 'DELETE' })
+      .then(() => {
+        delete _pins[msgId];
+        // Remove from pinned section only — do NOT put back in regular sections
+        const card = document.getElementById(`pin-card-${msgId}`);
+        if (card) {
+          card.style.transition = 'opacity .3s';
+          card.style.opacity = '0';
+          setTimeout(() => {
+            card.remove();
+            renderPinnedSection();
+          }, 300);
+        } else {
+          renderPinnedSection();
+        }
+      });
+  });
+}
+
+let _clientIsMac = false;  // set by /client-context on load
+
+// Determine if this client is the Mac (affects open-email behavior)
+(function loadClientContext() {
+  fetch('/client-context').then(r => r.json()).then(d => {
+    _clientIsMac = d.is_mac;
+  }).catch(() => {});
+})();
+
+function openEmail(msgId, folder, idx, btn) {
+  btn.textContent = '…';
+  btn.classList.add('opening');
+  fetch(`/open-email/${encodeURIComponent(msgId)}?folder=${encodeURIComponent(folder)}&index=${encodeURIComponent(idx)}`)
+    .then(r => r.json())
+    .then(d => {
+      btn.classList.remove('opening');
+      if (d.open_viewer) {
+        // Remote client: open email body in a new tab
+        window.open(d.viewer_url, '_blank');
+        btn.textContent = '↗ Open';
+      } else {
+        btn.textContent = d.success ? '✓ Opened' : '↗ Open';
+        if (!d.success) btn.title = 'Could not open — try opening Outlook manually';
+        setTimeout(() => { btn.textContent = '↗ Open'; }, 3000);
+      }
+    });
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Load pins on page load so the section is always visible
+loadPins();
+
+// Auto-reconnect if a job is already running when the page loads
+(function checkRunning() {
+  fetch('/status').then(r => r.json()).then(d => {
+    if (d.running) {
+      const btn = document.getElementById('run-btn');
+      btn.disabled = true;
+      document.getElementById('run-icon').textContent = '⏳';
+      document.getElementById('progress-section').style.display = 'block';
+      document.getElementById('status-text').textContent = 'Screening in progress…';
+      _sse = new EventSource('/stream');
+      _sse.onmessage = handleEvent;
+      _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
+    }
+  }).catch(() => {});
+})();
+
+// Config modal
+function openConfig() {
+  fetch('/config').then(r => r.json()).then(cfg => {
+    document.getElementById('cfg-user-name').value = cfg.user_name || '';
+    document.getElementById('cfg-github-model').value = cfg.github_model || '';
+    document.getElementById('cfg-ollama-url').value = cfg.ollama_url || '';
+    document.getElementById('cfg-ollama-model').value = cfg.ollama_model || '';
+    document.getElementById('cfg-date-range-days').value = cfg.date_range_days || 7;
+    document.getElementById('cfg-confidence-threshold').value = cfg.confidence_threshold || 0.6;
+    document.getElementById('cfg-max-body-chars').value = cfg.max_body_chars || 3000;
+    document.getElementById('cfg-outlook-folder').value = cfg.outlook_folder || 'Inbox';
+    document.getElementById('cfg-timeout').value = cfg.outlook_query_timeout_sec || 600;
+    document.getElementById('cfg-fetch-tail').value = cfg.outlook_fetch_tail || 500;
+    document.getElementById('save-msg').style.display = 'none';
+    document.getElementById('config-modal').classList.add('open');
+  });
+}
+function closeConfig() {
+  document.getElementById('config-modal').classList.remove('open');
+}
+function saveConfig() {
+  const cfg = {
+    user_name: document.getElementById('cfg-user-name').value,
+    github_model: document.getElementById('cfg-github-model').value,
+    ollama_url: document.getElementById('cfg-ollama-url').value,
+    ollama_model: document.getElementById('cfg-ollama-model').value,
+    date_range_days: parseInt(document.getElementById('cfg-date-range-days').value),
+    confidence_threshold: parseFloat(document.getElementById('cfg-confidence-threshold').value),
+    max_body_chars: parseInt(document.getElementById('cfg-max-body-chars').value),
+    outlook_folder: document.getElementById('cfg-outlook-folder').value,
+    outlook_query_timeout_sec: parseInt(document.getElementById('cfg-timeout').value),
+    outlook_include_body: document.getElementById('cfg-include-body').checked,
+    outlook_fetch_tail: parseInt(document.getElementById('cfg-fetch-tail').value),
+  };
+  fetch('/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cfg) })
+    .then(() => {
+      document.getElementById('save-msg').style.display = 'inline';
+      setTimeout(closeConfig, 1000);
+    });
+}
+// Close modal on overlay click
+document.getElementById('config-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeConfig();
+});
+
+// ---- Feedback modal ----
+let _fbMsgId = null;
+function openFeedback(msgId, btn) {
+  const r = _resultsMap[msgId] || (_pins[msgId]);
+  if (!r) return;
+  _fbMsgId = msgId;
+  const category = r.screening.needs_action ? 'Action Required' : (r.screening.interesting ? 'Worth Reading' : 'Noise');
+  document.getElementById('fb-subject').value = r.email.subject || '';
+  document.getElementById('fb-original').value = category;
+  document.getElementById('fb-correct').value = '';
+  document.getElementById('fb-note').value = '';
+  document.getElementById('fb-save-msg').style.display = 'none';
+  document.getElementById('feedback-modal').classList.add('open');
+}
+function closeFeedback() {
+  document.getElementById('feedback-modal').classList.remove('open');
+  _fbMsgId = null;
+}
+function submitFeedback() {
+  if (!_fbMsgId) return;
+  const r = _resultsMap[_fbMsgId] || (_pins[_fbMsgId]);
+  const orig = r ? (r.screening.needs_action ? 'action_required' : (r.screening.interesting ? 'worth_reading' : 'noise')) : '';
+  const payload = {
+    msg_id: _fbMsgId,
+    subject: document.getElementById('fb-subject').value,
+    from_: r ? (r.email.from || '') : '',
+    original_category: orig,
+    correct_category: document.getElementById('fb-correct').value,
+    note: document.getElementById('fb-note').value,
+  };
+  fetch('/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(() => {
+    document.getElementById('fb-save-msg').style.display = 'inline';
+    setTimeout(closeFeedback, 1200);
+  });
+}
+document.getElementById('feedback-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeFeedback();
+});
+</script>
+</body>
+</html>
