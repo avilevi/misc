@@ -491,6 +491,7 @@ def _do_screening(data: dict):
         cfg["outlook_folder"] = folder
         no_llm = data.get("no_llm", False)
         unread_only = data.get("unread", False)
+        force_rescreen = data.get("force_rescreen", False)
 
         today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = datetime.strptime(data["end"], "%Y-%m-%d") if data.get("end") else today
@@ -520,12 +521,18 @@ def _do_screening(data: dict):
         _emit({"type": "total", "total": len(emails)})
 
         results = []
+        cache_hits = 0
         for i, email in enumerate(emails, 1):
             email["body_clean"] = se.clean_body(email.get("body", ""), cfg["max_body_chars"])
             subj = email.get("subject", "")[:60]
             _emit({"type": "progress", "current": i, "total": len(emails), "subject": subj})
 
-            if no_llm:
+            # Check cache first (skip if force_rescreen requested)
+            cached = None if force_rescreen else _db.get_screening(email["id"])
+            if cached:
+                screening = cached
+                cache_hits += 1
+            elif no_llm:
                 screening = se.screen_rule_based(email)
             elif provider == "github":
                 result = se.screen_with_github(email, cfg)
@@ -540,9 +547,10 @@ def _do_screening(data: dict):
                     result = se.screen_rule_based(email)
                 screening = result
 
-            # Persist email + screening to DB
+            # Persist email + screening to DB (upsert is idempotent for cached hits)
             _db.upsert_email(email, folder=folder)
-            _db.upsert_screening(email["id"], screening)
+            if not cached:
+                _db.upsert_screening(email["id"], screening)
 
             results.append({"email": email, "screening": screening})
 
@@ -550,6 +558,10 @@ def _do_screening(data: dict):
         output_dir_cfg = cfg.get("output_dir", "").strip()
         output_dir = Path(output_dir_cfg).expanduser() if output_dir_cfg else Path(se.__file__).parent / "reports"
         se.generate_report(results, output_dir, start_date, end_date)
+
+        new_count = len(emails) - cache_hits
+        if cache_hits:
+            _emit({"type": "log", "msg": f"📦 {cache_hits} from cache, {new_count} newly screened."})
 
         threshold = float(cfg.get("confidence_threshold", 0.6))
         action_count = sum(

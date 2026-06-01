@@ -265,6 +265,31 @@ def add_feedback(email_id: str, subject: str, from_: str,
         conn.close()
 
 
+def get_screening(email_id: str) -> dict | None:
+    """Return a cached screening dict for the given email, or None if not found."""
+    with _lock:
+        conn = _connect()
+        row = conn.execute(
+            "SELECT * FROM screenings WHERE email_id=?", (email_id,)
+        ).fetchone()
+        conn.close()
+    if not row:
+        return None
+    row = dict(row)
+    return {
+        "needs_action":    row["category"] == "action_required",
+        "urgency":         row["urgency"] or "low",
+        "confidence":      row["confidence"] or 0.0,
+        "summary":         row["summary"] or "",
+        "reason":          row["reason"] or "",
+        "actions":         json.loads(row["actions_json"]) if row.get("actions_json") else [],
+        "interesting":     bool(row["interesting"]),
+        "interest_reason": row["interest_reason"] or "",
+        "_cached":         True,
+        "_screened_at":    row["screened_at"],
+    }
+
+
 def get_all_feedback() -> list[dict]:
     with _lock:
         conn = _connect()

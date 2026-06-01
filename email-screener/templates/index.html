@@ -357,6 +357,9 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
       <label class="check-label">
         <input type="checkbox" id="unread" checked> Unread emails only
       </label>
+      <label class="check-label" style="margin-left: 18px;">
+        <input type="checkbox" id="force-rescreen"> Force re-screen all
+      </label>
     </div>
 
     <div class="field field-full">
@@ -650,6 +653,7 @@ function startScreening() {
     end: document.getElementById('end').value,
     folder: document.getElementById('folder').value,
     unread: document.getElementById('unread').checked,
+    force_rescreen: document.getElementById('force-rescreen').checked,
     provider: provider === 'no_llm' ? 'github' : provider,
     no_llm: provider === 'no_llm',
     model: document.getElementById('model').value,
@@ -815,6 +819,7 @@ function emailCard(r, showActions, isPinned) {
       ${pinBtn}
       ${markReadBtn}
       ${conf ? `<span class="conf-pill">${conf}</span>` : ''}
+      ${s._cached ? `<span class="conf-pill" title="From cache (screened ${esc(s._screened_at||'')})">📦 cached</span>` : ''}
       ${feedbackBtn}
     </div>
   </div>`;
