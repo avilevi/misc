@@ -700,7 +700,10 @@ function renderResults(data) {
 
   document.getElementById('results-section').style.display = 'block';
   renderPinnedSection();
-  document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+  // Only scroll to results if user is still near the top (hasn't scrolled down to read)
+  if (window.scrollY < 200) {
+    document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
+  }
 }
 
 function emailCard(r, showActions, isPinned) {
