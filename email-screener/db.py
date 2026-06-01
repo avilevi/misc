@@ -104,6 +104,15 @@ def _migrate_schema():
         if "embedding" not in g_existing:
             conn.execute("ALTER TABLE guidelines ADD COLUMN embedding TEXT")
 
+        e_existing = {row[1] for row in conn.execute("PRAGMA table_info(emails)").fetchall()}
+        for col, defn in [
+            ("notes",            "TEXT DEFAULT ''"),
+            ("importance",       "TEXT DEFAULT 'normal'"),
+            ("user_importance",  "TEXT"),
+        ]:
+            if col not in e_existing:
+                conn.execute(f"ALTER TABLE emails ADD COLUMN {col} {defn}")
+
         conn.commit()
         conn.close()
 
@@ -153,12 +162,13 @@ def upsert_email(email: dict, folder: str = "Inbox"):
     with _lock:
         conn = _connect()
         conn.execute("""
-            INSERT INTO emails (id, subject, from_, to_, cc, date, body_raw, body_clean, is_read, idx, folder, fetched_at)
-            VALUES (:id, :subject, :from_, :to_, :cc, :date, :body_raw, :body_clean, :is_read, :idx, :folder, datetime('now'))
+            INSERT INTO emails (id, subject, from_, to_, cc, date, body_raw, body_clean, is_read, idx, folder, importance, fetched_at)
+            VALUES (:id, :subject, :from_, :to_, :cc, :date, :body_raw, :body_clean, :is_read, :idx, :folder, :importance, datetime('now'))
             ON CONFLICT(id) DO UPDATE SET
                 subject=excluded.subject, from_=excluded.from_, to_=excluded.to_, cc=excluded.cc,
                 date=excluded.date, body_raw=excluded.body_raw, body_clean=excluded.body_clean,
                 is_read=excluded.is_read, idx=excluded.idx, folder=excluded.folder,
+                importance=excluded.importance,
                 fetched_at=excluded.fetched_at
         """, {
             "id":         email.get("id", ""),
@@ -172,10 +182,57 @@ def upsert_email(email: dict, folder: str = "Inbox"):
             "is_read":    1 if email.get("read") else 0,
             "idx":        email.get("index"),
             "folder":     folder,
+            "importance": email.get("importance", "normal"),
         })
         conn.commit()
         conn.close()
     return email.get("id", "")
+
+
+def get_email_annotations(ids: list) -> dict:
+    """Return {email_id: {notes, importance, user_importance}} for a list of IDs."""
+    if not ids:
+        return {}
+    placeholders = ",".join("?" * len(ids))
+    with _lock:
+        conn = _connect()
+        rows = conn.execute(
+            f"SELECT id, notes, importance, user_importance FROM emails WHERE id IN ({placeholders})",
+            ids,
+        ).fetchall()
+        conn.close()
+    return {
+        row["id"]: {
+            "notes":           row["notes"] or "",
+            "importance":      row["importance"] or "normal",
+            "user_importance": row["user_importance"],
+        }
+        for row in rows
+    }
+
+
+def set_email_notes(email_id: str, notes: str):
+    with _lock:
+        conn = _connect()
+        conn.execute(
+            "INSERT INTO emails (id, notes) VALUES (?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET notes=excluded.notes",
+            (email_id, notes),
+        )
+        conn.commit()
+        conn.close()
+
+
+def set_user_importance(email_id: str, importance: str):
+    with _lock:
+        conn = _connect()
+        conn.execute(
+            "INSERT INTO emails (id, user_importance) VALUES (?, ?) "
+            "ON CONFLICT(id) DO UPDATE SET user_importance=excluded.user_importance",
+            (email_id, importance),
+        )
+        conn.commit()
+        conn.close()
 
 
 def get_email(email_id: str) -> dict | None:

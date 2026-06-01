@@ -184,6 +184,16 @@ tell application "Microsoft Outlook"
                     end repeat
                 end try
 
+                set msgImportance to "normal"
+                try
+                    set impLevel to importance level of msg
+                    if impLevel is high importance then
+                        set msgImportance to "high"
+                    else if impLevel is low importance then
+                        set msgImportance to "low"
+                    end if
+                end try
+
                 set outText to outText & "<<<EMAIL_START>>>" & return
                 set outText to outText & "ID:" & msgId & return
                 set outText to outText & "INDEX:" & i & return
@@ -193,6 +203,7 @@ tell application "Microsoft Outlook"
                 set outText to outText & "CC:" & msgCc & return
                 set outText to outText & "SUBJECT:" & msgSubject & return
                 set outText to outText & "READ:" & (msgIsRead as string) & return
+                set outText to outText & "IMPORTANCE:" & msgImportance & return
                 set outText to outText & "BODY:" & msgBody & return
                 set outText to outText & "<<<EMAIL_END>>>" & return
             end if
@@ -555,6 +566,9 @@ def parse_applescript_output(raw: str) -> list[dict]:
         if m:
             email["read"] = m.group(1).strip().lower() == "true"
 
+        m = re.search(r"^IMPORTANCE:(.+)$", block, re.MULTILINE)
+        if m:
+            email["importance"] = m.group(1).strip().lower()
 
         m = re.search(r"^BODY:(.*)$", block, re.MULTILINE | re.DOTALL)
         if m:

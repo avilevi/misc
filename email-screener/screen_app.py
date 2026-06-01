@@ -267,6 +267,26 @@ def get_pins():
     return jsonify(_db.get_all_pins())
 
 
+@app.route("/emails/annotations", methods=["POST"])
+def email_annotations():
+    ids = (request.get_json() or {}).get("ids", [])
+    return jsonify(_db.get_email_annotations(ids))
+
+
+@app.route("/emails/<msg_id>/notes", methods=["PUT"])
+def save_notes(msg_id):
+    notes = (request.get_json() or {}).get("notes", "")
+    _db.set_email_notes(msg_id, notes)
+    return jsonify({"ok": True})
+
+
+@app.route("/emails/<msg_id>/importance", methods=["PUT"])
+def save_importance(msg_id):
+    importance = (request.get_json() or {}).get("importance", "normal")
+    _db.set_user_importance(msg_id, importance)
+    return jsonify({"ok": True})
+
+
 @app.route("/pins/<msg_id>", methods=["POST"])
 def add_pin(msg_id):
     data = request.get_json() or {}

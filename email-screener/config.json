@@ -1,0 +1,18 @@
+{
+  "llm_provider": "github",
+  "github_model": "gpt-4o-mini",
+  "date_range_days": 7,
+  "ollama_url": "http://localhost:11434",
+  "ollama_model": "llama3",
+  "confidence_threshold": 0.6,
+  "max_body_chars": 3000,
+  "outlook_folder": "Inbox",
+  "outlook_query_timeout_sec": 600,
+  "outlook_include_body": true,
+  "outlook_fetch_tail": 500,
+  "user_name": "Avi",
+  "mac_agent_url": "http://snps-mac.tail23d304.ts.net:5002",
+  "mac_agent_token": "bae71327a73e346c9fc8ff8054eb223ec65f54e78c70a2d1",
+  "mac_agent_port": 5002,
+  "mac_ip": "snps-mac.tail23d304.ts.net"
+}

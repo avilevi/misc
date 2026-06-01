@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ email.subject or '(no subject)' }}</title>
+<style>
+:root {
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --border: #e0e0e5;
+  --text: #1c1c1e;
+  --subtext: #6c6c70;
+  --accent: #0071e3;
+  --radius: 12px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ---- Header bar ---- */
+.top-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+}
+.top-bar h1 { font-size: 15px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn-back {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer; color: var(--accent);
+  white-space: nowrap; text-decoration: none;
+}
+.btn-back:hover { background: #e8f0fd; }
+
+/* ---- Main layout ---- */
+main { max-width: 860px; margin: 24px auto; padding: 0 16px; }
+
+/* ---- Email envelope ---- */
+.email-envelope {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.email-header {
+  padding: 20px 24px;
+  border-bottom: 2px solid var(--border);
+}
+.email-subject-line {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+.email-fields { display: flex; flex-direction: column; gap: 6px; }
+.email-field {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 8px;
+  font-size: 13px;
+  align-items: baseline;
+}
+.field-label {
+  font-weight: 600;
+  color: var(--subtext);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: .04em;
+  padding-top: 2px;
+}
+.field-value { color: var(--text); word-break: break-word; }
+.field-value.date { color: var(--subtext); font-size: 12px; }
+
+/* ---- Body ---- */
+.email-body {
+  padding: 24px;
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--text);
+  overflow-x: auto;
+}
+.email-body p { margin-bottom: 10px; }
+.email-body pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* sanitized HTML email content */
+.email-body-html { }
+.email-body-html img { max-width: 100%; height: auto; }
+.email-body-html a { color: var(--accent); }
+.email-body-html table { max-width: 100%; border-collapse: collapse; }
+
+.no-body {
+  padding: 32px 24px;
+  color: var(--subtext);
+  font-style: italic;
+  text-align: center;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a class="btn-back" href="javascript:history.back()">← Back</a>
+  <h1>{{ email.subject or '(no subject)' }}</h1>
+</div>
+
+<main>
+  <div class="email-envelope">
+
+    <div class="email-header">
+      <div class="email-subject-line">{{ email.subject or '(no subject)' }}</div>
+      <div class="email-fields">
+        <div class="email-field">
+          <span class="field-label">From</span>
+          <span class="field-value">{{ email.from_ or '—' }}</span>
+        </div>
+        {% if email.to_ %}
+        <div class="email-field">
+          <span class="field-label">To</span>
+          <span class="field-value">{{ email.to_ }}</span>
+        </div>
+        {% endif %}
+        {% if email.cc %}
+        <div class="email-field">
+          <span class="field-label">CC</span>
+          <span class="field-value">{{ email.cc }}</span>
+        </div>
+        {% endif %}
+        <div class="email-field">
+          <span class="field-label">Date</span>
+          <span class="field-value date">{{ email.date or '—' }}</span>
+        </div>
+        <div class="email-field">
+          <span class="field-label">Folder</span>
+          <span class="field-value date">{{ email.folder or 'Inbox' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="email-body">
+      {% if email.body_raw %}
+        {# Try to render as HTML if it looks like HTML, else plaintext #}
+        {% if '<html' in email.body_raw.lower() or '<body' in email.body_raw.lower() or '<div' in email.body_raw.lower() %}
+          <div class="email-body-html">{{ email.body_raw | safe }}</div>
+        {% else %}
+          <pre>{{ email.body_raw }}</pre>
+        {% endif %}
+      {% elif email.body_clean %}
+        <pre>{{ email.body_clean }}</pre>
+      {% else %}
+        <div class="no-body">No email body stored. Re-run screening with "Fetch Email Body" enabled.</div>
+      {% endif %}
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

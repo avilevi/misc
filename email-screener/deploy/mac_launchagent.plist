@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.emailscreener.macagent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>REPLACE_WITH_FULL_PATH/mac_agent.py</string>
+    </array>
+
+    <!-- Run at login -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Restart if it crashes -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Write stdout/stderr to logs -->
+    <key>StandardOutPath</key>
+    <string>/tmp/emailscreener-agent.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/emailscreener-agent-error.log</string>
+
+    <!-- Working directory -->
+    <key>WorkingDirectory</key>
+    <string>REPLACE_WITH_FULL_PATH</string>
+</dict>
+</plist>

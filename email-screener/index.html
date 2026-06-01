@@ -171,12 +171,8 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 .email-from { font-size: 12px; color: var(--subtext); }
 .email-date { font-size: 11px; color: var(--subtext); }
 .email-reason { font-size: 12px; color: var(--subtext); margin-top: 5px; font-style: italic; }
-.email-summary {
-  font-size: 13px; color: var(--text); margin-top: 6px;
-  line-height: 1.45;
-}
-.email-summary-raw {
-  color: var(--subtext);
+.email-preview {
+  font-size: 12px; color: var(--subtext); margin-top: 6px;
   background: var(--bg); border-radius: 6px; padding: 6px 8px;
   border-left: 3px solid var(--border);
   white-space: pre-wrap; word-break: break-word;
@@ -262,30 +258,6 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 .noise-list .noise-subject { color: var(--text); font-weight: 500; flex: 1; }
 .noise-list .btn-open { padding: 3px 8px; }
 
-/* notes box */
-.email-notes-box {
-  border: 1.5px solid var(--accent);
-  border-radius: 8px;
-  background: #f0f7ff;
-  padding: 6px 10px;
-  margin-bottom: 10px;
-}
-.email-notes-textarea {
-  width: 100%; border: none; background: transparent; resize: none; overflow: hidden;
-  font-size: 12px; color: var(--text); outline: none; min-height: 22px;
-  font-family: inherit; line-height: 1.5;
-}
-.email-notes-textarea::placeholder { color: #8ab4d8; font-style: italic; }
-
-/* importance select */
-.importance-select {
-  font-size: 11px; border: 1px solid var(--border); border-radius: 6px;
-  padding: 3px 6px; background: var(--surface2); color: var(--text);
-  cursor: pointer; outline: none;
-}
-.importance-select.imp-high { border-color: var(--red); color: var(--red); background: #fff5f5; }
-.importance-select.imp-low  { border-color: var(--subtext); color: var(--subtext); }
-
 /* ---- Config modal ---- */
 .modal-overlay {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -293,11 +265,11 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 }
 .modal-overlay.open { display: flex; }
 .modal {
-  background: var(--surface); border-radius: 16px; width: 540px; max-width: 95vw;
-  max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  background: var(--surface); border-radius: 16px; width: 500px; max-width: 95vw;
+  max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
   padding: 24px;
 }
-.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
 .modal .field { margin-bottom: 12px; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .btn-secondary {
@@ -310,35 +282,6 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .save-msg { font-size: 12px; color: var(--green); display: none; }
-
-/* ---- Modal tabs ---- */
-.modal-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
-.modal-tab {
-  background: none; border: none; border-bottom: 2px solid transparent;
-  padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--subtext);
-  margin-bottom: -1px;
-}
-.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-/* ---- Guidelines list ---- */
-.guideline-item {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px;
-}
-.guideline-item:last-child { border-bottom: none; }
-.guideline-text { flex: 1; line-height: 1.5; color: var(--text); }
-.guideline-text.disabled { color: var(--subtext); text-decoration: line-through; }
-.guideline-source { font-size: 10px; color: var(--subtext); margin-top: 2px; }
-.btn-icon {
-  background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 5px;
-  color: var(--subtext); border-radius: 5px;
-}
-.btn-icon:hover { background: var(--bg); color: var(--text); }
-.guidelines-add { display: flex; gap: 8px; margin-top: 14px; }
-.guidelines-add textarea {
-  flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px;
-  font-size: 13px; resize: vertical; font-family: inherit;
-}
 
 .empty-state { text-align: center; padding: 24px; color: var(--subtext); font-size: 13px; }
 </style>
@@ -380,9 +323,6 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
     <div class="field" style="justify-content: flex-end; padding-top: 18px;">
       <label class="check-label">
         <input type="checkbox" id="unread" checked> Unread emails only
-      </label>
-      <label class="check-label" style="margin-left: 18px;">
-        <input type="checkbox" id="force-rescreen"> Force re-screen all
       </label>
     </div>
 
@@ -438,7 +378,7 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 
   <div id="noise-section">
     <div class="section-header noise">✅ Noise / No Action Needed <span class="badge green" id="noise-badge">0</span></div>
-    <div id="noise-items"></div>
+    <div class="card"><ul class="noise-list" id="noise-items"></ul></div>
   </div>
 </div>
 
@@ -449,60 +389,34 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
   <div class="modal">
     <h2>⚙ Settings</h2>
 
-    <div class="modal-tabs">
-      <button class="modal-tab active" id="tab-btn-config" onclick="showSettingsTab('config')">Config</button>
-      <button class="modal-tab" id="tab-btn-guidelines" onclick="showSettingsTab('guidelines')">🧠 Guidelines <span id="guidelines-count"></span></button>
+    <div class="field"><label>Your Name (used to detect actions assigned to you)</label>
+      <input type="text" id="cfg-user-name"></div>
+    <div class="field"><label>GitHub Model</label>
+      <input type="text" id="cfg-github-model"></div>
+    <div class="field"><label>Ollama URL</label>
+      <input type="text" id="cfg-ollama-url"></div>
+    <div class="field"><label>Ollama Model</label>
+      <input type="text" id="cfg-ollama-model"></div>
+    <div class="field"><label>Default Lookback (days)</label>
+      <input type="text" id="cfg-date-range-days"></div>
+    <div class="field"><label>Confidence Threshold (0–1)</label>
+      <input type="text" id="cfg-confidence-threshold"></div>
+    <div class="field"><label>Max Body Characters sent to LLM</label>
+      <input type="text" id="cfg-max-body-chars"></div>
+    <div class="field"><label>Default Outlook Folder</label>
+      <input type="text" id="cfg-outlook-folder"></div>
+    <div class="field"><label>AppleScript Timeout (seconds)</label>
+      <input type="text" id="cfg-timeout"></div>
+    <div class="field"><label>Messages to scan (tail of mailbox)</label>
+      <input type="text" id="cfg-fetch-tail"></div>
+    <div class="field"><label>Fetch Email Body</label>
+      <label class="check-label"><input type="checkbox" id="cfg-include-body"> Include email body in screening</label>
     </div>
 
-    <!-- Config tab -->
-    <div id="tab-config">
-      <div class="field"><label>Your Name (used to detect actions assigned to you)</label>
-        <input type="text" id="cfg-user-name"></div>
-      <div class="field"><label>GitHub Model</label>
-        <input type="text" id="cfg-github-model"></div>
-      <div class="field"><label>Ollama URL</label>
-        <input type="text" id="cfg-ollama-url"></div>
-      <div class="field"><label>Ollama Model</label>
-        <input type="text" id="cfg-ollama-model"></div>
-      <div class="field"><label>Default Lookback (days)</label>
-        <input type="text" id="cfg-date-range-days"></div>
-      <div class="field"><label>Confidence Threshold (0–1)</label>
-        <input type="text" id="cfg-confidence-threshold"></div>
-      <div class="field"><label>Max Body Characters sent to LLM</label>
-        <input type="text" id="cfg-max-body-chars"></div>
-      <div class="field"><label>Default Outlook Folder</label>
-        <input type="text" id="cfg-outlook-folder"></div>
-      <div class="field"><label>AppleScript Timeout (seconds)</label>
-        <input type="text" id="cfg-timeout"></div>
-      <div class="field"><label>Messages to scan (tail of mailbox)</label>
-        <input type="text" id="cfg-fetch-tail"></div>
-      <div class="field"><label>Fetch Email Body</label>
-        <label class="check-label"><input type="checkbox" id="cfg-include-body"> Include email body in screening</label>
-      </div>
-
-      <div class="modal-footer">
-        <span class="save-msg" id="save-msg">✓ Saved</span>
-        <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
-        <button class="btn-primary" onclick="saveConfig()">Save</button>
-      </div>
-    </div>
-
-    <!-- Guidelines tab -->
-    <div id="tab-guidelines" style="display:none">
-      <p style="font-size:13px;color:var(--subtext);margin-bottom:12px;">
-        Rules the AI uses when classifying emails. Generated automatically from your feedback, or add them manually.
-      </p>
-      <div id="guidelines-list"><p style="color:var(--subtext);font-size:13px;">Loading…</p></div>
-
-      <div class="guidelines-add">
-        <textarea id="new-guideline-text" rows="2" placeholder="Add a guideline, e.g. 'Automated build notifications are never action required'"></textarea>
-        <button class="btn-primary" style="align-self:flex-end" onclick="addGuidelineManually()">Add</button>
-      </div>
-
-      <div class="modal-footer" style="justify-content:space-between">
-        <button class="btn-secondary" style="font-size:12px" onclick="reembedAll(this)" title="Generate neural embeddings via Ollama (optional — keyword similarity is always active)">🔄 Regenerate neural embeddings (Ollama)</button>
-        <button class="btn-secondary" onclick="closeConfig()">Close</button>
-      </div>
+    <div class="modal-footer">
+      <span class="save-msg" id="save-msg">✓ Saved</span>
+      <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
+      <button class="btn-primary" onclick="saveConfig()">Save</button>
     </div>
   </div>
 </div>
@@ -512,7 +426,7 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
   <div class="modal">
     <h2>💬 Feedback</h2>
     <p style="font-size:13px;color:var(--subtext);margin-bottom:14px;">
-      Help train the screener. Your feedback is saved and the AI will generate a reusable guideline from it.
+      Help train the screener. Your feedback is saved and used to improve future classifications.
     </p>
 
     <div class="field">
@@ -537,13 +451,10 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
       <textarea id="fb-note" rows="3" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px;font-size:13px;resize:vertical;"></textarea>
     </div>
 
-    <div id="fb-guideline-status" style="display:none;font-size:12px;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--bg);">
-    </div>
-
     <div class="modal-footer">
       <span class="save-msg" id="fb-save-msg">✓ Feedback saved</span>
       <button class="btn-secondary" onclick="closeFeedback()">Cancel</button>
-      <button class="btn-primary" id="fb-submit-btn" onclick="submitFeedback()">Save &amp; Generate Guideline</button>
+      <button class="btn-primary" onclick="submitFeedback()">Save Feedback</button>
     </div>
   </div>
 </div>
@@ -552,41 +463,6 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 let _total = 0;
 let _sse = null;
 let _resultsMap = {};  // msg_id -> full result object, for pin lookup
-
-// ---------------------------------------------------------------------------
-// On page load: check if a screening job is already running on the server.
-// If so, connect immediately so the user sees the ongoing progress.
-// ---------------------------------------------------------------------------
-(function checkOngoingJob() {
-  fetch('/status')
-    .then(r => r.json())
-    .then(d => {
-      if (d.running) {
-        document.getElementById('progress-section').style.display = 'block';
-        document.getElementById('results-section').style.display = 'none';
-        document.getElementById('run-btn').disabled = true;
-        document.getElementById('run-icon').textContent = '⏳';
-        document.getElementById('status-text').textContent = 'Screening in progress — reconnecting…';
-        connectToStream();
-      }
-    })
-    .catch(() => {});
-})();
-
-// Re-attach when the phone screen wakes up or the tab becomes visible again.
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && _sse === null) {
-    fetch('/status')
-      .then(r => r.json())
-      .then(d => {
-        if (d.running) {
-          document.getElementById('status-text').textContent = 'Reconnecting…';
-          connectToStream();
-        }
-      })
-      .catch(() => {});
-  }
-});
 
 // Check Outlook mode on page load
 (function checkOutlookMode() {
@@ -609,9 +485,7 @@ document.addEventListener('visibilitychange', () => {
         msg.innerHTML = d.msg +
           ' &nbsp;<a href="#" onclick="recheckOutlook(event)">Re-check ↻</a>';
         document.getElementById('run-btn').disabled = true;
-        document.getElementById('run-btn').title = d.error
-          ? 'Mac is unreachable — check that it is on and Mac Agent is running'
-          : 'Outlook must be in Classic mode to screen emails';
+        document.getElementById('run-btn').title = 'Outlook must be in Classic mode to screen emails';
       }
     })
     .catch(() => {/* server not ready yet */});
@@ -651,16 +525,6 @@ document.querySelectorAll('input[name=provider]').forEach(r => {
   });
 });
 
-function connectToStream() {
-  if (_sse) { _sse.close(); _sse = null; }
-  _sse = new EventSource('/stream');
-  _sse.onmessage = handleEvent;
-  _sse.onerror = () => {
-    // Don't show an error for normal close after job finishes
-    if (_sse) { _sse.close(); _sse = null; }
-  };
-}
-
 function startScreening() {
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
@@ -677,7 +541,6 @@ function startScreening() {
     end: document.getElementById('end').value,
     folder: document.getElementById('folder').value,
     unread: document.getElementById('unread').checked,
-    force_rescreen: document.getElementById('force-rescreen').checked,
     provider: provider === 'no_llm' ? 'github' : provider,
     no_llm: provider === 'no_llm',
     model: document.getElementById('model').value,
@@ -686,13 +549,10 @@ function startScreening() {
   fetch('/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
     .then(r => r.json())
     .then(d => {
-      if (d.error && !d.running) { showError(d.error); return; }
-      // Whether job just started or was already running, connect to stream.
-      // The server replays the full event log so we never miss anything.
-      if (d.running) {
-        document.getElementById('status-text').textContent = 'Reconnecting to running job…';
-      }
-      connectToStream();
+      if (d.error) { showError(d.error); return; }
+      _sse = new EventSource('/stream');
+      _sse.onmessage = handleEvent;
+      _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
     })
     .catch(e => showError(e.message));
 }
@@ -711,14 +571,14 @@ function handleEvent(e) {
     document.getElementById('status-text').textContent =
       `Screening ${data.current} / ${data.total}: ${data.subject}`;
   } else if (data.type === 'done') {
-    if (_sse) { _sse.close(); _sse = null; }
+    _sse.close();
     document.getElementById('run-btn').disabled = false;
     document.getElementById('run-icon').textContent = '🔍';
     document.getElementById('progress-bar').style.width = '100%';
     document.getElementById('status-text').textContent = '✓ Done';
     renderResults(data);
   } else if (data.type === 'error') {
-    if (_sse) { _sse.close(); _sse = null; }
+    _sse.close();
     showError(data.msg);
   }
 }
@@ -776,20 +636,17 @@ function renderResults(data) {
     interesting.length ? interesting.map(r => emailCard(r, false, false)).join('') :
     '<div class="empty-state">Nothing flagged as interesting.</div>';
 
-  const noiseContainer = document.getElementById('noise-items');
-  noiseContainer.innerHTML = noise.length
-    ? noise.map(r => emailCard(r, false, false)).join('')
-    : '<div class="empty-state">No noise emails.</div>';
+  const noiseList = document.getElementById('noise-items');
+  noiseList.innerHTML = noise.map(r => `
+    <li>
+      <span class="noise-subject">${esc(r.email.subject || '(no subject)')}</span>
+      <span class="email-from">${esc(r.email.from || '?')}</span>
+      <button class="btn-open" onclick="openEmail('${r.email.id}','${esc(r.folder)}',${r.email.index||0},this)">↗ Open</button>
+    </li>`).join('');
 
   document.getElementById('results-section').style.display = 'block';
   renderPinnedSection();
-  // Only scroll to results if user is still near the top (hasn't scrolled down to read)
-  if (window.scrollY < 200) {
-    document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
-  }
-
-  // Load persisted notes + importance for all visible cards
-  loadAnnotations();
+  document.getElementById('results-section').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 function emailCard(r, showActions, isPinned) {
@@ -809,17 +666,10 @@ function emailCard(r, showActions, isPinned) {
         return `<li>${esc(a.description)}${due}</li>`;
       }).join('') + '</ul>';
   }
-
-  // summary: LLM-generated description of the email. Fall back to raw preview if absent.
-  const summaryHtml = s.summary
-    ? `<div class="email-summary">${esc(s.summary)}</div>`
-    : (e.preview ? `<div class="email-summary email-summary-raw">${esc(e.preview)}</div>` : '');
-
-  // reason: shown only when it adds value (action cards and interesting cards)
-  const reasonHtml = s.reason
-    ? `<div class="email-reason">${esc(s.reason)}</div>` : '';
+  const reasonHtml = s.reason ? `<div class="email-reason">${esc(s.reason)}</div>` : '';
   const interestHtml = (!showActions && !isPinned && s.interest_reason)
     ? `<div class="email-reason">${esc(s.interest_reason)}</div>` : '';
+  const previewHtml = e.preview ? `<div class="email-preview">${esc(e.preview)}</div>` : '';
 
   const pinBtn = isPinned
     ? `<button class="btn-unpin" onclick="unpinEmail('${e.id}',this)">✓ Done</button>`
@@ -831,33 +681,18 @@ function emailCard(r, showActions, isPinned) {
   const feedbackBtn = `<button class="btn-feedback" onclick="openFeedback('${e.id}',this)">💬 Feedback</button>`;
 
   return `<div class="${cardClass}" id="${cardId}">
-    <div class="email-notes-box">
-      <textarea class="email-notes-textarea" id="notes-${cardId}"
-        placeholder="+ Add notes…"
-        rows="1"
-        oninput="autoResizeTA(this)"
-        onfocus="autoResizeTA(this)"
-        onblur="saveNote('${e.id}',this)"
-      ></textarea>
-    </div>
     <div class="email-meta">
       <div class="email-subject">${esc(e.subject || '(no subject)')}</div>
       <div class="email-from">${esc(e.from || '?')}</div>
       <div class="email-date">${esc(e.date || '')}</div>
       ${(showActions || isPinned) ? `<span class="urgency-pill ${urgencyClass}">${urgencyLabel}</span>` : ''}
-      ${summaryHtml}${actionsHtml}${reasonHtml}${interestHtml}
+      ${reasonHtml}${interestHtml}${actionsHtml}${previewHtml}
     </div>
     <div class="email-card-actions">
       <button class="btn-open" onclick="openEmail('${e.id}','${esc(r.folder)}',${e.index||0},this)">↗ Open</button>
       ${pinBtn}
       ${markReadBtn}
-      <select class="importance-select" id="importance-${cardId}" onchange="saveImportance('${e.id}',this)">
-        <option value="normal">— Normal</option>
-        <option value="high">🔴 High</option>
-        <option value="low">🔽 Low</option>
-      </select>
       ${conf ? `<span class="conf-pill">${conf}</span>` : ''}
-      ${s._cached ? `<span class="conf-pill" title="From cache (screened ${esc(s._screened_at||'')})">📦 cached</span>` : ''}
       ${feedbackBtn}
     </div>
   </div>`;
@@ -886,59 +721,6 @@ function markRead(msgId, folder, idx, cardId, btn) {
   });
 }
 
-// ---- Annotations (notes + importance) ----
-
-function autoResizeTA(el) {
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
-}
-
-function saveNote(msgId, el) {
-  const notes = el.value;
-  fetch(`/emails/${encodeURIComponent(msgId)}/notes`, {
-    method: 'PUT',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({notes})
-  });
-}
-
-function saveImportance(msgId, el) {
-  const importance = el.value;
-  el.className = 'importance-select' + (importance === 'high' ? ' imp-high' : importance === 'low' ? ' imp-low' : '');
-  fetch(`/emails/${encodeURIComponent(msgId)}/importance`, {
-    method: 'PUT',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({importance})
-  });
-}
-
-function loadAnnotations() {
-  const ids = [...new Set([...Object.keys(_resultsMap), ...Object.keys(_pins)])];
-  if (!ids.length) return;
-  fetch('/emails/annotations', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ids})
-  }).then(r => r.json()).then(data => {
-    Object.entries(data).forEach(([id, ann]) => {
-      ['card-', 'pin-card-'].forEach(prefix => {
-        const cardId = prefix + id;
-        const notesEl = document.getElementById('notes-' + cardId);
-        if (notesEl && ann.notes) {
-          notesEl.value = ann.notes;
-          autoResizeTA(notesEl);
-        }
-        const impEl = document.getElementById('importance-' + cardId);
-        if (impEl) {
-          const imp = ann.user_importance || ann.importance || 'normal';
-          impEl.value = imp;
-          impEl.className = 'importance-select' + (imp === 'high' ? ' imp-high' : imp === 'low' ? ' imp-low' : '');
-        }
-      });
-    });
-  });
-}
-
 // ---- Pin / Unpin ----
 let _pins = {};  // msg_id -> full result payload
 
@@ -949,7 +731,6 @@ function loadPins() {
     renderPinnedSection();
     document.getElementById('results-section').style.display =
       Object.keys(_pins).length > 0 ? 'block' : document.getElementById('results-section').style.display;
-    loadAnnotations();
   });
 }
 
@@ -1057,26 +838,8 @@ function esc(s) {
 // Load pins on page load so the section is always visible
 loadPins();
 
-// Auto-reconnect if a job is already running when the page loads
-(function checkRunning() {
-  fetch('/status').then(r => r.json()).then(d => {
-    if (d.running) {
-      const btn = document.getElementById('run-btn');
-      btn.disabled = true;
-      document.getElementById('run-icon').textContent = '⏳';
-      document.getElementById('progress-section').style.display = 'block';
-      document.getElementById('status-text').textContent = 'Screening in progress…';
-      _sse = new EventSource('/stream');
-      _sse.onmessage = handleEvent;
-      _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
-    }
-  }).catch(() => {});
-})();
-
 // Config modal
 function openConfig() {
-  // Default to Config tab
-  showSettingsTab('config');
   fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('cfg-user-name').value = cfg.user_name || '';
     document.getElementById('cfg-github-model').value = cfg.github_model || '';
@@ -1115,118 +878,10 @@ function saveConfig() {
       setTimeout(closeConfig, 1000);
     });
 }
-
-function showSettingsTab(name) {
-  document.getElementById('tab-config').style.display = name === 'config' ? '' : 'none';
-  document.getElementById('tab-guidelines').style.display = name === 'guidelines' ? '' : 'none';
-  document.getElementById('tab-btn-config').classList.toggle('active', name === 'config');
-  document.getElementById('tab-btn-guidelines').classList.toggle('active', name === 'guidelines');
-  if (name === 'guidelines') loadGuidelinesTab();
-}
-
 // Close modal on overlay click
 document.getElementById('config-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeConfig();
 });
-
-// ---- Guidelines ----
-let _guidelines = [];
-
-function loadGuidelinesTab() {
-  fetch('/guidelines').then(r => r.json()).then(gs => {
-    _guidelines = gs;
-    renderGuidelinesList();
-    const count = gs.length;
-    document.getElementById('guidelines-count').textContent = count ? `(${count})` : '';
-  });
-}
-
-function renderGuidelinesList() {
-  const el = document.getElementById('guidelines-list');
-  if (!_guidelines.length) {
-    el.innerHTML = '<p style="color:var(--subtext);font-size:13px;">No guidelines yet. Submit feedback or add one manually.</p>';
-    return;
-  }
-  el.innerHTML = _guidelines.map(g => {
-    const embBadge = g.has_embedding
-      ? '<span title="Neural embedding ready (Ollama)" style="color:var(--green);font-size:10px">⬤ neural</span>'
-      : '<span title="Keyword similarity active — neural embedding not available" style="color:var(--subtext);font-size:10px">⬤ keyword</span>';
-    return `
-    <div class="guideline-item" id="gl-${g.id}">
-      <input type="checkbox" title="Enable/disable" ${g.enabled ? 'checked' : ''} onchange="toggleGuideline(${g.id}, this.checked)" style="margin-top:3px;flex-shrink:0">
-      <div style="flex:1">
-        <div class="guideline-text ${g.enabled ? '' : 'disabled'}" id="gl-text-${g.id}">${esc(g.text)}</div>
-        <div class="guideline-source">
-          ${g.source === 'feedback' ? '🤖 AI-generated from feedback' : '✏ Manual'}
-          · ${g.created_at ? g.created_at.slice(0,10) : ''}
-          · ${embBadge}
-        </div>
-      </div>
-      <button class="btn-icon" title="Edit" onclick="editGuideline(${g.id})">✏</button>
-      <button class="btn-icon" title="Delete" onclick="deleteGuideline(${g.id})" style="color:var(--red)">🗑</button>
-    </div>`}).join('');
-}
-
-function toggleGuideline(id, enabled) {
-  fetch(`/guidelines/${id}`, {
-    method: 'PUT', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({enabled})
-  }).then(r => r.json()).then(g => {
-    const idx = _guidelines.findIndex(x => x.id === id);
-    if (idx !== -1) { _guidelines[idx] = g; renderGuidelinesList(); }
-  });
-}
-
-function editGuideline(id) {
-  const g = _guidelines.find(x => x.id === id);
-  if (!g) return;
-  const newText = prompt('Edit guideline:', g.text);
-  if (newText === null || !newText.trim()) return;
-  fetch(`/guidelines/${id}`, {
-    method: 'PUT', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({text: newText})
-  }).then(r => r.json()).then(updated => {
-    const idx = _guidelines.findIndex(x => x.id === id);
-    if (idx !== -1) { _guidelines[idx] = updated; renderGuidelinesList(); }
-  });
-}
-
-function deleteGuideline(id) {
-  if (!confirm('Delete this guideline?')) return;
-  fetch(`/guidelines/${id}`, { method: 'DELETE' }).then(() => {
-    _guidelines = _guidelines.filter(x => x.id !== id);
-    renderGuidelinesList();
-    const count = _guidelines.length;
-    document.getElementById('guidelines-count').textContent = count ? `(${count})` : '';
-  });
-}
-
-function addGuidelineManually() {
-  const text = document.getElementById('new-guideline-text').value.trim();
-  if (!text) return;
-  fetch('/guidelines', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({text})
-  }).then(r => r.json()).then(g => {
-    _guidelines.unshift(g);
-    renderGuidelinesList();
-    document.getElementById('new-guideline-text').value = '';
-    document.getElementById('guidelines-count').textContent = `(${_guidelines.length})`;
-  });
-}
-
-function reembedAll(btn) {
-  btn.disabled = true;
-  btn.textContent = '⏳ Regenerating…';
-  fetch('/guidelines/reembed', { method: 'POST' })
-    .then(r => r.json())
-    .then(() => {
-      btn.textContent = '✓ Started — reload tab in a moment';
-      // Reload the list after a few seconds to show updated status
-      setTimeout(() => { loadGuidelinesTab(); btn.disabled = false; btn.textContent = '🔄 Regenerate embeddings'; }, 5000);
-    })
-    .catch(() => { btn.disabled = false; btn.textContent = '🔄 Regenerate embeddings'; });
-}
 
 // ---- Feedback modal ----
 let _fbMsgId = null;
@@ -1240,8 +895,6 @@ function openFeedback(msgId, btn) {
   document.getElementById('fb-correct').value = '';
   document.getElementById('fb-note').value = '';
   document.getElementById('fb-save-msg').style.display = 'none';
-  document.getElementById('fb-guideline-status').style.display = 'none';
-  document.getElementById('fb-submit-btn').disabled = false;
   document.getElementById('feedback-modal').classList.add('open');
 }
 function closeFeedback() {
@@ -1260,49 +913,14 @@ function submitFeedback() {
     correct_category: document.getElementById('fb-correct').value,
     note: document.getElementById('fb-note').value,
   };
-
-  const btn = document.getElementById('fb-submit-btn');
-  const statusEl = document.getElementById('fb-guideline-status');
-  btn.disabled = true;
-
-  // Step 1: save raw feedback
-  fetch('/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
-    .then(() => {
-      document.getElementById('fb-save-msg').style.display = 'inline';
-
-      // Step 2: only generate guideline if a correction was made
-      if (!payload.correct_category && !payload.note) {
-        btn.disabled = false;
-        setTimeout(closeFeedback, 1200);
-        return;
-      }
-
-      statusEl.style.display = 'block';
-      statusEl.style.color = 'var(--subtext)';
-      statusEl.textContent = '🤖 AI is generating a guideline from your feedback…';
-
-      fetch('/guidelines/from-feedback', {
-        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-      }).then(r => r.json()).then(d => {
-        if (d.error) {
-          statusEl.style.color = 'var(--red)';
-          statusEl.textContent = '⚠ Could not generate guideline: ' + d.error;
-          btn.disabled = false;
-          return;
-        }
-        statusEl.style.color = 'var(--green)';
-        statusEl.textContent = '✓ Guideline added: ' + d.guideline.text;
-        // Update count badge
-        fetch('/guidelines').then(r => r.json()).then(gs => {
-          document.getElementById('guidelines-count').textContent = gs.length ? `(${gs.length})` : '';
-        });
-        setTimeout(closeFeedback, 3000);
-      }).catch(err => {
-        statusEl.style.color = 'var(--red)';
-        statusEl.textContent = '⚠ Network error: ' + err.message;
-        btn.disabled = false;
-      });
-    });
+  fetch('/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(() => {
+    document.getElementById('fb-save-msg').style.display = 'inline';
+    setTimeout(closeFeedback, 1200);
+  });
 }
 document.getElementById('feedback-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFeedback();
