@@ -233,6 +233,14 @@ def email_viewer(msg_id):
     return render_template("email_view.html", email=email)
 
 
+def _remove_from_event_log(msg_id: str):
+    """Remove an email from the 'done' event in the replay log so reconnecting clients don't see it."""
+    with _subs_lock:
+        for evt in _event_log:
+            if evt.get("type") == "done" and "results" in evt:
+                evt["results"] = [r for r in evt["results"] if r.get("email", {}).get("id") != msg_id]
+
+
 @app.route("/mark-read/<msg_id>", methods=["POST"])
 def mark_read(msg_id):
     data = request.get_json() or {}
@@ -244,9 +252,13 @@ def mark_read(msg_id):
 
     if mac_agent_url:
         result, status = _call_mac_agent(f"/mark-read/{msg_id}", json_body={"folder": folder, "index": idx})
+        if result.get("success"):
+            _remove_from_event_log(msg_id)
         return jsonify(result), status
     else:
         success = se.mark_email_as_read(msg_id, folder, msg_index=idx)
+        if success:
+            _remove_from_event_log(msg_id)
         return jsonify({"success": success})
 
 
