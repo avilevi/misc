@@ -13,7 +13,8 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
+import math
+
 import csv
 import json
 import os
@@ -609,14 +610,121 @@ You also flag emails that are worth reading even if no action is needed.
 Respond ONLY with valid JSON. No prose before or after the JSON.
 """).strip()
 
+# Embedding endpoint for GitHub Models (separate from Copilot chat)
+# ---------------------------------------------------------------------------
+# Guideline retrieval — local keyword similarity (no external API needed)
+# ---------------------------------------------------------------------------
 
-def _build_system_prompt() -> str:
-    """Build the system prompt, appending enabled guidelines as extra rules."""
+_STOP_WORDS = {
+    'a','an','the','is','are','was','were','be','been','being','have','has',
+    'had','do','does','did','will','would','could','should','may','might',
+    'must','shall','can','to','of','in','on','at','by','for','with','about',
+    'as','into','through','before','after','from','up','out','and','but',
+    'or','nor','not','so','no','if','it','its','this','that','these','those',
+    'i','me','my','we','our','you','your','he','she','they','their','what',
+    'which','who','whom','am','re','ve','ll','d','s','t','email','emails',
+}
+
+
+def _tokenize(text: str) -> set[str]:
+    return {w for w in re.findall(r'\b[a-z]{3,}\b', text.lower()) if w not in _STOP_WORDS}
+
+
+def _text_similarity(query_tokens: set[str], guideline_tokens: set[str]) -> float:
+    """Jaccard similarity between two token sets — fast, no external deps."""
+    if not query_tokens or not guideline_tokens:
+        return 0.0
+    return len(query_tokens & guideline_tokens) / len(query_tokens | guideline_tokens)
+
+
+def get_embedding(text: str, cfg: dict) -> list[float] | None:
+    """Attempt to fetch a neural embedding from the configured provider.
+
+    Currently only Ollama's /api/embeddings is tried (GitHub Models embeddings
+    require a separate access grant that may not be available).
+    Returns None on any failure — callers fall back to keyword similarity.
+    """
+    if requests is None:
+        return None
+    provider = cfg.get("llm_provider", "github")
+    try:
+        if provider == "ollama":
+            ollama_url = cfg.get("ollama_url", "http://localhost:11434").rstrip("/")
+            model = cfg.get("ollama_embed_model") or cfg.get("ollama_model", "nomic-embed-text")
+            resp = requests.post(
+                f"{ollama_url}/api/embeddings",
+                json={"model": model, "prompt": text[:8000]},
+                timeout=20,
+            )
+            resp.raise_for_status()
+            return resp.json().get("embedding")
+    except Exception:
+        pass
+    return None
+
+
+def _retrieve_guidelines(email: dict, cfg: dict, top_k: int = 5) -> list[str]:
+    """Return up to *top_k* guideline texts most relevant to this email.
+
+    Strategy:
+    1. If precomputed neural embeddings exist, use cosine similarity.
+    2. Otherwise use Jaccard keyword similarity — works well in practice
+       because guidelines and the emails they cover share vocabulary.
+    """
     try:
         import db
-        guidelines = db.get_enabled_guidelines()
+        guidelines = db.get_guidelines(enabled_only=True)
     except Exception:
-        guidelines = []
+        return []
+
+    if not guidelines:
+        return []
+
+    if len(guidelines) <= top_k:
+        # Small enough to use all — no ranking needed
+        return [g["text"] for g in guidelines]
+
+    # Build query string from email metadata + body preview
+    query = " ".join(filter(None, [
+        email.get("subject", ""),
+        email.get("from", ""),
+        email.get("body_clean", "")[:300],
+    ]))
+
+    # Try neural embeddings first (Ollama only for now)
+    with_emb = [(g, json.loads(g["embedding"])) for g in guidelines if g.get("embedding")]
+    if len(with_emb) == len(guidelines):
+        query_vec = get_embedding(query, cfg)
+        if query_vec:
+            scored = sorted(
+                with_emb,
+                key=lambda pair: _cosine_similarity(pair[1], query_vec),
+                reverse=True,
+            )
+            return [g["text"] for g, _ in scored[:top_k]]
+
+    # Fall back to keyword similarity — fast, zero API calls
+    query_tokens = _tokenize(query)
+    scored = sorted(
+        guidelines,
+        key=lambda g: _text_similarity(query_tokens, _tokenize(g["text"])),
+        reverse=True,
+    )
+    return [g["text"] for g in scored[:top_k]]
+
+
+def _build_system_prompt(email: dict | None = None, cfg: dict | None = None) -> str:
+    """Build the system prompt, injecting the most relevant guidelines via RAG."""
+    if email and cfg:
+        guidelines = _retrieve_guidelines(email, cfg)
+    else:
+        # Fallback when called without context (shouldn't happen in normal flow)
+        try:
+            import db
+            guidelines = db.get_enabled_guidelines()[:10]
+        except Exception:
+            guidelines = []
+
 
     if not guidelines:
         return SYSTEM_PROMPT
@@ -697,7 +805,7 @@ def screen_with_llm(email: dict, cfg: dict) -> dict | None:
     payload = {
         "model": cfg["ollama_model"],
         "messages": [
-            {"role": "system", "content": _build_system_prompt()},
+            {"role": "system", "content": _build_system_prompt(email=email, cfg=cfg)},
             {"role": "user", "content": prompt},
         ],
         "stream": False,
@@ -801,7 +909,7 @@ def screen_with_github(email: dict, cfg: dict) -> dict | None:
     payload = {
         "model": cfg.get("github_model", "gpt-4o-mini"),
         "messages": [
-            {"role": "system", "content": _build_system_prompt()},
+            {"role": "system", "content": _build_system_prompt(email=email, cfg=cfg)},
             {"role": "user", "content": prompt},
         ],
         "response_format": {"type": "json_object"},

@@ -472,7 +472,8 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
         <button class="btn-primary" style="align-self:flex-end" onclick="addGuidelineManually()">Add</button>
       </div>
 
-      <div class="modal-footer">
+      <div class="modal-footer" style="justify-content:space-between">
+        <button class="btn-secondary" style="font-size:12px" onclick="reembedAll(this)" title="Generate neural embeddings via Ollama (optional — keyword similarity is always active)">🔄 Regenerate neural embeddings (Ollama)</button>
         <button class="btn-secondary" onclick="closeConfig()">Close</button>
       </div>
     </div>
@@ -1049,16 +1050,24 @@ function renderGuidelinesList() {
     el.innerHTML = '<p style="color:var(--subtext);font-size:13px;">No guidelines yet. Submit feedback or add one manually.</p>';
     return;
   }
-  el.innerHTML = _guidelines.map(g => `
+  el.innerHTML = _guidelines.map(g => {
+    const embBadge = g.has_embedding
+      ? '<span title="Neural embedding ready (Ollama)" style="color:var(--green);font-size:10px">⬤ neural</span>'
+      : '<span title="Keyword similarity active — neural embedding not available" style="color:var(--subtext);font-size:10px">⬤ keyword</span>';
+    return `
     <div class="guideline-item" id="gl-${g.id}">
       <input type="checkbox" title="Enable/disable" ${g.enabled ? 'checked' : ''} onchange="toggleGuideline(${g.id}, this.checked)" style="margin-top:3px;flex-shrink:0">
       <div style="flex:1">
         <div class="guideline-text ${g.enabled ? '' : 'disabled'}" id="gl-text-${g.id}">${esc(g.text)}</div>
-        <div class="guideline-source">${g.source === 'feedback' ? '🤖 AI-generated from feedback' : '✏ Manual'} · ${g.created_at ? g.created_at.slice(0,10) : ''}</div>
+        <div class="guideline-source">
+          ${g.source === 'feedback' ? '🤖 AI-generated from feedback' : '✏ Manual'}
+          · ${g.created_at ? g.created_at.slice(0,10) : ''}
+          · ${embBadge}
+        </div>
       </div>
       <button class="btn-icon" title="Edit" onclick="editGuideline(${g.id})">✏</button>
       <button class="btn-icon" title="Delete" onclick="deleteGuideline(${g.id})" style="color:var(--red)">🗑</button>
-    </div>`).join('');
+    </div>`}).join('');
 }
 
 function toggleGuideline(id, enabled) {
@@ -1107,6 +1116,19 @@ function addGuidelineManually() {
     document.getElementById('new-guideline-text').value = '';
     document.getElementById('guidelines-count').textContent = `(${_guidelines.length})`;
   });
+}
+
+function reembedAll(btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Regenerating…';
+  fetch('/guidelines/reembed', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      btn.textContent = '✓ Started — reload tab in a moment';
+      // Reload the list after a few seconds to show updated status
+      setTimeout(() => { loadGuidelinesTab(); btn.disabled = false; btn.textContent = '🔄 Regenerate embeddings'; }, 5000);
+    })
+    .catch(() => { btn.disabled = false; btn.textContent = '🔄 Regenerate embeddings'; });
 }
 
 // ---- Feedback modal ----

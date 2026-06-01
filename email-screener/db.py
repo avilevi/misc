@@ -99,7 +99,12 @@ def _migrate_schema():
         existing = {row[1] for row in conn.execute("PRAGMA table_info(screenings)").fetchall()}
         if "summary" not in existing:
             conn.execute("ALTER TABLE screenings ADD COLUMN summary TEXT")
-            conn.commit()
+
+        g_existing = {row[1] for row in conn.execute("PRAGMA table_info(guidelines)").fetchall()}
+        if "embedding" not in g_existing:
+            conn.execute("ALTER TABLE guidelines ADD COLUMN embedding TEXT")
+
+        conn.commit()
         conn.close()
 
 
@@ -319,13 +324,16 @@ def get_guideline(id_: int) -> dict | None:
     return dict(row) if row else None
 
 
-def update_guideline(id_: int, text: str | None = None, enabled: bool | None = None):
+def update_guideline(id_: int, text: str | None = None, enabled: bool | None = None,
+                     embedding: str | None = None):
     with _lock:
         conn = _connect()
         if text is not None:
             conn.execute("UPDATE guidelines SET text=? WHERE id=?", (text.strip(), id_))
         if enabled is not None:
             conn.execute("UPDATE guidelines SET enabled=? WHERE id=?", (1 if enabled else 0, id_))
+        if embedding is not None:
+            conn.execute("UPDATE guidelines SET embedding=? WHERE id=?", (embedding, id_))
         conn.commit()
         conn.close()
 

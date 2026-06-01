@@ -291,9 +291,30 @@ def add_feedback():
 # Guidelines
 # ---------------------------------------------------------------------------
 
+def _embed_guideline_async(id_: int, text: str):
+    """Try to generate a neural embedding and store it (Ollama only, optional)."""
+    def _run():
+        try:
+            cfg = se.load_config()
+            if cfg.get("llm_provider") != "ollama":
+                return  # Neural embeddings only supported via Ollama for now
+            vec = se.get_embedding(text, cfg)
+            if vec:
+                _db.update_guideline(id_, embedding=json.dumps(vec))
+                print(f"[guidelines] Neural embedding stored for id={id_}")
+        except Exception as e:
+            print(f"[guidelines] Embedding error for id={id_}: {e}")
+    threading.Thread(target=_run, daemon=True).start()
+
+
 @app.route("/guidelines", methods=["GET"])
 def get_guidelines():
-    return jsonify(_db.get_guidelines())
+    gs = _db.get_guidelines()
+    # Don't ship the raw embedding vectors to the client — they're large
+    for g in gs:
+        g["has_embedding"] = bool(g.get("embedding"))
+        g.pop("embedding", None)
+    return jsonify(gs)
 
 
 @app.route("/guidelines", methods=["POST"])
@@ -303,7 +324,11 @@ def create_guideline():
     if not text:
         return jsonify({"error": "text is required"}), 400
     id_ = _db.add_guideline(text, source="manual")
-    return jsonify(_db.get_guideline(id_))
+    _embed_guideline_async(id_, text)
+    g = _db.get_guideline(id_)
+    g["has_embedding"] = False  # embedding is in-flight
+    g.pop("embedding", None)
+    return jsonify(g)
 
 
 @app.route("/guidelines/<int:gid>", methods=["PUT"])
@@ -313,8 +338,16 @@ def update_guideline(gid):
     enabled = data.get("enabled")
     if enabled is not None:
         enabled = bool(enabled)
-    _db.update_guideline(gid, text=text, enabled=enabled)
-    return jsonify(_db.get_guideline(gid))
+    if text:
+        # Text changed — clear old embedding and regenerate
+        _db.update_guideline(gid, text=text, enabled=enabled, embedding=None)
+        _embed_guideline_async(gid, text)
+    else:
+        _db.update_guideline(gid, enabled=enabled)
+    g = _db.get_guideline(gid)
+    g["has_embedding"] = bool(g.get("embedding"))
+    g.pop("embedding", None)
+    return jsonify(g)
 
 
 @app.route("/guidelines/<int:gid>", methods=["DELETE"])
@@ -338,9 +371,32 @@ def guideline_from_feedback():
             cfg=cfg,
         )
         id_ = _db.add_guideline(text, source="feedback")
-        return jsonify({"status": "created", "guideline": _db.get_guideline(id_)})
+        _embed_guideline_async(id_, text)
+        g = _db.get_guideline(id_)
+        g["has_embedding"] = False  # embedding is in-flight
+        g.pop("embedding", None)
+        return jsonify({"status": "created", "guideline": g})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/guidelines/reembed", methods=["POST"])
+def reembed_guidelines():
+    """Regenerate embeddings for all guidelines that are missing one."""
+    def _run():
+        cfg = se.load_config()
+        gs = _db.get_guidelines()
+        for g in gs:
+            if not g.get("embedding"):
+                try:
+                    vec = se.get_embedding(g["text"], cfg)
+                    if vec:
+                        _db.update_guideline(g["id"], embedding=json.dumps(vec))
+                        print(f"[guidelines] Embedded id={g['id']}")
+                except Exception as e:
+                    print(f"[guidelines] Reembed error for id={g['id']}: {e}")
+    threading.Thread(target=_run, daemon=True).start()
+    return jsonify({"status": "started"})
 
 
 @app.route("/check-outlook")
