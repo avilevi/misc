@@ -739,7 +739,7 @@ The recipient's name is {user_name}. Analyse the following email and return a JS
 object with EXACTLY this structure:
 
 {{
-  "summary": "1-2 sentences describing what this email is about and what it's asking — written as a neutral description, not a classification",
+  "summary": "1-2 tight sentences capturing the SPECIFIC content: who is asking what, the concrete details, and any key names/topics mentioned. Do NOT write generic descriptions like 'an update about a project' — write the actual substance, e.g. 'Ran forwards Yaron's request for a background trace-simplification engine: it should prefer counterexamples, prioritize shorter traces, and show a GUI indication when a trace is simplified.'",
   "needs_action": true or false,
   "urgency": "low" | "medium" | "high",
   "confidence": 0.0 to 1.0,
