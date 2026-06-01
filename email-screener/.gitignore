@@ -1,0 +1,20 @@
+# Runtime data
+*.db
+*.db-shm
+*.db-wal
+reports/
+token.pickle
+token.json
+
+# Config with secrets
+config.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Logs / temp
+*.log
+nohup.out
