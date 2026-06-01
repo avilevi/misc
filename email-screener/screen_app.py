@@ -31,8 +31,15 @@ _db.init_db()
 
 _job_lock = threading.Lock()
 _job_running = False
-_event_queue: queue.Queue = queue.Queue()
 _last_results: list[dict] = []
+
+# Event log + fan-out subscribers.
+# _event_log holds every event emitted for the current job so that any
+# client connecting mid-run (or after a reconnect) gets the full replay.
+# All access is serialised by _subs_lock so subscribe + snapshot is atomic.
+_event_log: list[dict] = []
+_subscribers: list[queue.Queue] = []
+_subs_lock = threading.Lock()
 
 
 def _is_mac_client() -> bool:
@@ -138,20 +145,53 @@ def run():
 @app.route("/status")
 def status():
     with _job_lock:
-        return jsonify({"running": _job_running})
+        with _subs_lock:
+            return jsonify({"running": _job_running, "has_log": bool(_event_log)})
 
 
 @app.route("/stream")
 def stream():
+    """SSE stream with full replay.
+
+    On connect we atomically snapshot the current event log AND add the
+    client queue to the subscriber list. This means:
+    - Events already emitted → delivered via log replay
+    - Events emitted after subscribe → delivered via the queue
+    No events are lost and no duplicates occur.
+    """
+    q: queue.Queue = queue.Queue()
+    with _subs_lock:
+        _subscribers.append(q)
+        log_snapshot = list(_event_log)
+
     def generate():
-        while True:
-            try:
-                event = _event_queue.get(timeout=30)
+        try:
+            # Replay everything that happened before this client connected
+            terminal = False
+            for event in log_snapshot:
                 yield f"data: {json.dumps(event)}\n\n"
                 if event.get("type") in ("done", "error"):
-                    break
-            except queue.Empty:
-                yield f"data: {json.dumps({'type': 'ping'})}\n\n"
+                    terminal = True
+
+            if terminal:
+                # Job already finished — nothing more to wait for
+                return
+
+            # Stream live events
+            while True:
+                try:
+                    event = q.get(timeout=30)
+                    yield f"data: {json.dumps(event)}\n\n"
+                    if event.get("type") in ("done", "error"):
+                        break
+                except queue.Empty:
+                    yield f"data: {json.dumps({'type': 'ping'})}\n\n"
+        finally:
+            with _subs_lock:
+                try:
+                    _subscribers.remove(q)
+                except ValueError:
+                    pass
 
     return Response(
         stream_with_context(generate()),
@@ -283,17 +323,18 @@ def client_context():
 # ---------------------------------------------------------------------------
 
 def _emit(event: dict):
-    _event_queue.put(event)
+    """Append event to the persistent log and fan-out to all live subscribers."""
+    with _subs_lock:
+        _event_log.append(event)
+        for q in _subscribers:
+            q.put(event)
 
 
 def _do_screening(data: dict):
     global _job_running, _last_results
-    # Drain stale events
-    while not _event_queue.empty():
-        try:
-            _event_queue.get_nowait()
-        except queue.Empty:
-            break
+    # Clear the log for the new job (existing subscribers see the clear on reconnect)
+    with _subs_lock:
+        _event_log.clear()
 
     try:
         cfg = se.load_config()

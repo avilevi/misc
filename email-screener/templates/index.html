@@ -468,6 +468,41 @@ let _total = 0;
 let _sse = null;
 let _resultsMap = {};  // msg_id -> full result object, for pin lookup
 
+// ---------------------------------------------------------------------------
+// On page load: check if a screening job is already running on the server.
+// If so, connect immediately so the user sees the ongoing progress.
+// ---------------------------------------------------------------------------
+(function checkOngoingJob() {
+  fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+      if (d.running) {
+        document.getElementById('progress-section').style.display = 'block';
+        document.getElementById('results-section').style.display = 'none';
+        document.getElementById('run-btn').disabled = true;
+        document.getElementById('run-icon').textContent = '⏳';
+        document.getElementById('status-text').textContent = 'Screening in progress — reconnecting…';
+        connectToStream();
+      }
+    })
+    .catch(() => {});
+})();
+
+// Re-attach when the phone screen wakes up or the tab becomes visible again.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && _sse === null) {
+    fetch('/status')
+      .then(r => r.json())
+      .then(d => {
+        if (d.running) {
+          document.getElementById('status-text').textContent = 'Reconnecting…';
+          connectToStream();
+        }
+      })
+      .catch(() => {});
+  }
+});
+
 // Check Outlook mode on page load
 (function checkOutlookMode() {
   fetch('/check-outlook')
@@ -531,6 +566,16 @@ document.querySelectorAll('input[name=provider]').forEach(r => {
   });
 });
 
+function connectToStream() {
+  if (_sse) { _sse.close(); _sse = null; }
+  _sse = new EventSource('/stream');
+  _sse.onmessage = handleEvent;
+  _sse.onerror = () => {
+    // Don't show an error for normal close after job finishes
+    if (_sse) { _sse.close(); _sse = null; }
+  };
+}
+
 function startScreening() {
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
@@ -555,18 +600,13 @@ function startScreening() {
   fetch('/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
     .then(r => r.json())
     .then(d => {
+      if (d.error && !d.running) { showError(d.error); return; }
+      // Whether job just started or was already running, connect to stream.
+      // The server replays the full event log so we never miss anything.
       if (d.running) {
-        // Job already in progress — reconnect to the existing stream
         document.getElementById('status-text').textContent = 'Reconnecting to running job…';
-        _sse = new EventSource('/stream');
-        _sse.onmessage = handleEvent;
-        _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
-        return;
       }
-      if (d.error) { showError(d.error); return; }
-      _sse = new EventSource('/stream');
-      _sse.onmessage = handleEvent;
-      _sse.onerror = () => { showError('Connection lost.'); _sse.close(); };
+      connectToStream();
     })
     .catch(e => showError(e.message));
 }
@@ -585,14 +625,14 @@ function handleEvent(e) {
     document.getElementById('status-text').textContent =
       `Screening ${data.current} / ${data.total}: ${data.subject}`;
   } else if (data.type === 'done') {
-    _sse.close();
+    if (_sse) { _sse.close(); _sse = null; }
     document.getElementById('run-btn').disabled = false;
     document.getElementById('run-icon').textContent = '🔍';
     document.getElementById('progress-bar').style.width = '100%';
     document.getElementById('status-text').textContent = '✓ Done';
     renderResults(data);
   } else if (data.type === 'error') {
-    _sse.close();
+    if (_sse) { _sse.close(); _sse = null; }
     showError(data.msg);
   }
 }
