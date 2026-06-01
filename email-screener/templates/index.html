@@ -269,11 +269,11 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 }
 .modal-overlay.open { display: flex; }
 .modal {
-  background: var(--surface); border-radius: 16px; width: 500px; max-width: 95vw;
-  max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  background: var(--surface); border-radius: 16px; width: 540px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.25);
   padding: 24px;
 }
-.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
 .modal .field { margin-bottom: 12px; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .btn-secondary {
@@ -286,6 +286,35 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
 }
 .btn-primary:hover { background: var(--accent-hover); }
 .save-msg { font-size: 12px; color: var(--green); display: none; }
+
+/* ---- Modal tabs ---- */
+.modal-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.modal-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--subtext);
+  margin-bottom: -1px;
+}
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ---- Guidelines list ---- */
+.guideline-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.guideline-item:last-child { border-bottom: none; }
+.guideline-text { flex: 1; line-height: 1.5; color: var(--text); }
+.guideline-text.disabled { color: var(--subtext); text-decoration: line-through; }
+.guideline-source { font-size: 10px; color: var(--subtext); margin-top: 2px; }
+.btn-icon {
+  background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 5px;
+  color: var(--subtext); border-radius: 5px;
+}
+.btn-icon:hover { background: var(--bg); color: var(--text); }
+.guidelines-add { display: flex; gap: 8px; margin-top: 14px; }
+.guidelines-add textarea {
+  flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px;
+  font-size: 13px; resize: vertical; font-family: inherit;
+}
 
 .empty-state { text-align: center; padding: 24px; color: var(--subtext); font-size: 13px; }
 </style>
@@ -393,34 +422,59 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
   <div class="modal">
     <h2>⚙ Settings</h2>
 
-    <div class="field"><label>Your Name (used to detect actions assigned to you)</label>
-      <input type="text" id="cfg-user-name"></div>
-    <div class="field"><label>GitHub Model</label>
-      <input type="text" id="cfg-github-model"></div>
-    <div class="field"><label>Ollama URL</label>
-      <input type="text" id="cfg-ollama-url"></div>
-    <div class="field"><label>Ollama Model</label>
-      <input type="text" id="cfg-ollama-model"></div>
-    <div class="field"><label>Default Lookback (days)</label>
-      <input type="text" id="cfg-date-range-days"></div>
-    <div class="field"><label>Confidence Threshold (0–1)</label>
-      <input type="text" id="cfg-confidence-threshold"></div>
-    <div class="field"><label>Max Body Characters sent to LLM</label>
-      <input type="text" id="cfg-max-body-chars"></div>
-    <div class="field"><label>Default Outlook Folder</label>
-      <input type="text" id="cfg-outlook-folder"></div>
-    <div class="field"><label>AppleScript Timeout (seconds)</label>
-      <input type="text" id="cfg-timeout"></div>
-    <div class="field"><label>Messages to scan (tail of mailbox)</label>
-      <input type="text" id="cfg-fetch-tail"></div>
-    <div class="field"><label>Fetch Email Body</label>
-      <label class="check-label"><input type="checkbox" id="cfg-include-body"> Include email body in screening</label>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-btn-config" onclick="showSettingsTab('config')">Config</button>
+      <button class="modal-tab" id="tab-btn-guidelines" onclick="showSettingsTab('guidelines')">🧠 Guidelines <span id="guidelines-count"></span></button>
     </div>
 
-    <div class="modal-footer">
-      <span class="save-msg" id="save-msg">✓ Saved</span>
-      <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
-      <button class="btn-primary" onclick="saveConfig()">Save</button>
+    <!-- Config tab -->
+    <div id="tab-config">
+      <div class="field"><label>Your Name (used to detect actions assigned to you)</label>
+        <input type="text" id="cfg-user-name"></div>
+      <div class="field"><label>GitHub Model</label>
+        <input type="text" id="cfg-github-model"></div>
+      <div class="field"><label>Ollama URL</label>
+        <input type="text" id="cfg-ollama-url"></div>
+      <div class="field"><label>Ollama Model</label>
+        <input type="text" id="cfg-ollama-model"></div>
+      <div class="field"><label>Default Lookback (days)</label>
+        <input type="text" id="cfg-date-range-days"></div>
+      <div class="field"><label>Confidence Threshold (0–1)</label>
+        <input type="text" id="cfg-confidence-threshold"></div>
+      <div class="field"><label>Max Body Characters sent to LLM</label>
+        <input type="text" id="cfg-max-body-chars"></div>
+      <div class="field"><label>Default Outlook Folder</label>
+        <input type="text" id="cfg-outlook-folder"></div>
+      <div class="field"><label>AppleScript Timeout (seconds)</label>
+        <input type="text" id="cfg-timeout"></div>
+      <div class="field"><label>Messages to scan (tail of mailbox)</label>
+        <input type="text" id="cfg-fetch-tail"></div>
+      <div class="field"><label>Fetch Email Body</label>
+        <label class="check-label"><input type="checkbox" id="cfg-include-body"> Include email body in screening</label>
+      </div>
+
+      <div class="modal-footer">
+        <span class="save-msg" id="save-msg">✓ Saved</span>
+        <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
+        <button class="btn-primary" onclick="saveConfig()">Save</button>
+      </div>
+    </div>
+
+    <!-- Guidelines tab -->
+    <div id="tab-guidelines" style="display:none">
+      <p style="font-size:13px;color:var(--subtext);margin-bottom:12px;">
+        Rules the AI uses when classifying emails. Generated automatically from your feedback, or add them manually.
+      </p>
+      <div id="guidelines-list"><p style="color:var(--subtext);font-size:13px;">Loading…</p></div>
+
+      <div class="guidelines-add">
+        <textarea id="new-guideline-text" rows="2" placeholder="Add a guideline, e.g. 'Automated build notifications are never action required'"></textarea>
+        <button class="btn-primary" style="align-self:flex-end" onclick="addGuidelineManually()">Add</button>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeConfig()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -430,7 +484,7 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
   <div class="modal">
     <h2>💬 Feedback</h2>
     <p style="font-size:13px;color:var(--subtext);margin-bottom:14px;">
-      Help train the screener. Your feedback is saved and used to improve future classifications.
+      Help train the screener. Your feedback is saved and the AI will generate a reusable guideline from it.
     </p>
 
     <div class="field">
@@ -455,10 +509,13 @@ main { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
       <textarea id="fb-note" rows="3" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:7px;font-size:13px;resize:vertical;"></textarea>
     </div>
 
+    <div id="fb-guideline-status" style="display:none;font-size:12px;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--bg);">
+    </div>
+
     <div class="modal-footer">
       <span class="save-msg" id="fb-save-msg">✓ Feedback saved</span>
       <button class="btn-secondary" onclick="closeFeedback()">Cancel</button>
-      <button class="btn-primary" onclick="submitFeedback()">Save Feedback</button>
+      <button class="btn-primary" id="fb-submit-btn" onclick="submitFeedback()">Save &amp; Generate Guideline</button>
     </div>
   </div>
 </div>
@@ -920,6 +977,8 @@ loadPins();
 
 // Config modal
 function openConfig() {
+  // Default to Config tab
+  showSettingsTab('config');
   fetch('/config').then(r => r.json()).then(cfg => {
     document.getElementById('cfg-user-name').value = cfg.user_name || '';
     document.getElementById('cfg-github-model').value = cfg.github_model || '';
@@ -958,10 +1017,97 @@ function saveConfig() {
       setTimeout(closeConfig, 1000);
     });
 }
+
+function showSettingsTab(name) {
+  document.getElementById('tab-config').style.display = name === 'config' ? '' : 'none';
+  document.getElementById('tab-guidelines').style.display = name === 'guidelines' ? '' : 'none';
+  document.getElementById('tab-btn-config').classList.toggle('active', name === 'config');
+  document.getElementById('tab-btn-guidelines').classList.toggle('active', name === 'guidelines');
+  if (name === 'guidelines') loadGuidelinesTab();
+}
+
 // Close modal on overlay click
 document.getElementById('config-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeConfig();
 });
+
+// ---- Guidelines ----
+let _guidelines = [];
+
+function loadGuidelinesTab() {
+  fetch('/guidelines').then(r => r.json()).then(gs => {
+    _guidelines = gs;
+    renderGuidelinesList();
+    const count = gs.length;
+    document.getElementById('guidelines-count').textContent = count ? `(${count})` : '';
+  });
+}
+
+function renderGuidelinesList() {
+  const el = document.getElementById('guidelines-list');
+  if (!_guidelines.length) {
+    el.innerHTML = '<p style="color:var(--subtext);font-size:13px;">No guidelines yet. Submit feedback or add one manually.</p>';
+    return;
+  }
+  el.innerHTML = _guidelines.map(g => `
+    <div class="guideline-item" id="gl-${g.id}">
+      <input type="checkbox" title="Enable/disable" ${g.enabled ? 'checked' : ''} onchange="toggleGuideline(${g.id}, this.checked)" style="margin-top:3px;flex-shrink:0">
+      <div style="flex:1">
+        <div class="guideline-text ${g.enabled ? '' : 'disabled'}" id="gl-text-${g.id}">${esc(g.text)}</div>
+        <div class="guideline-source">${g.source === 'feedback' ? '🤖 AI-generated from feedback' : '✏ Manual'} · ${g.created_at ? g.created_at.slice(0,10) : ''}</div>
+      </div>
+      <button class="btn-icon" title="Edit" onclick="editGuideline(${g.id})">✏</button>
+      <button class="btn-icon" title="Delete" onclick="deleteGuideline(${g.id})" style="color:var(--red)">🗑</button>
+    </div>`).join('');
+}
+
+function toggleGuideline(id, enabled) {
+  fetch(`/guidelines/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({enabled})
+  }).then(r => r.json()).then(g => {
+    const idx = _guidelines.findIndex(x => x.id === id);
+    if (idx !== -1) { _guidelines[idx] = g; renderGuidelinesList(); }
+  });
+}
+
+function editGuideline(id) {
+  const g = _guidelines.find(x => x.id === id);
+  if (!g) return;
+  const newText = prompt('Edit guideline:', g.text);
+  if (newText === null || !newText.trim()) return;
+  fetch(`/guidelines/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({text: newText})
+  }).then(r => r.json()).then(updated => {
+    const idx = _guidelines.findIndex(x => x.id === id);
+    if (idx !== -1) { _guidelines[idx] = updated; renderGuidelinesList(); }
+  });
+}
+
+function deleteGuideline(id) {
+  if (!confirm('Delete this guideline?')) return;
+  fetch(`/guidelines/${id}`, { method: 'DELETE' }).then(() => {
+    _guidelines = _guidelines.filter(x => x.id !== id);
+    renderGuidelinesList();
+    const count = _guidelines.length;
+    document.getElementById('guidelines-count').textContent = count ? `(${count})` : '';
+  });
+}
+
+function addGuidelineManually() {
+  const text = document.getElementById('new-guideline-text').value.trim();
+  if (!text) return;
+  fetch('/guidelines', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({text})
+  }).then(r => r.json()).then(g => {
+    _guidelines.unshift(g);
+    renderGuidelinesList();
+    document.getElementById('new-guideline-text').value = '';
+    document.getElementById('guidelines-count').textContent = `(${_guidelines.length})`;
+  });
+}
 
 // ---- Feedback modal ----
 let _fbMsgId = null;
@@ -975,6 +1121,8 @@ function openFeedback(msgId, btn) {
   document.getElementById('fb-correct').value = '';
   document.getElementById('fb-note').value = '';
   document.getElementById('fb-save-msg').style.display = 'none';
+  document.getElementById('fb-guideline-status').style.display = 'none';
+  document.getElementById('fb-submit-btn').disabled = false;
   document.getElementById('feedback-modal').classList.add('open');
 }
 function closeFeedback() {
@@ -993,14 +1141,49 @@ function submitFeedback() {
     correct_category: document.getElementById('fb-correct').value,
     note: document.getElementById('fb-note').value,
   };
-  fetch('/feedback', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  }).then(() => {
-    document.getElementById('fb-save-msg').style.display = 'inline';
-    setTimeout(closeFeedback, 1200);
-  });
+
+  const btn = document.getElementById('fb-submit-btn');
+  const statusEl = document.getElementById('fb-guideline-status');
+  btn.disabled = true;
+
+  // Step 1: save raw feedback
+  fetch('/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+    .then(() => {
+      document.getElementById('fb-save-msg').style.display = 'inline';
+
+      // Step 2: only generate guideline if a correction was made
+      if (!payload.correct_category && !payload.note) {
+        btn.disabled = false;
+        setTimeout(closeFeedback, 1200);
+        return;
+      }
+
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--subtext)';
+      statusEl.textContent = '🤖 AI is generating a guideline from your feedback…';
+
+      fetch('/guidelines/from-feedback', {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+      }).then(r => r.json()).then(d => {
+        if (d.error) {
+          statusEl.style.color = 'var(--red)';
+          statusEl.textContent = '⚠ Could not generate guideline: ' + d.error;
+          btn.disabled = false;
+          return;
+        }
+        statusEl.style.color = 'var(--green)';
+        statusEl.textContent = '✓ Guideline added: ' + d.guideline.text;
+        // Update count badge
+        fetch('/guidelines').then(r => r.json()).then(gs => {
+          document.getElementById('guidelines-count').textContent = gs.length ? `(${gs.length})` : '';
+        });
+        setTimeout(closeFeedback, 3000);
+      }).catch(err => {
+        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = '⚠ Network error: ' + err.message;
+        btn.disabled = false;
+      });
+    });
 }
 document.getElementById('feedback-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFeedback();

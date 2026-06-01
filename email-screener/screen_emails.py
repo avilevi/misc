@@ -611,35 +611,19 @@ Respond ONLY with valid JSON. No prose before or after the JSON.
 
 
 def _build_system_prompt() -> str:
-    """Build the system prompt, appending any learned feedback as extra rules."""
+    """Build the system prompt, appending enabled guidelines as extra rules."""
     try:
         import db
-        items = db.get_feedback_for_prompt(limit=40)
+        guidelines = db.get_enabled_guidelines()
     except Exception:
-        # Fallback: read from feedback.json if db not available
-        feedback_file = Path(__file__).parent / "feedback.json"
-        if not feedback_file.exists():
-            return SYSTEM_PROMPT
-        try:
-            with open(feedback_file) as f:
-                items = [i for i in json.load(f) if i.get("correct_category")]
-        except Exception:
-            return SYSTEM_PROMPT
+        guidelines = []
 
-    if not items:
+    if not guidelines:
         return SYSTEM_PROMPT
 
-    lines = ["\nLearned corrections from past feedback (apply these as additional rules):"]
-    for fb in items:
-        subj = fb.get("subject", "")
-        orig = fb.get("original_category", "")
-        corr = fb.get("correct_category", "")
-        note = fb.get("note", "")
-        if corr:
-            entry = f'- Email "{subj[:60]}": was classified as "{orig}", correct is "{corr}"'
-            if note:
-                entry += f' — note: {note}'
-            lines.append(entry)
+    lines = ["\nAdditional guidelines to apply when classifying emails:"]
+    for g in guidelines:
+        lines.append(f"- {g}")
     return SYSTEM_PROMPT + "\n" + "\n".join(lines)
 
 USER_PROMPT_TEMPLATE = textwrap.dedent("""
@@ -907,6 +891,89 @@ def screen_rule_based(email: dict) -> dict:
         "interesting": False,
         "interest_reason": None,
     }
+
+
+
+# ---------------------------------------------------------------------------
+# Guideline generation (AI distills a feedback correction into a reusable rule)
+# ---------------------------------------------------------------------------
+
+def generate_guideline_from_feedback(
+    subject: str,
+    from_: str,
+    original: str,
+    correct: str,
+    note: str,
+    cfg: dict,
+) -> str:
+    """Call the LLM to produce a single generalized guideline from one feedback correction.
+
+    Returns the guideline text (a short sentence or two).
+    Raises RuntimeError if the LLM cannot be reached.
+    """
+    if requests is None:
+        raise RuntimeError("'requests' library not installed.")
+
+    prompt = (
+        "A user corrected an email classification:\n"
+        f"- Subject: {subject}\n"
+        f"- From: {from_}\n"
+        f"- Original classification: {original}\n"
+        f"- Correct classification: {correct}\n"
+        f"- User note: {note or 'none'}\n\n"
+        "Write ONE concise guideline rule (1–2 sentences) that generalises this correction "
+        "so it can be applied to similar future emails. "
+        "The rule must be broad enough to cover similar patterns, not just this exact email. "
+        "Return ONLY the guideline text — no prefix, no JSON, no bullet point."
+    )
+
+    provider = cfg.get("llm_provider", "github")
+
+    if provider == "github":
+        token = _resolve_github_token(cfg)
+        if not token:
+            raise RuntimeError("No GitHub token found.")
+        if "_github_endpoint" not in cfg:
+            cfg["_github_endpoint"] = _get_copilot_endpoint(token)
+        resp = requests.post(
+            cfg["_github_endpoint"],
+            json={
+                "model": cfg.get("github_model", "gpt-4o-mini"),
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant. Respond concisely."},
+                    {"role": "user", "content": prompt},
+                ],
+            },
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "Copilot-Integration-Id": "vscode-chat",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
+
+    elif provider == "ollama":
+        ollama_url = cfg.get("ollama_url", "http://localhost:11434").rstrip("/")
+        model = cfg.get("ollama_model", "llama3")
+        resp = requests.post(
+            f"{ollama_url}/api/chat",
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant. Respond concisely."},
+                    {"role": "user", "content": prompt},
+                ],
+                "stream": False,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        return resp.json()["message"]["content"].strip()
+
+    else:
+        raise RuntimeError(f"Unsupported provider for guideline generation: {provider}")
 
 
 # ---------------------------------------------------------------------------

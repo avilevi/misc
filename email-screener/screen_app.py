@@ -287,6 +287,62 @@ def add_feedback():
     return jsonify({"status": "saved"})
 
 
+# ---------------------------------------------------------------------------
+# Guidelines
+# ---------------------------------------------------------------------------
+
+@app.route("/guidelines", methods=["GET"])
+def get_guidelines():
+    return jsonify(_db.get_guidelines())
+
+
+@app.route("/guidelines", methods=["POST"])
+def create_guideline():
+    data = request.get_json() or {}
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    id_ = _db.add_guideline(text, source="manual")
+    return jsonify(_db.get_guideline(id_))
+
+
+@app.route("/guidelines/<int:gid>", methods=["PUT"])
+def update_guideline(gid):
+    data = request.get_json() or {}
+    text = data.get("text")
+    enabled = data.get("enabled")
+    if enabled is not None:
+        enabled = bool(enabled)
+    _db.update_guideline(gid, text=text, enabled=enabled)
+    return jsonify(_db.get_guideline(gid))
+
+
+@app.route("/guidelines/<int:gid>", methods=["DELETE"])
+def delete_guideline(gid):
+    _db.delete_guideline(gid)
+    return jsonify({"status": "deleted"})
+
+
+@app.route("/guidelines/from-feedback", methods=["POST"])
+def guideline_from_feedback():
+    """AI agent: convert one feedback correction into a generalised guideline."""
+    data = request.get_json() or {}
+    cfg = se.load_config()
+    try:
+        text = se.generate_guideline_from_feedback(
+            subject=data.get("subject", ""),
+            from_=data.get("from_", ""),
+            original=data.get("original_category", ""),
+            correct=data.get("correct_category", ""),
+            note=data.get("note", ""),
+            cfg=cfg,
+        )
+        id_ = _db.add_guideline(text, source="feedback")
+        return jsonify({"status": "created", "guideline": _db.get_guideline(id_)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/check-outlook")
 def check_outlook():
     cfg = se.load_config()

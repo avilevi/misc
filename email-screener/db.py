@@ -76,6 +76,14 @@ def init_db():
             note                TEXT,
             ts                  TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS guidelines (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            text        TEXT NOT NULL,
+            source      TEXT DEFAULT 'manual',
+            enabled     INTEGER DEFAULT 1,
+            created_at  TEXT DEFAULT (datetime('now'))
+        );
         """)
         conn.commit()
         conn.close()
@@ -270,3 +278,66 @@ def get_feedback_for_prompt(limit: int = 40) -> list[dict]:
         ).fetchall()
         conn.close()
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Guidelines (AI-generated or manually authored rules injected into prompts)
+# ---------------------------------------------------------------------------
+
+def add_guideline(text: str, source: str = "manual") -> int:
+    with _lock:
+        conn = _connect()
+        cur = conn.execute(
+            "INSERT INTO guidelines (text, source) VALUES (?, ?)", (text.strip(), source)
+        )
+        conn.commit()
+        row_id = cur.lastrowid
+        conn.close()
+    return row_id
+
+
+def get_guidelines(enabled_only: bool = False) -> list[dict]:
+    with _lock:
+        conn = _connect()
+        if enabled_only:
+            rows = conn.execute(
+                "SELECT * FROM guidelines WHERE enabled=1 ORDER BY created_at DESC"
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM guidelines ORDER BY created_at DESC"
+            ).fetchall()
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_guideline(id_: int) -> dict | None:
+    with _lock:
+        conn = _connect()
+        row = conn.execute("SELECT * FROM guidelines WHERE id=?", (id_,)).fetchone()
+        conn.close()
+    return dict(row) if row else None
+
+
+def update_guideline(id_: int, text: str | None = None, enabled: bool | None = None):
+    with _lock:
+        conn = _connect()
+        if text is not None:
+            conn.execute("UPDATE guidelines SET text=? WHERE id=?", (text.strip(), id_))
+        if enabled is not None:
+            conn.execute("UPDATE guidelines SET enabled=? WHERE id=?", (1 if enabled else 0, id_))
+        conn.commit()
+        conn.close()
+
+
+def delete_guideline(id_: int):
+    with _lock:
+        conn = _connect()
+        conn.execute("DELETE FROM guidelines WHERE id=?", (id_,))
+        conn.commit()
+        conn.close()
+
+
+def get_enabled_guidelines() -> list[str]:
+    """Return only the text of enabled guidelines, for prompt injection."""
+    return [g["text"] for g in get_guidelines(enabled_only=True)]
