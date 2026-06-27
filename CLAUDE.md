@@ -12,6 +12,7 @@ Personal utility scripts living under `/home/avil/git/misc/`. Each subdirectory 
 | `base44_to_elementor/` | Converts base44 page data to Elementor-compatible JSON for WordPress import |
 | `keren_hish_calculations/` | Standalone calculation scripts (no external APIs) |
 | `outlook_to_gcal_sync/` | Outlook → Google Calendar sync (in progress / not yet implemented) |
+| `healthconnect_to_gcal/` | Android app: reads Health Connect (sleep + exercise) and writes to Google Calendar via CalendarContract (no OAuth). CI builds signed APK, publishes to GitHub Releases with self-update support. Journal stores raw data append-only; merges query Calendar Provider directly; display filters hide covered WOD entries. |
 
 ## Google Calendar / Drive API — how it works
 

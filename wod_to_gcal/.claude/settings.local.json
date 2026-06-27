@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:hypr-workouts.pages.dev)",
+      "Bash(curl -s https://hypr-workouts.pages.dev/)",
+      "Bash(pip3 list *)",
+      "Bash(python3 -c \"from html.parser import HTMLParser; print\\('stdlib html.parser ok'\\)\")"
+    ]
+  }
+}

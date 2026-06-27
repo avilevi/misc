@@ -392,6 +392,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 42.5kg
@@ -399,7 +400,8 @@ description:
   Overhead Press: 3x6 @ 44kg
   Bench Press: 3x8 @ 59kg
   Barbell Row: 4x6 @ 52kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 25kg
+
 ---
 date: 2026-05-14
 summary: Week 7 - Day A - Thruster
@@ -433,6 +435,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 45kg
@@ -440,7 +443,8 @@ description:
   Overhead Press: 3x6 @ 44kg
   Bench Press: 3x8 @ 59kg
   Barbell Row: 4x6 @ 52kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 25kg
+
 ---
 date: 2026-05-19
 summary: Week 8 - Day A - Thruster
@@ -474,6 +478,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 45kg
@@ -481,7 +486,8 @@ description:
   Overhead Press: 3x6 @ 44kg
   Bench Press: 3x8 @ 59kg
   Barbell Row: 4x6 @ 52kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 25kg
+
 ---
 date: 2026-05-24
 summary: Week 9 - Day A - Thruster
@@ -515,6 +521,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 47.5kg
@@ -522,7 +529,8 @@ description:
   Overhead Press: 3x6 @ 44.5kg
   Bench Press: 3x8 @ 60kg
   Barbell Row: 4x6 @ 53kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 25kg
+
 ---
 date: 2026-05-28
 summary: Week 9 - Day A - Thruster
@@ -556,6 +564,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 47.5kg
@@ -563,7 +572,8 @@ description:
   Overhead Press: 3x6 @ 44.5kg
   Bench Press: 3x8 @ 60kg
   Barbell Row: 4x6 @ 53kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 25kg
+
 ---
 date: 2026-06-02
 summary: Week 10 - Day A - Thruster
@@ -597,6 +607,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 50kg
@@ -604,7 +615,8 @@ description:
   Overhead Press: 3x6 @ 44.5kg
   Bench Press: 3x8 @ 60kg
   Barbell Row: 4x6 @ 53kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 25kg
+
 ---
 date: 2026-06-07
 summary: Week 11 - Day A - Thruster
@@ -638,6 +650,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 50kg
@@ -645,7 +658,8 @@ description:
   Overhead Press: 3x6 @ 45kg
   Bench Press: 3x8 @ 61kg
   Barbell Row: 4x6 @ 54kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 27.5kg
+
 ---
 date: 2026-06-11
 summary: Week 11 - Day A - Thruster
@@ -679,6 +693,7 @@ description:
     Empty bar hang power clean x5
     Empty bar overhead press x5
     Empty bar barbell row x5
+    Empty bar barbell curl x5
   --------------------
 
   Hang Power Clean: 5x3 @ 52.5kg
@@ -686,7 +701,8 @@ description:
   Overhead Press: 3x6 @ 45kg
   Bench Press: 3x8 @ 61kg
   Barbell Row: 4x6 @ 54kg
-  Pull-ups: 3 sets to failure
+  Barbell Curl: 3x10 @ 27.5kg
+
 ---
 date: 2026-06-16
 summary: Week 12 - Day A - Thruster
@@ -708,73 +724,71 @@ description:
   Romanian Deadlift: 3x8 @ 75kg
 ---
 date: 2026-06-18
-summary: Week 12 - Day B - Press and Pull
+summary: Week 1 — Power
 description:
-  Week 12
-
+  Week 1
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
+  
   Hang Power Clean: 5x3 @ 52.5kg
-  Push Press: 4x5 @ 55kg
+  Front Squat: 4x4 @ 74kg
+  Romanian Deadlift: 3x8 @ 75kg
   Overhead Press: 3x6 @ 45kg
+---
+date: 2026-06-20
+summary: Week 1 — Full
+description:
+  Week 1
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 50kg
+  Overhead Squat: 4x5 @ 42kg
   Bench Press: 3x8 @ 61kg
   Barbell Row: 4x6 @ 54kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-06-21
-summary: Week 13 - Day A - Thruster
-description:
-  Week 13 - DELOAD WEEK
-
-  --------------------
-  Warm-up (5 min):
-    Hip circles + leg swings
-    Ankle mobility (knee-to-wall)
-    PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
-    Air squats x10
-  --------------------
-
-  Thruster: 3x3 @ 42.5kg [DELOAD]
-  Overhead Squat: 4x5 @ 31.5kg [DELOAD]
-  Front Squat: 4x4 @ 56.5kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 60kg [DELOAD]
+  Barbell Curl: 3x10 @ 27.5kg
 ---
 date: 2026-06-23
-summary: Week 13 - Day B - Press and Pull
+summary: Week 2 — Core
 description:
-  Week 13 - DELOAD WEEK
-
+  Week 2
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 3x3 @ 40kg [DELOAD]
-  Push Press: 4x5 @ 42.5kg [DELOAD]
-  Overhead Press: 3x6 @ 35kg [DELOAD]
-  Bench Press: 3x8 @ 50kg [DELOAD]
-  Barbell Row: 4x6 @ 41.5kg [DELOAD]
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 50kg
+  Bench Press: 3x8 @ 61kg
 ---
 date: 2026-06-25
-summary: Week 13 - Day A - Thruster
+summary: Week 2 — Power
 description:
-  Week 13 - DELOAD WEEK
-
+  Week 2
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -782,81 +796,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 3x3 @ 42.5kg [DELOAD]
-  Overhead Squat: 4x5 @ 31.5kg [DELOAD]
-  Front Squat: 4x4 @ 56.5kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 60kg [DELOAD]
----
-date: 2026-06-28
-summary: Week 14 - Day B - Press and Pull
-description:
-  Week 14
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 55kg
-  Push Press: 4x5 @ 56kg
-  Overhead Press: 3x6 @ 45.5kg
-  Bench Press: 3x8 @ 62kg
-  Barbell Row: 4x6 @ 55kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 52.5kg
+  Front Squat: 4x4 @ 74kg
+  Romanian Deadlift: 3x8 @ 75kg
+  Overhead Press: 3x6 @ 45kg
+---
+date: 2026-06-27
+summary: Week 2 — Full
+description:
+  Week 2
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 50kg
+  Overhead Squat: 4x5 @ 42kg
+  Bench Press: 3x8 @ 61kg
+  Barbell Row: 4x6 @ 54kg
+  Barbell Curl: 3x10 @ 27.5kg
 ---
 date: 2026-06-30
-summary: Week 14 - Day A - Thruster
+summary: Week 3 — Core
 description:
-  Week 14
-
+  Week 3
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 5x4 @ 52.5kg
-  Overhead Squat: 4x5 @ 43kg
-  Front Squat: 4x4 @ 75kg
-  Romanian Deadlift: 3x8 @ 77.5kg
+  
+  Thruster: 5x4 @ 51kg
+  Bench Press: 3x8 @ 62kg
 ---
 date: 2026-07-02
-summary: Week 14 - Day B - Press and Pull
+summary: Week 3 — Power
 description:
-  Week 14
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 55kg
-  Push Press: 4x5 @ 56kg
-  Overhead Press: 3x6 @ 45.5kg
-  Bench Press: 3x8 @ 62kg
-  Barbell Row: 4x6 @ 55kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-07-05
-summary: Week 15 - Day A - Thruster
-description:
-  Week 15
-
+  Week 3
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -864,40 +857,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 5x4 @ 52.5kg
-  Overhead Squat: 4x5 @ 43kg
+  
+  Hang Power Clean: 5x3 @ 53.5kg
   Front Squat: 4x4 @ 75kg
-  Romanian Deadlift: 3x8 @ 77.5kg
+  Romanian Deadlift: 3x8 @ 76kg
+  Overhead Press: 3x6 @ 46kg
+---
+date: 2026-07-04
+summary: Week 3 — Full
+description:
+  Week 3
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 51kg
+  Overhead Squat: 4x5 @ 43kg
+  Bench Press: 3x8 @ 62kg
+  Barbell Row: 4x6 @ 55kg
+  Barbell Curl: 3x10 @ 28.5kg
 ---
 date: 2026-07-07
-summary: Week 15 - Day B - Press and Pull
+summary: Week 4 — Core
 description:
-  Week 15
-
+  Week 4
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 57.5kg
-  Push Press: 4x5 @ 56kg
-  Overhead Press: 3x6 @ 45.5kg
+  
+  Thruster: 5x4 @ 51kg
   Bench Press: 3x8 @ 62kg
-  Barbell Row: 4x6 @ 55kg
-  Pull-ups: 3 sets to failure
 ---
 date: 2026-07-09
-summary: Week 15 - Day A - Thruster
+summary: Week 4 — Power
 description:
-  Week 15
-
+  Week 4
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -905,81 +918,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 5x4 @ 52.5kg
-  Overhead Squat: 4x5 @ 43kg
-  Front Squat: 4x4 @ 75kg
-  Romanian Deadlift: 3x8 @ 77.5kg
----
-date: 2026-07-12
-summary: Week 16 - Day B - Press and Pull
-description:
-  Week 16
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 57.5kg
-  Push Press: 4x5 @ 57kg
+  
+  Hang Power Clean: 5x3 @ 53.5kg
+  Front Squat: 4x4 @ 75kg
+  Romanian Deadlift: 3x8 @ 76kg
   Overhead Press: 3x6 @ 46kg
-  Bench Press: 3x8 @ 63kg
-  Barbell Row: 4x6 @ 56kg
-  Pull-ups: 3 sets to failure
+---
+date: 2026-07-11
+summary: Week 4 — Full
+description:
+  Week 4
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 51kg
+  Overhead Squat: 4x5 @ 43kg
+  Bench Press: 3x8 @ 62kg
+  Barbell Row: 4x6 @ 55kg
+  Barbell Curl: 3x10 @ 28.5kg
 ---
 date: 2026-07-14
-summary: Week 16 - Day A - Thruster
+summary: Week 5 — Core [DELOAD]
 description:
-  Week 16
-
+  Week 5 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 5x4 @ 52.5kg
-  Overhead Squat: 4x5 @ 44kg
-  Front Squat: 4x4 @ 76kg
-  Romanian Deadlift: 3x8 @ 77.5kg
+  
+  Thruster: 5x4 @ 38kg [DELOAD]
+  Bench Press: 3x8 @ 46.5kg [DELOAD]
 ---
 date: 2026-07-16
-summary: Week 16 - Day B - Press and Pull
+summary: Week 5 — Power [DELOAD]
 description:
-  Week 16
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 60kg
-  Push Press: 4x5 @ 57kg
-  Overhead Press: 3x6 @ 46kg
-  Bench Press: 3x8 @ 63kg
-  Barbell Row: 4x6 @ 56kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-07-19
-summary: Week 17 - Day A - Thruster
-description:
-  Week 17
-
+  Week 5 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -987,40 +979,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 5x4 @ 55kg
-  Overhead Squat: 4x5 @ 44kg
-  Front Squat: 4x4 @ 76kg
-  Romanian Deadlift: 3x8 @ 77.5kg
+  
+  Hang Power Clean: 5x3 @ 40kg [DELOAD]
+  Front Squat: 4x4 @ 56kg [DELOAD]
+  Romanian Deadlift: 3x8 @ 57kg [DELOAD]
+  Overhead Press: 3x6 @ 34.5kg [DELOAD]
+---
+date: 2026-07-18
+summary: Week 5 — Full [DELOAD]
+description:
+  Week 5 — DELOAD WEEK
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 38kg [DELOAD]
+  Overhead Squat: 4x5 @ 32kg [DELOAD]
+  Bench Press: 3x8 @ 46.5kg [DELOAD]
+  Barbell Row: 4x6 @ 41kg [DELOAD]
+  Barbell Curl: 3x10 @ 21.5kg [DELOAD]
 ---
 date: 2026-07-21
-summary: Week 17 - Day B - Press and Pull
+summary: Week 6 — Core
 description:
-  Week 17
-
+  Week 6
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 60kg
-  Push Press: 4x5 @ 57kg
-  Overhead Press: 3x6 @ 46kg
+  
+  Thruster: 5x4 @ 52kg
   Bench Press: 3x8 @ 63kg
-  Barbell Row: 4x6 @ 56kg
-  Pull-ups: 3 sets to failure
 ---
 date: 2026-07-23
-summary: Week 17 - Day A - Thruster
+summary: Week 6 — Power
 description:
-  Week 17
-
+  Week 6
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1028,81 +1040,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 5x4 @ 55kg
-  Overhead Squat: 4x5 @ 44kg
-  Front Squat: 4x4 @ 76kg
-  Romanian Deadlift: 3x8 @ 77.5kg
----
-date: 2026-07-26
-summary: Week 18 - Day B - Press and Pull
-description:
-  Week 18
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 62.5kg
-  Push Press: 4x5 @ 58kg
-  Overhead Press: 3x6 @ 46.5kg
-  Bench Press: 3x8 @ 64kg
-  Barbell Row: 4x6 @ 57kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 54.5kg
+  Front Squat: 4x4 @ 76kg
+  Romanian Deadlift: 3x8 @ 77kg
+  Overhead Press: 3x6 @ 47kg
+---
+date: 2026-07-25
+summary: Week 6 — Full
+description:
+  Week 6
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 52kg
+  Overhead Squat: 4x5 @ 44kg
+  Bench Press: 3x8 @ 63kg
+  Barbell Row: 4x6 @ 56kg
+  Barbell Curl: 3x10 @ 29.5kg
 ---
 date: 2026-07-28
-summary: Week 18 - Day A - Thruster
+summary: Week 7 — Core
 description:
-  Week 18
-
+  Week 7
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 5x4 @ 55kg
-  Overhead Squat: 4x5 @ 45kg
-  Front Squat: 4x4 @ 77kg
-  Romanian Deadlift: 3x8 @ 80kg
+  
+  Thruster: 5x4 @ 52kg
+  Bench Press: 3x8 @ 63kg
 ---
 date: 2026-07-30
-summary: Week 18 - Day B - Press and Pull
+summary: Week 7 — Power
 description:
-  Week 18
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 62.5kg
-  Push Press: 4x5 @ 58kg
-  Overhead Press: 3x6 @ 46.5kg
-  Bench Press: 3x8 @ 64kg
-  Barbell Row: 4x6 @ 57kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-08-02
-summary: Week 19 - Day A - Thruster
-description:
-  Week 19
-
+  Week 7
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1110,40 +1101,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 5x4 @ 55kg
-  Overhead Squat: 4x5 @ 45kg
-  Front Squat: 4x4 @ 77kg
-  Romanian Deadlift: 3x8 @ 80kg
+  
+  Hang Power Clean: 5x3 @ 54.5kg
+  Front Squat: 4x4 @ 76kg
+  Romanian Deadlift: 3x8 @ 77kg
+  Overhead Press: 3x6 @ 47kg
+---
+date: 2026-08-01
+summary: Week 7 — Full
+description:
+  Week 7
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 52kg
+  Overhead Squat: 4x5 @ 44kg
+  Bench Press: 3x8 @ 63kg
+  Barbell Row: 4x6 @ 56kg
+  Barbell Curl: 3x10 @ 29.5kg
 ---
 date: 2026-08-04
-summary: Week 19 - Day B - Press and Pull
+summary: Week 8 — Core
 description:
-  Week 19
-
+  Week 8
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 65kg
-  Push Press: 4x5 @ 58kg
-  Overhead Press: 3x6 @ 46.5kg
+  
+  Thruster: 5x4 @ 53kg
   Bench Press: 3x8 @ 64kg
-  Barbell Row: 4x6 @ 57kg
-  Pull-ups: 3 sets to failure
 ---
 date: 2026-08-06
-summary: Week 19 - Day A - Thruster
+summary: Week 8 — Power
 description:
-  Week 19
-
+  Week 8
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1151,81 +1162,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 5x4 @ 55kg
-  Overhead Squat: 4x5 @ 45kg
-  Front Squat: 4x4 @ 77kg
-  Romanian Deadlift: 3x8 @ 80kg
----
-date: 2026-08-09
-summary: Week 20 - Day B - Press and Pull
-description:
-  Week 20
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 65kg
-  Push Press: 4x5 @ 59kg
-  Overhead Press: 3x6 @ 47kg
-  Bench Press: 3x8 @ 65kg
-  Barbell Row: 4x6 @ 58kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 55.5kg
+  Front Squat: 4x4 @ 77kg
+  Romanian Deadlift: 3x8 @ 78kg
+  Overhead Press: 3x6 @ 48kg
+---
+date: 2026-08-08
+summary: Week 8 — Full
+description:
+  Week 8
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 53kg
+  Overhead Squat: 4x5 @ 45kg
+  Bench Press: 3x8 @ 64kg
+  Barbell Row: 4x6 @ 57kg
+  Barbell Curl: 3x10 @ 30.5kg
 ---
 date: 2026-08-11
-summary: Week 20 - Day A - Thruster
+summary: Week 9 — Core
 description:
-  Week 20
-
+  Week 9
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 4x4 @ 57.5kg
-  Overhead Squat: 4x5 @ 46kg
-  Front Squat: 4x4 @ 78kg
-  Romanian Deadlift: 3x8 @ 80kg
+  
+  Thruster: 5x4 @ 53kg
+  Bench Press: 3x8 @ 64kg
 ---
 date: 2026-08-13
-summary: Week 20 - Day B - Press and Pull
+summary: Week 9 — Power
 description:
-  Week 20
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 67.5kg
-  Push Press: 4x5 @ 59kg
-  Overhead Press: 3x6 @ 47kg
-  Bench Press: 3x8 @ 65kg
-  Barbell Row: 4x6 @ 58kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-08-16
-summary: Week 21 - Day A - Thruster
-description:
-  Week 21
-
+  Week 9
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1233,40 +1223,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 4x4 @ 57.5kg
-  Overhead Squat: 4x5 @ 46kg
-  Front Squat: 4x4 @ 78kg
-  Romanian Deadlift: 3x8 @ 80kg
+  
+  Hang Power Clean: 5x3 @ 55.5kg
+  Front Squat: 4x4 @ 77kg
+  Romanian Deadlift: 3x8 @ 78kg
+  Overhead Press: 3x6 @ 48kg
+---
+date: 2026-08-15
+summary: Week 9 — Full
+description:
+  Week 9
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 53kg
+  Overhead Squat: 4x5 @ 45kg
+  Bench Press: 3x8 @ 64kg
+  Barbell Row: 4x6 @ 57kg
+  Barbell Curl: 3x10 @ 30.5kg
 ---
 date: 2026-08-18
-summary: Week 21 - Day B - Press and Pull
+summary: Week 10 — Core [DELOAD]
 description:
-  Week 21
-
+  Week 10 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 67.5kg
-  Push Press: 4x5 @ 59kg
-  Overhead Press: 3x6 @ 47kg
-  Bench Press: 3x8 @ 65kg
-  Barbell Row: 4x6 @ 58kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 40kg [DELOAD]
+  Bench Press: 3x8 @ 48kg [DELOAD]
 ---
 date: 2026-08-20
-summary: Week 21 - Day A - Thruster
+summary: Week 10 — Power [DELOAD]
 description:
-  Week 21
-
+  Week 10 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1274,81 +1284,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 4x4 @ 57.5kg
-  Overhead Squat: 4x5 @ 46kg
-  Front Squat: 4x4 @ 78kg
-  Romanian Deadlift: 3x8 @ 80kg
----
-date: 2026-08-23
-summary: Week 22 - Day B - Press and Pull
-description:
-  Week 22
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 70kg
-  Push Press: 4x5 @ 60kg
-  Overhead Press: 3x6 @ 47.5kg
-  Bench Press: 3x8 @ 66kg
-  Barbell Row: 4x6 @ 59kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 41.5kg [DELOAD]
+  Front Squat: 4x4 @ 58kg [DELOAD]
+  Romanian Deadlift: 3x8 @ 58.5kg [DELOAD]
+  Overhead Press: 3x6 @ 36kg [DELOAD]
+---
+date: 2026-08-22
+summary: Week 10 — Full [DELOAD]
+description:
+  Week 10 — DELOAD WEEK
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 40kg [DELOAD]
+  Overhead Squat: 4x5 @ 34kg [DELOAD]
+  Bench Press: 3x8 @ 48kg [DELOAD]
+  Barbell Row: 4x6 @ 43kg [DELOAD]
+  Barbell Curl: 3x10 @ 23kg [DELOAD]
 ---
 date: 2026-08-25
-summary: Week 22 - Day A - Thruster
+summary: Week 11 — Core
 description:
-  Week 22
-
+  Week 11
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 4x4 @ 57.5kg
-  Overhead Squat: 4x5 @ 47kg
-  Front Squat: 4x4 @ 79kg
-  Romanian Deadlift: 3x8 @ 82.5kg
+  
+  Thruster: 5x4 @ 54kg
+  Bench Press: 3x8 @ 65kg
 ---
 date: 2026-08-27
-summary: Week 22 - Day B - Press and Pull
+summary: Week 11 — Power
 description:
-  Week 22
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 70kg
-  Push Press: 4x5 @ 60kg
-  Overhead Press: 3x6 @ 47.5kg
-  Bench Press: 3x8 @ 66kg
-  Barbell Row: 4x6 @ 59kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-08-30
-summary: Week 23 - Day A - Thruster
-description:
-  Week 23 - DELOAD WEEK
-
+  Week 11
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1356,40 +1345,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 3x3 @ 47.5kg [DELOAD]
-  Overhead Squat: 4x5 @ 35kg [DELOAD]
-  Front Squat: 4x4 @ 59kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 65kg [DELOAD]
+  
+  Hang Power Clean: 5x3 @ 56.5kg
+  Front Squat: 4x4 @ 78kg
+  Romanian Deadlift: 3x8 @ 79kg
+  Overhead Press: 3x6 @ 49kg
+---
+date: 2026-08-29
+summary: Week 11 — Full
+description:
+  Week 11
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 54kg
+  Overhead Squat: 4x5 @ 46kg
+  Bench Press: 3x8 @ 65kg
+  Barbell Row: 4x6 @ 58kg
+  Barbell Curl: 3x10 @ 31.5kg
 ---
 date: 2026-09-01
-summary: Week 23 - Day B - Press and Pull
+summary: Week 12 — Core
 description:
-  Week 23 - DELOAD WEEK
-
+  Week 12
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 3x3 @ 52.5kg [DELOAD]
-  Push Press: 4x5 @ 47.5kg [DELOAD]
-  Overhead Press: 3x6 @ 35kg [DELOAD]
-  Bench Press: 3x8 @ 50kg [DELOAD]
-  Barbell Row: 4x6 @ 46.5kg [DELOAD]
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 54kg
+  Bench Press: 3x8 @ 65kg
 ---
 date: 2026-09-03
-summary: Week 23 - Day A - Thruster
+summary: Week 12 — Power
 description:
-  Week 23 - DELOAD WEEK
-
+  Week 12
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1397,122 +1406,121 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 3x3 @ 47.5kg [DELOAD]
-  Overhead Squat: 4x5 @ 35kg [DELOAD]
-  Front Squat: 4x4 @ 59kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 65kg [DELOAD]
----
-date: 2026-09-06
-summary: Week 24 - Day B - Press and Pull
-description:
-  Week 24
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 72.5kg
-  Push Press: 4x5 @ 60kg
-  Overhead Press: 3x6 @ 47.5kg
-  Bench Press: 3x8 @ 66kg
-  Barbell Row: 4x6 @ 59kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 56.5kg
+  Front Squat: 4x4 @ 78kg
+  Romanian Deadlift: 3x8 @ 79kg
+  Overhead Press: 3x6 @ 49kg
+---
+date: 2026-09-05
+summary: Week 12 — Full
+description:
+  Week 12
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 54kg
+  Overhead Squat: 4x5 @ 46kg
+  Bench Press: 3x8 @ 65kg
+  Barbell Row: 4x6 @ 58kg
+  Barbell Curl: 3x10 @ 31.5kg
 ---
 date: 2026-09-08
-summary: Week 24 - Day A - Thruster
+summary: Week 13 — Core
 description:
-  Week 24
-
+  Week 13
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 4x4 @ 60kg
-  Overhead Squat: 4x5 @ 48kg
-  Front Squat: 4x4 @ 79kg
-  Romanian Deadlift: 3x8 @ 82.5kg
+  
+  Thruster: 5x4 @ 55kg
+  Bench Press: 3x8 @ 66kg
 ---
 date: 2026-09-10
-summary: Week 24 - Day B - Press and Pull
+summary: Week 13 — Power
 description:
-  Week 24
-
+  Week 13
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 72.5kg
-  Push Press: 4x5 @ 60kg
-  Overhead Press: 3x6 @ 47.5kg
+  
+  Hang Power Clean: 5x3 @ 57.5kg
+  Front Squat: 4x4 @ 79kg
+  Romanian Deadlift: 3x8 @ 80kg
+  Overhead Press: 3x6 @ 50kg
+---
+date: 2026-09-12
+summary: Week 13 — Full
+description:
+  Week 13
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 55kg
+  Overhead Squat: 4x5 @ 47kg
   Bench Press: 3x8 @ 66kg
   Barbell Row: 4x6 @ 59kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-09-13
-summary: Week 25 - Day A - Thruster
-description:
-  Week 25
-
-  --------------------
-  Warm-up (5 min):
-    Hip circles + leg swings
-    Ankle mobility (knee-to-wall)
-    PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
-    Air squats x10
-  --------------------
-
-  Thruster: 4x4 @ 60kg
-  Overhead Squat: 4x5 @ 48kg
-  Front Squat: 4x4 @ 80kg
-  Romanian Deadlift: 3x8 @ 82.5kg
+  Barbell Curl: 3x10 @ 32.5kg
 ---
 date: 2026-09-15
-summary: Week 25 - Day B - Press and Pull
+summary: Week 14 — Core
 description:
-  Week 25
-
+  Week 14
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 75kg
-  Push Press: 4x5 @ 61kg
-  Overhead Press: 3x6 @ 48kg
-  Bench Press: 3x8 @ 67kg
-  Barbell Row: 4x6 @ 60kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 55kg
+  Bench Press: 3x8 @ 66kg
 ---
 date: 2026-09-17
-summary: Week 25 - Day A - Thruster
+summary: Week 14 — Power
 description:
-  Week 25
-
+  Week 14
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1520,81 +1528,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 4x4 @ 60kg
-  Overhead Squat: 4x5 @ 48kg
-  Front Squat: 4x4 @ 80kg
-  Romanian Deadlift: 3x8 @ 82.5kg
----
-date: 2026-09-20
-summary: Week 26 - Day B - Press and Pull
-description:
-  Week 26
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 75kg
-  Push Press: 4x5 @ 61kg
-  Overhead Press: 3x6 @ 48kg
-  Bench Press: 3x8 @ 67kg
-  Barbell Row: 4x6 @ 60kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 57.5kg
+  Front Squat: 4x4 @ 79kg
+  Romanian Deadlift: 3x8 @ 80kg
+  Overhead Press: 3x6 @ 50kg
+---
+date: 2026-09-19
+summary: Week 14 — Full
+description:
+  Week 14
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 55kg
+  Overhead Squat: 4x5 @ 47kg
+  Bench Press: 3x8 @ 66kg
+  Barbell Row: 4x6 @ 59kg
+  Barbell Curl: 3x10 @ 32.5kg
 ---
 date: 2026-09-22
-summary: Week 26 - Day A - Thruster
+summary: Week 15 — Core [DELOAD]
 description:
-  Week 26
-
+  Week 15 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 4x4 @ 60kg
-  Overhead Squat: 4x5 @ 49kg
-  Front Squat: 4x4 @ 80kg
-  Romanian Deadlift: 3x8 @ 82.5kg
+  
+  Thruster: 5x4 @ 41kg [DELOAD]
+  Bench Press: 3x8 @ 49.5kg [DELOAD]
 ---
 date: 2026-09-24
-summary: Week 26 - Day B - Press and Pull
+summary: Week 15 — Power [DELOAD]
 description:
-  Week 26
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 77.5kg
-  Push Press: 4x5 @ 61kg
-  Overhead Press: 3x6 @ 48kg
-  Bench Press: 3x8 @ 67kg
-  Barbell Row: 4x6 @ 60kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-09-27
-summary: Week 27 - Day A - Thruster
-description:
-  Week 27
-
+  Week 15 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1602,40 +1589,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 4x4 @ 62.5kg
-  Overhead Squat: 4x5 @ 49kg
-  Front Squat: 4x4 @ 81kg
-  Romanian Deadlift: 3x8 @ 85kg
+  
+  Hang Power Clean: 5x3 @ 43kg [DELOAD]
+  Front Squat: 4x4 @ 59kg [DELOAD]
+  Romanian Deadlift: 3x8 @ 60kg [DELOAD]
+  Overhead Press: 3x6 @ 37.5kg [DELOAD]
+---
+date: 2026-09-26
+summary: Week 15 — Full [DELOAD]
+description:
+  Week 15 — DELOAD WEEK
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 41kg [DELOAD]
+  Overhead Squat: 4x5 @ 35kg [DELOAD]
+  Bench Press: 3x8 @ 49.5kg [DELOAD]
+  Barbell Row: 4x6 @ 44kg [DELOAD]
+  Barbell Curl: 3x10 @ 24.5kg [DELOAD]
 ---
 date: 2026-09-29
-summary: Week 27 - Day B - Press and Pull
+summary: Week 16 — Core
 description:
-  Week 27
-
+  Week 16
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 77.5kg
-  Push Press: 4x5 @ 62kg
-  Overhead Press: 3x6 @ 48.5kg
-  Bench Press: 3x8 @ 68kg
-  Barbell Row: 4x6 @ 61kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 56kg
+  Bench Press: 3x8 @ 67kg
 ---
 date: 2026-10-01
-summary: Week 27 - Day A - Thruster
+summary: Week 16 — Power
 description:
-  Week 27
-
+  Week 16
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1643,81 +1650,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 4x4 @ 62.5kg
-  Overhead Squat: 4x5 @ 49kg
-  Front Squat: 4x4 @ 81kg
-  Romanian Deadlift: 3x8 @ 85kg
----
-date: 2026-10-04
-summary: Week 28 - Day B - Press and Pull
-description:
-  Week 28
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 80kg
-  Push Press: 4x5 @ 62kg
-  Overhead Press: 3x6 @ 48.5kg
-  Bench Press: 3x8 @ 68kg
-  Barbell Row: 4x6 @ 61kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 58.5kg
+  Front Squat: 4x4 @ 80kg
+  Romanian Deadlift: 3x8 @ 81kg
+  Overhead Press: 3x6 @ 51kg
+---
+date: 2026-10-03
+summary: Week 16 — Full
+description:
+  Week 16
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 56kg
+  Overhead Squat: 4x5 @ 48kg
+  Bench Press: 3x8 @ 67kg
+  Barbell Row: 4x6 @ 60kg
+  Barbell Curl: 3x10 @ 33.5kg
 ---
 date: 2026-10-06
-summary: Week 28 - Day A - Thruster
+summary: Week 17 — Core
 description:
-  Week 28
-
+  Week 17
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 4x4 @ 62.5kg
-  Overhead Squat: 4x5 @ 50kg
-  Front Squat: 4x4 @ 81kg
-  Romanian Deadlift: 3x8 @ 85kg
+  
+  Thruster: 5x4 @ 56kg
+  Bench Press: 3x8 @ 67kg
 ---
 date: 2026-10-08
-summary: Week 28 - Day B - Press and Pull
+summary: Week 17 — Power
 description:
-  Week 28
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 80kg
-  Push Press: 4x5 @ 62kg
-  Overhead Press: 3x6 @ 48.5kg
-  Bench Press: 3x8 @ 68kg
-  Barbell Row: 4x6 @ 61kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-10-11
-summary: Week 29 - Day A - Thruster
-description:
-  Week 29
-
+  Week 17
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1725,40 +1711,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 4x4 @ 62.5kg
-  Overhead Squat: 4x5 @ 50kg
-  Front Squat: 4x4 @ 82kg
-  Romanian Deadlift: 3x8 @ 85kg
+  
+  Hang Power Clean: 5x3 @ 58.5kg
+  Front Squat: 4x4 @ 80kg
+  Romanian Deadlift: 3x8 @ 81kg
+  Overhead Press: 3x6 @ 51kg
+---
+date: 2026-10-10
+summary: Week 17 — Full
+description:
+  Week 17
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 56kg
+  Overhead Squat: 4x5 @ 48kg
+  Bench Press: 3x8 @ 67kg
+  Barbell Row: 4x6 @ 60kg
+  Barbell Curl: 3x10 @ 33.5kg
 ---
 date: 2026-10-13
-summary: Week 29 - Day B - Press and Pull
+summary: Week 18 — Core
 description:
-  Week 29
-
+  Week 18
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 82.5kg
-  Push Press: 4x5 @ 63kg
-  Overhead Press: 3x6 @ 49kg
-  Bench Press: 3x8 @ 69kg
-  Barbell Row: 4x6 @ 62kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 57kg
+  Bench Press: 3x8 @ 68kg
 ---
 date: 2026-10-15
-summary: Week 29 - Day A - Thruster
+summary: Week 18 — Power
 description:
-  Week 29
-
+  Week 18
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1766,81 +1772,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 4x4 @ 62.5kg
-  Overhead Squat: 4x5 @ 50kg
-  Front Squat: 4x4 @ 82kg
-  Romanian Deadlift: 3x8 @ 85kg
----
-date: 2026-10-18
-summary: Week 30 - Day B - Press and Pull
-description:
-  Week 30
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 82.5kg
-  Push Press: 4x5 @ 63kg
-  Overhead Press: 3x6 @ 49kg
-  Bench Press: 3x8 @ 69kg
-  Barbell Row: 4x6 @ 62kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 59.5kg
+  Front Squat: 4x4 @ 81kg
+  Romanian Deadlift: 3x8 @ 82kg
+  Overhead Press: 3x6 @ 52kg
+---
+date: 2026-10-17
+summary: Week 18 — Full
+description:
+  Week 18
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 57kg
+  Overhead Squat: 4x5 @ 49kg
+  Bench Press: 3x8 @ 68kg
+  Barbell Row: 4x6 @ 61kg
+  Barbell Curl: 3x10 @ 34.5kg
 ---
 date: 2026-10-20
-summary: Week 30 - Day A - Thruster
+summary: Week 19 — Core
 description:
-  Week 30
-
+  Week 19
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 3x2 @ 65kg
-  Overhead Squat: 4x5 @ 51kg
-  Front Squat: 4x4 @ 82kg
-  Romanian Deadlift: 3x8 @ 85kg
+  
+  Thruster: 5x4 @ 57kg
+  Bench Press: 3x8 @ 68kg
 ---
 date: 2026-10-22
-summary: Week 30 - Day B - Press and Pull
+summary: Week 19 — Power
 description:
-  Week 30
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 82.5kg
-  Push Press: 4x5 @ 63kg
-  Overhead Press: 3x6 @ 49kg
-  Bench Press: 3x8 @ 69kg
-  Barbell Row: 4x6 @ 62kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-10-25
-summary: Week 31 - Day A - Thruster
-description:
-  Week 31
-
+  Week 19
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1848,40 +1833,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 3x2 @ 65kg
-  Overhead Squat: 4x5 @ 51kg
-  Front Squat: 4x4 @ 83kg
-  Romanian Deadlift: 3x8 @ 87.5kg
+  
+  Hang Power Clean: 5x3 @ 59.5kg
+  Front Squat: 4x4 @ 81kg
+  Romanian Deadlift: 3x8 @ 82kg
+  Overhead Press: 3x6 @ 52kg
+---
+date: 2026-10-24
+summary: Week 19 — Full
+description:
+  Week 19
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 57kg
+  Overhead Squat: 4x5 @ 49kg
+  Bench Press: 3x8 @ 68kg
+  Barbell Row: 4x6 @ 61kg
+  Barbell Curl: 3x10 @ 34.5kg
 ---
 date: 2026-10-27
-summary: Week 31 - Day B - Press and Pull
+summary: Week 20 — Core [DELOAD]
 description:
-  Week 31
-
+  Week 20 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 82.5kg
-  Push Press: 4x5 @ 64kg
-  Overhead Press: 3x6 @ 49.5kg
-  Bench Press: 3x8 @ 70kg
-  Barbell Row: 4x6 @ 63kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 43kg [DELOAD]
+  Bench Press: 3x8 @ 51kg [DELOAD]
 ---
 date: 2026-10-29
-summary: Week 31 - Day A - Thruster
+summary: Week 20 — Power [DELOAD]
 description:
-  Week 31
-
+  Week 20 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1889,81 +1894,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 3x2 @ 65kg
-  Overhead Squat: 4x5 @ 51kg
-  Front Squat: 4x4 @ 83kg
-  Romanian Deadlift: 3x8 @ 87.5kg
----
-date: 2026-11-01
-summary: Week 32 - Day B - Press and Pull
-description:
-  Week 32
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 85kg
-  Push Press: 4x5 @ 64kg
-  Overhead Press: 3x6 @ 49.5kg
-  Bench Press: 3x8 @ 70kg
-  Barbell Row: 4x6 @ 63kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 44.5kg [DELOAD]
+  Front Squat: 4x4 @ 61kg [DELOAD]
+  Romanian Deadlift: 3x8 @ 61.5kg [DELOAD]
+  Overhead Press: 3x6 @ 39kg [DELOAD]
+---
+date: 2026-10-31
+summary: Week 20 — Full [DELOAD]
+description:
+  Week 20 — DELOAD WEEK
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 43kg [DELOAD]
+  Overhead Squat: 4x5 @ 37kg [DELOAD]
+  Bench Press: 3x8 @ 51kg [DELOAD]
+  Barbell Row: 4x6 @ 46kg [DELOAD]
+  Barbell Curl: 3x10 @ 26kg [DELOAD]
 ---
 date: 2026-11-03
-summary: Week 32 - Day A - Thruster
+summary: Week 21 — Core
 description:
-  Week 32
-
+  Week 21
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 3x2 @ 67.5kg
-  Overhead Squat: 4x5 @ 52kg
-  Front Squat: 4x4 @ 83kg
-  Romanian Deadlift: 3x8 @ 87.5kg
+  
+  Thruster: 5x4 @ 58kg
+  Bench Press: 3x8 @ 69kg
 ---
 date: 2026-11-05
-summary: Week 32 - Day B - Press and Pull
+summary: Week 21 — Power
 description:
-  Week 32
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 85kg
-  Push Press: 4x5 @ 64kg
-  Overhead Press: 3x6 @ 49.5kg
-  Bench Press: 3x8 @ 70kg
-  Barbell Row: 4x6 @ 63kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-11-08
-summary: Week 33 - Day A - Thruster
-description:
-  Week 33
-
+  Week 21
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -1971,40 +1955,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 3x2 @ 67.5kg
-  Overhead Squat: 4x5 @ 52kg
-  Front Squat: 4x4 @ 84kg
-  Romanian Deadlift: 3x8 @ 87.5kg
+  
+  Hang Power Clean: 5x3 @ 60.5kg
+  Front Squat: 4x4 @ 82kg
+  Romanian Deadlift: 3x8 @ 83kg
+  Overhead Press: 3x6 @ 53kg
+---
+date: 2026-11-07
+summary: Week 21 — Full
+description:
+  Week 21
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 58kg
+  Overhead Squat: 4x5 @ 50kg
+  Bench Press: 3x8 @ 69kg
+  Barbell Row: 4x6 @ 62kg
+  Barbell Curl: 3x10 @ 35.5kg
 ---
 date: 2026-11-10
-summary: Week 33 - Day B - Press and Pull
+summary: Week 22 — Core
 description:
-  Week 33
-
+  Week 22
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 85kg
-  Push Press: 4x5 @ 65kg
-  Overhead Press: 3x6 @ 50kg
-  Bench Press: 3x8 @ 71kg
-  Barbell Row: 4x6 @ 64kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 58kg
+  Bench Press: 3x8 @ 69kg
 ---
 date: 2026-11-12
-summary: Week 33 - Day A - Thruster
+summary: Week 22 — Power
 description:
-  Week 33
-
+  Week 22
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2012,81 +2016,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 3x2 @ 67.5kg
-  Overhead Squat: 4x5 @ 52kg
-  Front Squat: 4x4 @ 84kg
-  Romanian Deadlift: 3x8 @ 87.5kg
----
-date: 2026-11-15
-summary: Week 34 - Day B - Press and Pull
-description:
-  Week 34 - DELOAD WEEK
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 3x3 @ 63kg [DELOAD]
-  Push Press: 4x5 @ 50kg [DELOAD]
-  Overhead Press: 3x6 @ 35kg [DELOAD]
-  Bench Press: 3x8 @ 50kg [DELOAD]
-  Barbell Row: 4x6 @ 49kg [DELOAD]
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 60.5kg
+  Front Squat: 4x4 @ 82kg
+  Romanian Deadlift: 3x8 @ 83kg
+  Overhead Press: 3x6 @ 53kg
+---
+date: 2026-11-14
+summary: Week 22 — Full
+description:
+  Week 22
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 58kg
+  Overhead Squat: 4x5 @ 50kg
+  Bench Press: 3x8 @ 69kg
+  Barbell Row: 4x6 @ 62kg
+  Barbell Curl: 3x10 @ 35.5kg
 ---
 date: 2026-11-17
-summary: Week 34 - Day A - Thruster
+summary: Week 23 — Core
 description:
-  Week 34 - DELOAD WEEK
-
+  Week 23
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 3x2 @ 52.5kg [DELOAD]
-  Overhead Squat: 4x5 @ 40kg [DELOAD]
-  Front Squat: 4x4 @ 64kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 70kg [DELOAD]
+  
+  Thruster: 5x4 @ 59kg
+  Bench Press: 3x8 @ 70kg
 ---
 date: 2026-11-19
-summary: Week 34 - Day B - Press and Pull
+summary: Week 23 — Power
 description:
-  Week 34 - DELOAD WEEK
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 3x3 @ 63kg [DELOAD]
-  Push Press: 4x5 @ 50kg [DELOAD]
-  Overhead Press: 3x6 @ 35kg [DELOAD]
-  Bench Press: 3x8 @ 50kg [DELOAD]
-  Barbell Row: 4x6 @ 49kg [DELOAD]
-  Pull-ups: 3 sets to failure
----
-date: 2026-11-22
-summary: Week 35 - Day A - Thruster
-description:
-  Week 35
-
+  Week 23
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2094,40 +2077,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 2x1 @ 70kg
-  Overhead Squat: 4x5 @ 53kg
-  Front Squat: 4x4 @ 84kg
-  Romanian Deadlift: 3x8 @ 87.5kg
+  
+  Hang Power Clean: 5x3 @ 61.5kg
+  Front Squat: 4x4 @ 83kg
+  Romanian Deadlift: 3x8 @ 84kg
+  Overhead Press: 3x6 @ 54kg
+---
+date: 2026-11-21
+summary: Week 23 — Full
+description:
+  Week 23
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 59kg
+  Overhead Squat: 4x5 @ 51kg
+  Bench Press: 3x8 @ 70kg
+  Barbell Row: 4x6 @ 63kg
+  Barbell Curl: 3x10 @ 36.5kg
 ---
 date: 2026-11-24
-summary: Week 35 - Day B - Press and Pull
+summary: Week 24 — Core
 description:
-  Week 35
-
+  Week 24
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 87.5kg
-  Push Press: 4x5 @ 65kg
-  Overhead Press: 3x6 @ 50kg
-  Bench Press: 3x8 @ 71kg
-  Barbell Row: 4x6 @ 64kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 59kg
+  Bench Press: 3x8 @ 70kg
 ---
 date: 2026-11-26
-summary: Week 35 - Day A - Thruster
+summary: Week 24 — Power
 description:
-  Week 35
-
+  Week 24
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2135,81 +2138,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 2x1 @ 70kg
-  Overhead Squat: 4x5 @ 53kg
-  Front Squat: 4x4 @ 84kg
-  Romanian Deadlift: 3x8 @ 87.5kg
----
-date: 2026-11-29
-summary: Week 36 - Day B - Press and Pull
-description:
-  Week 36
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 87.5kg
-  Push Press: 4x5 @ 66kg
-  Overhead Press: 3x6 @ 50.5kg
-  Bench Press: 3x8 @ 72kg
-  Barbell Row: 4x6 @ 65kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 61.5kg
+  Front Squat: 4x4 @ 83kg
+  Romanian Deadlift: 3x8 @ 84kg
+  Overhead Press: 3x6 @ 54kg
+---
+date: 2026-11-28
+summary: Week 24 — Full
+description:
+  Week 24
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 59kg
+  Overhead Squat: 4x5 @ 51kg
+  Bench Press: 3x8 @ 70kg
+  Barbell Row: 4x6 @ 63kg
+  Barbell Curl: 3x10 @ 36.5kg
 ---
 date: 2026-12-01
-summary: Week 36 - Day A - Thruster
+summary: Week 25 — Core [DELOAD]
 description:
-  Week 36
-
+  Week 25 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 2x1 @ 70kg
-  Overhead Squat: 4x5 @ 54kg
-  Front Squat: 4x4 @ 85kg
-  Romanian Deadlift: 3x8 @ 90kg
+  
+  Thruster: 5x4 @ 44kg [DELOAD]
+  Bench Press: 3x8 @ 52.5kg [DELOAD]
 ---
 date: 2026-12-03
-summary: Week 36 - Day B - Press and Pull
+summary: Week 25 — Power [DELOAD]
 description:
-  Week 36
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 87.5kg
-  Push Press: 4x5 @ 66kg
-  Overhead Press: 3x6 @ 50.5kg
-  Bench Press: 3x8 @ 72kg
-  Barbell Row: 4x6 @ 65kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-12-06
-summary: Week 37 - Day A - Thruster
-description:
-  Week 37
-
+  Week 25 — DELOAD WEEK
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2217,40 +2199,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 2x1 @ 72.5kg
-  Overhead Squat: 4x5 @ 54kg
-  Front Squat: 4x4 @ 85kg
-  Romanian Deadlift: 3x8 @ 90kg
+  
+  Hang Power Clean: 5x3 @ 46kg [DELOAD]
+  Front Squat: 4x4 @ 62kg [DELOAD]
+  Romanian Deadlift: 3x8 @ 63kg [DELOAD]
+  Overhead Press: 3x6 @ 40.5kg [DELOAD]
+---
+date: 2026-12-05
+summary: Week 25 — Full [DELOAD]
+description:
+  Week 25 — DELOAD WEEK
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 44kg [DELOAD]
+  Overhead Squat: 4x5 @ 38kg [DELOAD]
+  Bench Press: 3x8 @ 52.5kg [DELOAD]
+  Barbell Row: 4x6 @ 47kg [DELOAD]
+  Barbell Curl: 3x10 @ 27.5kg [DELOAD]
 ---
 date: 2026-12-08
-summary: Week 37 - Day B - Press and Pull
+summary: Week 26 — Core
 description:
-  Week 37
-
+  Week 26
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 87.5kg
-  Push Press: 4x5 @ 66kg
-  Overhead Press: 3x6 @ 50.5kg
-  Bench Press: 3x8 @ 72kg
-  Barbell Row: 4x6 @ 65kg
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 60kg
+  Bench Press: 3x8 @ 71kg
 ---
 date: 2026-12-10
-summary: Week 37 - Day A - Thruster
+summary: Week 26 — Power
 description:
-  Week 37
-
+  Week 26
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2258,81 +2260,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
-  --------------------
-
-  Thruster: 2x1 @ 72.5kg
-  Overhead Squat: 4x5 @ 54kg
-  Front Squat: 4x4 @ 85kg
-  Romanian Deadlift: 3x8 @ 90kg
----
-date: 2026-12-13
-summary: Week 38 - Day B - Press and Pull
-description:
-  Week 38
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
     Empty bar hang power clean x5
     Empty bar overhead press x5
-    Empty bar barbell row x5
   --------------------
-
-  Hang Power Clean: 5x3 @ 90kg
-  Push Press: 4x5 @ 67kg
-  Overhead Press: 3x6 @ 51kg
-  Bench Press: 3x8 @ 73kg
-  Barbell Row: 4x6 @ 66kg
-  Pull-ups: 3 sets to failure
+  
+  Hang Power Clean: 5x3 @ 62.5kg
+  Front Squat: 4x4 @ 84kg
+  Romanian Deadlift: 3x8 @ 85kg
+  Overhead Press: 3x6 @ 55kg
+---
+date: 2026-12-12
+summary: Week 26 — Full
+description:
+  Week 26
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 60kg
+  Overhead Squat: 4x5 @ 52kg
+  Bench Press: 3x8 @ 71kg
+  Barbell Row: 4x6 @ 64kg
+  Barbell Curl: 3x10 @ 37.5kg
 ---
 date: 2026-12-15
-summary: Week 38 - Day A - Thruster
+summary: Week 27 — Core
 description:
-  Week 38
-
+  Week 27
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
     Ankle mobility (knee-to-wall)
     PVC/band shoulder dislocates
-    Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Thruster: 2x1 @ 72.5kg
-  Overhead Squat: 4x5 @ 55kg
-  Front Squat: 4x4 @ 86kg
-  Romanian Deadlift: 3x8 @ 90kg
+  
+  Thruster: 5x4 @ 60kg
+  Bench Press: 3x8 @ 71kg
 ---
 date: 2026-12-17
-summary: Week 38 - Day B - Press and Pull
+summary: Week 27 — Power
 description:
-  Week 38
-
-  --------------------
-  Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
-  --------------------
-
-  Hang Power Clean: 5x3 @ 90kg
-  Push Press: 4x5 @ 67kg
-  Overhead Press: 3x6 @ 51kg
-  Bench Press: 3x8 @ 73kg
-  Barbell Row: 4x6 @ 66kg
-  Pull-ups: 3 sets to failure
----
-date: 2026-12-20
-summary: Week 39 - Day A - Thruster
-description:
-  Week 39 - DELOAD WEEK
-
+  Week 27
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2340,40 +2321,60 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 1x1 @ 77.5kg [DELOAD + 1RM TEST - attempt 75kg]
-  Overhead Squat: 4x5 @ 41kg [DELOAD]
-  Front Squat: 4x4 @ 64kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 70kg [DELOAD]
+  
+  Hang Power Clean: 5x3 @ 62.5kg
+  Front Squat: 4x4 @ 84kg
+  Romanian Deadlift: 3x8 @ 85kg
+  Overhead Press: 3x6 @ 55kg
+---
+date: 2026-12-19
+summary: Week 27 — Full
+description:
+  Week 27
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 60kg
+  Overhead Squat: 4x5 @ 52kg
+  Bench Press: 3x8 @ 71kg
+  Barbell Row: 4x6 @ 64kg
+  Barbell Curl: 3x10 @ 37.5kg
 ---
 date: 2026-12-22
-summary: Week 39 - Day B - Press and Pull
+summary: Week 28 — Core
 description:
-  Week 39 - DELOAD WEEK
-
+  Week 28
+  
   --------------------
   Warm-up (5 min):
-    Arm circles + cross-body swings
-    Band pull-aparts x15
-    Wall slides x10
-    Empty bar hang power clean x5
-    Empty bar overhead press x5
-    Empty bar barbell row x5
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
   --------------------
-
-  Hang Power Clean: 3x3 @ 67.5kg [DELOAD]
-  Push Press: 4x5 @ 52.5kg [DELOAD]
-  Overhead Press: 3x6 @ 35kg [DELOAD]
-  Bench Press: 3x8 @ 50kg [DELOAD]
-  Barbell Row: 4x6 @ 51.5kg [DELOAD]
-  Pull-ups: 3 sets to failure
+  
+  Thruster: 5x4 @ 61kg
+  Bench Press: 3x8 @ 72kg
 ---
 date: 2026-12-24
-summary: Week 39 - Day A - Thruster
+summary: Week 28 — Power
 description:
-  Week 39 - DELOAD WEEK
-
+  Week 28
+  
   --------------------
   Warm-up (5 min):
     Hip circles + leg swings
@@ -2381,9 +2382,72 @@ description:
     PVC/band shoulder dislocates
     Wrist circles + wrist stretches x10
     Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
   --------------------
-
-  Thruster: 1x1 @ 77.5kg [DELOAD + 1RM TEST - attempt 75kg]
-  Overhead Squat: 4x5 @ 41kg [DELOAD]
-  Front Squat: 4x4 @ 64kg [DELOAD]
-  Romanian Deadlift: 3x8 @ 70kg [DELOAD]
+  
+  Hang Power Clean: 5x3 @ 63.5kg
+  Front Squat: 4x4 @ 85kg
+  Romanian Deadlift: 3x8 @ 86kg
+  Overhead Press: 3x6 @ 56kg
+---
+date: 2026-12-26
+summary: Week 28 — Full
+description:
+  Week 28
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar overhead squat x5
+  --------------------
+  
+  Thruster: 5x4 @ 61kg
+  Overhead Squat: 4x5 @ 53kg
+  Bench Press: 3x8 @ 72kg
+  Barbell Row: 4x6 @ 65kg
+  Barbell Curl: 3x10 @ 38.5kg
+---
+date: 2026-12-29
+summary: Week 29 — Core
+description:
+  Week 29
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Air squats x10
+    Empty bar thruster x5
+    Empty bar bench press x5
+  --------------------
+  
+  Thruster: 5x4 @ 61kg
+  Bench Press: 3x8 @ 72kg
+---
+date: 2026-12-31
+summary: Week 29 — Power
+description:
+  Week 29
+  
+  --------------------
+  Warm-up (5 min):
+    Hip circles + leg swings
+    Ankle mobility (knee-to-wall)
+    PVC/band shoulder dislocates
+    Wrist circles + wrist stretches x10
+    Air squats x10
+    Empty bar hang power clean x5
+    Empty bar overhead press x5
+  --------------------
+  
+  Hang Power Clean: 5x3 @ 63.5kg
+  Front Squat: 4x4 @ 85kg
+  Romanian Deadlift: 3x8 @ 86kg
+  Overhead Press: 3x6 @ 56kg

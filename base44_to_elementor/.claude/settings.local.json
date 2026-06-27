@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/avil/SyncThing-Shared-Folder/novalife-egg-quality-base44-app/assets/**)",
+      "Read(//home/avil/SyncThing-Shared-Folder/novalife-egg-quality-base44-app/src:badge/**)",
+      "Read(//home/avil/SyncThing-Shared-Folder/novalife-egg-quality-base44-app/static:js/**)",
+      "Bash(node -e \" const chunks = []; process.stdin.on\\('data', d => chunks.push\\(d\\)\\); process.stdin.on\\('end', \\(\\) => { const code = Buffer.concat\\(chunks\\).toString\\(\\); // Try to find JSX-like string patterns that look like UI content const textMatches = code.match\\(/[\\\\\"'\\\\`][A-Z][^\\\\\"'\\\\`]{10,100}[\\\\\"'\\\\`]/g\\) || []; const unique = [...new Set\\(textMatches\\)].slice\\(0, 100\\); unique.forEach\\(m => console.log\\(m\\)\\); }\\); \")",
+      "Bash(npx playwright:*)",
+      "Bash(npx puppeteer:*)",
+      "Bash(node:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

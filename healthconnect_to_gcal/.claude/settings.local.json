@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git status *)",
+      "Bash(gh run *)",
+      "Read(//usr/lib/**)",
+      "Read(//usr/local/lib/**)",
+      "Bash(apt list *)",
+      "Bash(snap list *)",
+      "Bash(wget -q --show-progress https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip)",
+      "Bash(export ANDROID_HOME=/home/avil/android-sdk)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(git commit *)",
+      "Bash(./gradlew assembleRelease)",
+      "Bash(./gradlew compileReleaseKotlin)",
+      "Bash(git -C /home/avil/git/misc add healthconnect_to_gcal/hc_export_app/app/src/main/kotlin/com/hcexport/JournalEntryView.kt)",
+      "Bash(git -C /home/avil/git/misc commit -m ' *)",
+      "Bash(git -C /home/avil/git/misc push)",
+      "Read(//home/avil/git/misc/**)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
+    ]
+  }
+}
