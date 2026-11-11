@@ -99,6 +99,84 @@ object Prefs {
     fun setJournalLastSyncSummary(ctx: Context, summary: String) =
         prefs(ctx).edit().putString("journal_last_sync_summary", summary).apply()
 
+    // ── Workout database ───────────────────────────────────────────────────
+
+    fun getWorkoutEtag(ctx: Context): String? =
+        prefs(ctx).getString("workout_etag", null)
+
+    fun setWorkoutEtag(ctx: Context, etag: String?) =
+        prefs(ctx).edit().putString("workout_etag", etag).apply()
+
+    fun getWorkoutLastModified(ctx: Context): String? =
+        prefs(ctx).getString("workout_last_modified", null)
+
+    fun setWorkoutLastModified(ctx: Context, value: String?) =
+        prefs(ctx).edit().putString("workout_last_modified", value).apply()
+
+    fun getLastWorkoutPullMs(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("last_workout_pull_ms", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setLastWorkoutPullMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("last_workout_pull_ms", ms).apply()
+
+    fun getLastWorkoutPullSummary(ctx: Context): String? =
+        prefs(ctx).getString("last_workout_pull_summary", null)
+
+    fun setLastWorkoutPullSummary(ctx: Context, summary: String) =
+        prefs(ctx).edit().putString("last_workout_pull_summary", summary).apply()
+
+    // ── Wear ───────────────────────────────────────────────────────────────
+
+    fun getWearGeneration(ctx: Context): Long =
+        prefs(ctx).getLong("wear_generation", 0L)
+
+    fun setWearGeneration(ctx: Context, generation: Long) =
+        prefs(ctx).edit().putLong("wear_generation", generation).apply()
+
+    fun getWearPreviousGeneration(ctx: Context): Long =
+        prefs(ctx).getLong("wear_previous_generation", 0L)
+
+    fun setWearPreviousGeneration(ctx: Context, generation: Long) =
+        prefs(ctx).edit().putLong("wear_previous_generation", generation).apply()
+
+    fun getLastWatchPushMs(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("last_watch_push_ms", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setLastWatchPushMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("last_watch_push_ms", ms).apply()
+
+    // ── Catch-up / migration ───────────────────────────────────────────────
+
+    fun getLastCatchupMs(ctx: Context): Long =
+        prefs(ctx).getLong("last_catchup_ms", 0L)
+
+    fun setLastCatchupMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("last_catchup_ms", ms).apply()
+
+    // ── Armed alarms (display) ─────────────────────────────────────────────
+
+    fun getNextSyncAlarmMs(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("next_sync_alarm_at", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setNextSyncAlarmMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("next_sync_alarm_at", ms).apply()
+
+    fun getNextPullAlarmMs(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("next_pull_alarm_at", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setNextPullAlarmMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("next_pull_alarm_at", ms).apply()
+
+
+
     // ── Sync schedules ─────────────────────────────────────────────────────
 
     fun getSyncSchedules(ctx: Context): List<SyncSchedule> {

@@ -15,6 +15,10 @@ object CalendarHelper {
     private val timeFmt = SimpleDateFormat("h:mm a", Locale.getDefault())
     private val tz get() = TimeZone.getDefault().id
 
+    /** Marks an event this app wrote. Used to keep the journal from merging the
+     *  app's own Health Connect events back in as "WODs". */
+    const val HC_MARKER = "# hc_sync"
+
     val EXERCISE_TYPES = mapOf(
         0  to ("💪" to "Other Workout"),
         2  to ("🏸" to "Badminton"),
@@ -195,7 +199,8 @@ object CalendarHelper {
         if (event.notes.isNotBlank()) { appendLine(); appendLine("Notes: ${event.notes}") }
 
         appendLine()
-        append("Source: ${SourceBrands.displayName(event.sourcePkg)}")
+        appendLine("Source: ${SourceBrands.displayName(event.sourcePkg)}")
+        append(HC_MARKER)
     }.trimEnd()
 
     fun sleepTitle(event: SleepEvent): String =
@@ -223,15 +228,17 @@ object CalendarHelper {
         }
 
         appendLine()
-        append("Source: ${SourceBrands.displayName(event.sourcePkg)}")
+        appendLine("Source: ${SourceBrands.displayName(event.sourcePkg)}")
+        append(HC_MARKER)
     }.trimEnd()
 
     // ── WOD events ────────────────────────────────────────────────────────
 
     data class WodEventInfo(val id: Long, val dateStr: String, val startMs: Long, val endMs: Long, val title: String, val description: String?)
 
-    fun findWodEvents(context: Context, daysAhead: Int): List<WodEventInfo> {
+    fun findWodEvents(context: Context, daysAhead: Int, daysBack: Int = 0): List<WodEventInfo> {
         val todayStart = Instant.now().truncatedTo(ChronoUnit.DAYS)
+        val rangeStart = todayStart.minus(daysBack.toLong(), ChronoUnit.DAYS)
         val rangeEnd   = todayStart.plus(daysAhead.toLong(), ChronoUnit.DAYS)
 
         val projection = arrayOf(
@@ -250,7 +257,7 @@ object CalendarHelper {
             CalendarContract.Events.CONTENT_URI,
             projection,
             selection,
-            arrayOf("WOD", todayStart.toEpochMilli().toString(), rangeEnd.toEpochMilli().toString()),
+            arrayOf("WOD", rangeStart.toEpochMilli().toString(), rangeEnd.toEpochMilli().toString()),
             null,
         )?.use { cursor ->
             val idCol    = cursor.getColumnIndex(CalendarContract.Events._ID)
@@ -272,22 +279,28 @@ object CalendarHelper {
         return results
     }
 
-    /** Find any calendar events overlapping [startMs, endMs], excluding the Fitness calendar. */
+    /** Find any calendar events overlapping [startMs, endMs], excluding events this
+     *  app wrote and the target/fitness calendars. */
     fun findOverlappingEvents(context: Context, startMs: Long, endMs: Long): List<WodEventInfo> {
-        val fitnessId = findCalendarId(context, "Fitness")
-        val selection = if (fitnessId != null) {
-            "${CalendarContract.Events.DTSTART} < ? AND ${CalendarContract.Events.DTEND} > ? " +
-            "AND ${CalendarContract.Events.DELETED} = 0 " +
-            "AND ${CalendarContract.Events.CALENDAR_ID} != ?"
-        } else {
-            "${CalendarContract.Events.DTSTART} < ? AND ${CalendarContract.Events.DTEND} > ? " +
-            "AND ${CalendarContract.Events.DELETED} = 0"
+        val excluded = listOfNotNull(
+            Prefs.getCalendarId(context),
+            findCalendarId(context, "Fitness"),
+        ).distinct()
+
+        val selection = buildString {
+            append("${CalendarContract.Events.DTSTART} < ? AND ${CalendarContract.Events.DTEND} > ? ")
+            append("AND ${CalendarContract.Events.DELETED} = 0")
+            if (excluded.isNotEmpty()) {
+                append(" AND ${CalendarContract.Events.CALENDAR_ID} NOT IN (")
+                append(excluded.joinToString(",") { "?" })
+                append(")")
+            }
         }
-        val selArgs = if (fitnessId != null) {
-            arrayOf(endMs.toString(), startMs.toString(), fitnessId.toString())
-        } else {
-            arrayOf(endMs.toString(), startMs.toString())
-        }
+        val selArgs = buildList {
+            add(endMs.toString())
+            add(startMs.toString())
+            excluded.forEach { add(it.toString()) }
+        }.toTypedArray()
 
         val projection = arrayOf(
             CalendarContract.Events._ID,
@@ -310,11 +323,12 @@ object CalendarHelper {
             val endCol   = cursor.getColumnIndex(CalendarContract.Events.DTEND)
             val descCol  = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION)
             while (cursor.moveToNext()) {
+                val desc = cursor.getString(descCol)
+                if (desc?.contains(HC_MARKER) == true) continue
                 val id      = cursor.getLong(idCol)
                 val title   = cursor.getString(titleCol) ?: ""
                 val sMs     = cursor.getLong(startCol)
                 val eMs     = cursor.getLong(endCol)
-                val desc    = cursor.getString(descCol)
                 val date    = Instant.ofEpochMilli(sMs)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()

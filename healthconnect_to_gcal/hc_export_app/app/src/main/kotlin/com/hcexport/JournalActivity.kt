@@ -44,6 +44,7 @@ class JournalActivity : ComponentActivity() {
                 JournalStorage.updateEntry(this, entry)
             } catch (_: Exception) {}
         }
+        WearPushWorker.enqueue(this)
         refreshDayEntries()
         refreshCalendar()
     }

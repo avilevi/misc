@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HYPR Workouts without having to download any app!" />
+    <title>HYPR Workouts</title>
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="HYPR Workouts" />
+    <meta property="og:description" content="HYPR Workouts without having to download any app!" />
+    <meta property="og:url" content="https://hypr-workouts.pages.dev/" />
+    <meta property="og:image" content="hypr-black.png" />
+    <meta property="og:image:width" content="300" />
+    <meta property="og:image:height" content="100" />
+    <meta property="og:site_name" content="HYPR Workouts" />
+    <link rel="icon" type="image/jpeg" href="/hypr-favicon.jpg" />
+    <meta property="article:modified_time" content="2026-11-11T07:36:52.31225" />
+    <style>@layer theme{:root{--bg-color:oklch(92.2% 0 0);--text-color:oklch(26.9% 0 0);--clickable-text-color-hover:oklch(55.1% .027 264.364);--border-color:oklch(92.8% .006 264.531);--container-background-color:oklch(97% 0 0)}@media (prefers-color-scheme:dark){:root{--bg-color:oklch(37.1% 0 0);--text-color:oklch(92.2% 0 0);--clickable-text-color-hover:oklch(70.8% 0 0);--border-color:oklch(37.1% 0 0);--container-background-color:oklch(26.9% 0 0)}}}@layer base{*,::backdrop,:after,:before{box-sizing:border-box;border:0 solid;margin:0;padding:0}}html{tab-size:4;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;font-feature-settings:normal;font-variation-settings:normal;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-size:16px;line-height:1.5}*{color:var(--text-color)}.accordion-toggle{padding:0;&>div{justify-content:space-between;width:100%;display:flex}@media (hover:hover){&:hover div{color:var(--clickable-text-color-hover);&.icon{background-color:var(--clickable-text-color-hover)}}}}.text-emphasis{font-weight:600}body{background-color:var(--bg-color);margin:.5rem}header,main{width:100%;margin-inline:auto}header,main>details{background-color:var(--container-background-color)}header{border-radius:.5rem;flex-direction:column;align-items:center;padding:1rem;display:flex;&>picture{margin-bottom:.5rem}}main{margin-top:1rem}@media (width>=40rem){header,main{max-width:40rem}}@media (width>=48rem){header,main{max-width:48rem}}.accordion{margin-top:-1px;&:first-child{border-top-left-radius:.5rem;border-top-right-radius:.5rem}&:last-child{border-bottom-right-radius:.5rem;border-bottom-left-radius:.5rem}}details::details-content{transition:height .3s cubic-bezier(.4, 0, .2, 1), content-visibility .3s cubic-bezier(.4, 0, .2, 1) allow-discrete;height:0;overflow:clip}@supports (interpolate-size:allow-keywords){:root{interpolate-size:allow-keywords}}details[open]::details-content{height:auto}.workout-summary{white-space:pre-line}.accordion-toggle{text-align:start;border-radius:.5rem;align-items:center;column-gap:.75rem;width:100%;padding-block:.75rem;font-weight:600;display:inline-flex;& .icon{background-size:cover;background-color:var(--text-color);width:.875rem;height:.875rem;mask-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik01IDEyaDE0bS03LTd2MTQiLz48L3N2Zz4=);mask-position:0;mask-size:contain;mask-repeat:no-repeat}}main>.accordion{border-style:solid;border-width:1px;border-color:var(--border-color)}main>.accordion>.accordion-toggle{padding-block:1rem;padding-inline:1.25rem}.accordion[open]>.accordion-toggle .icon{mask-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik01IDEyaDE0Ii8+PC9zdmc+)}.accordion>.accordion{padding-inline:2rem 1rem;&:last-child{padding-bottom:1rem}}</style>
+  </head>
+
+  <body>
+    <header>
+      <picture>
+        <source srcset="hypr-white.png" media="(prefers-color-scheme: dark)" />
+        <img src="hypr-black.png" width="156" height="52" alt="HYPR Logo" />
+      </picture>
+      <p>Last updated: <span class="text-emphasis">2026-11-11 07:36</span></p>
+    </header>
+    <main>
+      <details class="accordion" name="all" open>
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-11</div><div>Wednesday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-11" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Strength:
+Every 3:00 x 5 Sets
+5-5-3-3-3 Strict Press
+- Build to Heavy Set 
+
+Metcon:
+10:00 EMOM
+Min 1: 15/12 Cal. Row/Bike
+Min 2: 15 Wall-Balls (20/14)
+
+Stimulus:
+- unbroken wall-balls for as long as possible
+- calories in 0:45 or faster
+</p>
+        </details>
+        <details class="accordion" name="2026-11-11">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">2:00 Work / 0:30 Rest x 12 
+(3 Rounds)
+
+A)
+500m Skii / 500m Row
+
+B)
+200m Run
+
+C)
+40 Sit-Ups
+
+D)
+30-40m SandBag Walking Lunges
+
+Notes:
+- most likely all stations will finish before the 2:00 mark, except from the row/skii
+</p>
+        </details>
+        <details class="accordion" name="2026-11-11">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump (Blend)</div>
+          </summary>
+          <p class="workout-summary">Barbell Strict Press
+Set 1: 15 Reps 
+Set 2: 12 Reps 
+Set 3: 10 Reps 
+Set 4: 8 Reps 
+Set 5: 6 Reps
+
+3 Sets:
+10 BB Upright Rows
++
+20 Plate Frontal Raise (light)
+
+Finisher:
+3 Sets:
+1:00 Max Seated DB Snatch
+-Rest 1:30-
+</p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-12</div><div>Thursday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-12" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Strength:
+Every 3:00 x 3 Sets
+10 Barbell Good Morning
+20 Band Pull-Apart
+
+Metcon:
+12:00 AMRAP
+200m Run
+12 C2B Pull-Ups
+24 Single DB Box Step-Ups
+(24/20 inch)
+
+Rx: 22.5/15kg
+Int: 15/10kg
+Beg: 10/7.5kg
+
+Stimulus:
+- 3+ Rounds
+- Runs in 1:00 or faster
+- C2B in 1-2 sets
+- Dumbbell step-ups in 2 sets or fewer.</p>
+        </details>
+        <details class="accordion" name="2026-11-12">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">3:00 Work / 1:00 Rest x 8 
+(2 Rounds)
+
+A)
+20 Alt. DB Snatch (22.5/15kg)
++
+Max Meter Skii
+
+B)
+Max Meter Row
+
+C)
+Max Distance Sled Push (180/120kg)
+
+D)
+20 Burpees
++
+Max Time Hollow Hold
+</p>
+        </details>
+        <details class="accordion" name="2026-11-12">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump</div>
+          </summary>
+          <p class="workout-summary">Barbell Strict Press
+Set 1: 15 Reps 
+Set 2: 12 Reps 
+Set 3: 10 Reps 
+Set 4: 8 Reps 
+Set 5: 6 Reps
+
+3 Sets:
+10 BB Upright Rows
++
+20 Plate Frontal Raise (light)
+
+Finisher:
+3 Sets:
+1:00 Max Seated DB Snatch
+-Rest 1:30-
+</p>
+        </details>
+        <details class="accordion" name="2026-11-12">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🏋🏻‍♀️ Weightlifting</div>
+          </summary>
+          <p class="workout-summary">A)
+Muscle Snatch
+5 Sets
+3-3-3-2-2-2 Reps
+(Build to Heavy 2)
+
+B)
+Snatch Complex
+6 Sets:
+1 Snatch High Pull
+2 Hang Squat Snatch From Below The Knee
+
+70-80% from 1rm snatch
+</p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-13</div><div>Friday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-13" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">30:00 Clock (with a partner)
+For As Far As Possible
+
+2-4-6-8-10..+2
+Dual KB Deadlift (32/24kg)
+Strict Ring / Bar Dips
+Squat Clean (0.75% bodyweight)
+
+- split reps as desired
+- one partner works at a time
+
+Stimulus:
+- finish the round of 20 reps or further</p>
+        </details>
+        <details class="accordion" name="2026-11-13">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">2:00 Work / 0:30 Rest x 12
+
+A)
+Max Distance Farmer Carry (32/24kg)
+
+B)
+400m Run
+
+C)
+20 Wall-Balls (20/14)
+Max Push-ups in remaining time
+
+D)
+300/250m Skii Erg.
+</p>
+        </details>
+        <details class="accordion" name="2026-11-13">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump</div>
+          </summary>
+          <p class="workout-summary">3 Sets:
+12/12 Bulgarian Split Squats
+
+3 Sets:
+12/12 S.Arm DB Rows
+
+4 Sets:
+20 Light DB Hip Thrust
+10/10 S.Leg Step-Ups
+20 Light KB Swings
+- 10-20s rest between movements
+- no rest between rounds
+</p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-14</div><div>Saturday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-14" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Strength:
+3 Sets:
+50m S.Arm DB Suitcase Carry (each arm)
+1:00 Tall Plank
+- rest 1:00 -
+- Carries must be unbroken
+
+Metcon:
+4 Rounds For Time
+40 DB Snatch (15/10kg)
+400m Run
+
+20:00 T.C
+
+Stimulus:
+- 15:00-18:00 for most
+- Snatches in 2:30 or less, switch arms as needed
+- Run efforts in 2:30 or less
+- Quick transitions </p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-15</div><div>Sunday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-15" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Skill / Practice:
+H.S Walk
+
+Metcon:
+18:00 AMRAP
+300m Run
+15m H.S Walk
+9 Toes To Bar
+
+Stimulus:
+- 5+ Rounds
+- TTB in 1-2 sets
+- H.S.W + TTB in 2:00 or less
+
+Scaling:
+HSW -&gt; Distance -&gt;  1 HSW Around The Box
+</p>
+        </details>
+        <details class="accordion" name="2026-11-15">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">35:00 AMRAP
+400m Run
+200m Farmer Carry (2x24/16kg)
+30m SandBag Walking Lunges
+20 Burpee-to-Plate
+
+Goals:
+4+ Rounds</p>
+        </details>
+        <details class="accordion" name="2026-11-15">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump</div>
+          </summary>
+          <p class="workout-summary">4 Sets: (build to heavy)
+3 Dual DB Strict Press
++
+5 Dual DB Push Press
+*2s hold at the top each rep
+
+3 Sets:
+Half Kneeling S.Arm Landmine Press 
+8/8 Reps
+
+4 Sets:
+20-15-12-10 Bench Dips
++
+15 Plate Overhead Triceps Extension (2s negative)
+</p>
+        </details>
+        <details class="accordion" name="2026-11-15">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🏋🏻‍♀️ Weightlifting</div>
+          </summary>
+          <p class="workout-summary">A)
+9 Sets: 
+1 Segment Squat Snatch
+* 3s Pause below the knee
+
+- start at 60% and build slowly to heavy single
+
+B)
+4 Sets
+3 Snatch Balance
++
+3 Overhead Squat
+
+55-65-75%
+</p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-16</div><div>Monday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-16" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Strength:
+Every 3:00 x 5 Sets
+Back Squat
+5-5-5-4-4
+- Aim to to be at about 70-75% from 1RM
+
+Metcon:
+12:00 EMOM
+Min 1: 2-3 Rope Climb
+Min 2: 60 Double Unders
+Min 3: 0:20 Side Plank (each side)
+
+
+Stimulus:
+- Grippy Workout
+- Rope Climbs in 0:30 or faster
+- Advanced athletes could scale up to legless rope climbs.
+</p>
+        </details>
+        <details class="accordion" name="2026-11-16">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">2:30 Work / 0:30 Rest x 12
+
+A)
+500/600m Skii / Row
+
+B)
+Max Distance Sled Push (150/1000kg)
+
+C)
+200m Run
+Max Box Jumps in remaining time
+
+Notes:
+- אפשר עד 8 אנשים בתחנה
+- את המזחלת לבצע בסטים של 10 מטר לכל אחד (כל אחד צובר 30 מטר בנפרד)
+</p>
+        </details>
+        <details class="accordion" name="2026-11-16">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump</div>
+          </summary>
+          <p class="workout-summary">4 Sets x 8 Reps
+Back Squats
+
+3 Sets:
+Max Unbroken Banded Wide Grip Pull-Ups with 2s negative
+(aim for about 10 reps)
+
+Finisher:
+3 Sets:
+20 Alt. DB Renegade Rows
++
+12-15 KB Horn Curls
+</p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-17</div><div>Tuesday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-17" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Heavy Metcon:
+28:00 EMOM
+Min 1: 3 Push Press
+Min 2: 15 Sit-Ups
+Min 3: 15/12 Cal. Row/Bike
+Min 4: Rest
+
+ - Score is the heaviest set of 3 Push Press
+
+Stimulus:
+- 7 opportunities to lift heavy, increasing load across as many sets as possible.
+- Movement interference from the sit-ups and calories will make lifting more challenging.
+</p>
+        </details>
+        <details class="accordion" name="2026-11-17">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">1:30 Work / 0:30 Rest x 16
+
+A)
+Max Burpee Broad Jumps
+
+B)
+AMRAP
+10 KB Goblet Reverse Lunge
+10 Push-Ups
+
+C)
+Max Cal. Row/Skii
+
+D)
+20-30 Wall-Balls (20/14)
+</p>
+        </details>
+        <details class="accordion" name="2026-11-17">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump</div>
+          </summary>
+          <p class="workout-summary">Barbell Bent-Over Row
+4 Sets
+8 Reps
+
+3 Sets:
+10/10 DB Bulgarian Split Squat
+20 Glute Bridges
+
+Killer Core:
+9:00 EMOM
+40s Work / 20s Rest
+
+1) Tall Plank
+2) MedBall Russian Twist
+3) Dual KB Front Rack Hold @Heavy
+</p>
+        </details>
+        <details class="accordion" name="2026-11-17">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🏋🏻‍♀️ Weightlifting</div>
+          </summary>
+          <p class="workout-summary">A)
+7 Sets:
+Clean Complex:
+1 Power Clean
+1 Hang Squat Clean (mid thigh)
+
+use about 70-80% from max clean
+
+B)
+Clean Pull
++
+Hang Clean Pull
+
+5 Sets x 1+3 Reps
+
+start at 70% and build by feeling
+</p>
+        </details>
+        </details>
+      <details class="accordion" name="all">
+        <summary class="accordion-toggle">
+          <div class="icon"></div>
+          <div><div>2026-11-18</div><div>Wednesday</div></div>
+        </summary>
+        <details class="accordion" name="2026-11-18" open>
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🔥WOD</div>
+          </summary>
+          <p class="workout-summary">Strength:
+Every 1:30 x 6 Sets:
+5-3-2-1-1-1
+Power Snatch
+- Build to Heavy Single
+
+- Newer Athletes:
+5-5-3-3-3-3 Reps
+
+Metcon:
+For Time:
+15-12-9-6-3 
+Power Snatch
+- 15 Air Squats + 15 Push-Ups after each round
+
+T.C 15:00
+
+Rx: 42.5/30kg
+Int: 30/15kg
+Beg: 15/7kg
+
+Stimulus:
+- Moderate snatches, Completed as t&amp;g reps
+- Weightlifting &amp; Gymnastics stamina.
+- Faster athletes might finish in 10:00
+</p>
+        </details>
+        <details class="accordion" name="2026-11-18">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>🫁 HYROX</div>
+          </summary>
+          <p class="workout-summary">6:00 Work / 2:00 Rest x4 
+(2 Rounds)
+
+A)
+AMRAP
+400m Run
+20 American KB Swings (24/16kg)
+
+B)
+AMRAP
+500/400m Skii / Row
+30/20m SandBag Walking Lunges
+10 Alt. Devil Press</p>
+        </details>
+        <details class="accordion" name="2026-11-18">
+          <summary class="accordion-toggle">
+            <div class="icon"></div>
+            <div>💪 Pump (Blend)</div>
+          </summary>
+          <p class="workout-summary">Barbell Bent-Over Row
+4 Sets
+8 Reps
+
+3 Sets:
+10/10 DB Bulgarian Split Squat
+20 Glute Bridges
+
+Killer Core:
+9:00 EMOM
+40s Work / 20s Rest
+
+1) Tall Plank
+2) MedBall Russian Twist
+3) Dual KB Front Rack Hold @Heavy
+</p>
+        </details>
+        </details>
+          </main>
+  <!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6f5c2cb4524847a1b606a86585456f6c"}'></script><!-- Cloudflare Pages Analytics --></body>
+</html>

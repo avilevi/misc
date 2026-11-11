@@ -59,9 +59,26 @@ object JournalStorage {
         return true
     }
 
+    /** Batched [addEntryIfAbsent]: one read + one write for a whole sync phase. */
+    fun addEntriesIfAbsent(ctx: Context, entries: List<JournalEntry>): Int {
+        if (entries.isEmpty()) return 0
+        val all = readAll(ctx).toMutableList()
+        var added = 0
+        for (entry in entries) {
+            val startMs = extractStartMs(entry)
+            val srcPkg = extractSourcePkg(entry)
+            if (all.none { extractStartMs(it) == startMs && extractSourcePkg(it) == srcPkg }) {
+                all.add(entry)
+                added++
+            }
+        }
+        if (added > 0) writeAll(ctx, all)
+        return added
+    }
+
     /** Insert or replace an entry matching by start time + source package.
-     *  Preserves user customizations (customNarrative, customDataJson) from the
-     *  existing entry when replacing. */
+     *  Preserves user customizations (customNarrative, customDataJson, customTitle) from
+     *  the existing entry when replacing. */
     fun upsertEntry(ctx: Context, entry: JournalEntry) {
         val all = readAll(ctx).toMutableList()
         val entryStartMs = extractStartMs(entry)
@@ -75,11 +92,72 @@ object JournalStorage {
                 id = existing.id,
                 customDataJson = existing.customDataJson,
                 customNarrative = existing.customNarrative,
+                customTitle = existing.customTitle,
             )
         } else {
             all.add(entry)
         }
         writeAll(ctx, all)
+    }
+
+    /** Batched [upsertEntry]. Returns (created, updated). */
+    fun upsertEntries(ctx: Context, entries: List<JournalEntry>): Pair<Int, Int> {
+        if (entries.isEmpty()) return 0 to 0
+        val all = readAll(ctx).toMutableList()
+        var created = 0
+        var updated = 0
+        for (entry in entries) {
+            val startMs = extractStartMs(entry)
+            val srcPkg = extractSourcePkg(entry)
+            val idx = all.indexOfFirst {
+                extractStartMs(it) == startMs && extractSourcePkg(it) == srcPkg
+            }
+            if (idx >= 0) {
+                val existing = all[idx]
+                all[idx] = entry.copy(
+                    id = existing.id,
+                    customDataJson = existing.customDataJson,
+                    customNarrative = existing.customNarrative,
+                    customTitle = existing.customTitle,
+                )
+                updated++
+            } else {
+                all.add(entry)
+                created++
+            }
+        }
+        writeAll(ctx, all)
+        return created to updated
+    }
+
+    /**
+     * Refresh auto-generated WOD entries from the workout database. An entry the user
+     * has edited (custom narrative or custom data) is left alone.
+     */
+    fun upsertWodEntries(ctx: Context, entries: List<JournalEntry>): Pair<Int, Int> {
+        if (entries.isEmpty()) return 0 to 0
+        val all = readAll(ctx).toMutableList()
+        var created = 0
+        var updated = 0
+        for (entry in entries) {
+            val startMs = extractStartMs(entry)
+            val srcPkg = extractSourcePkg(entry)
+            val idx = all.indexOfFirst {
+                extractStartMs(it) == startMs && extractSourcePkg(it) == srcPkg
+            }
+            if (idx < 0) {
+                all.add(entry)
+                created++
+            } else {
+                val existing = all[idx]
+                if (existing.customNarrative == null && existing.customDataJson == null) {
+                    all[idx] = entry.copy(id = existing.id, customTitle = existing.customTitle)
+                    updated++
+                }
+            }
+        }
+        if (created > 0 || updated > 0) writeAll(ctx, all)
+        return created to updated
     }
 
     fun updateEntry(ctx: Context, entry: JournalEntry) {
@@ -135,6 +213,16 @@ object JournalStorage {
     /** Return entries for a month, excluding WOD entries that overlap with non-WOD entries. */
     fun getVisibleEntriesForMonth(ctx: Context, year: Int, month: Int): List<JournalEntry> =
         filterCoveredWods(getEntriesForMonth(ctx, year, month))
+
+    /** Workout entries (exercise + WOD) dated on or before [throughDate], with
+     *  WOD entries covered by a real exercise hidden. This is the watch's journal. */
+    fun getAllVisibleWorkoutEntries(ctx: Context, throughDate: String): List<JournalEntry> =
+        readAll(ctx)
+            .filter { it.entryType == "exercise" || it.entryType == "wod" }
+            .filter { it.date <= throughDate }
+            .groupBy { it.date }
+            .flatMap { (_, entries) -> filterCoveredWods(entries) }
+            .sortedWith(compareByDescending<JournalEntry> { it.date }.thenBy { extractStartMs(it) })
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 

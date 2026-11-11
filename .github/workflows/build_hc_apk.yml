@@ -30,18 +30,18 @@ jobs:
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Decode keystore
-        working-directory: healthconnect_to_gcal/hc_export_app/app
+        working-directory: healthconnect_to_gcal/hc_export_app
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
-      - name: Build release APK
+      - name: Build release APKs and run unit tests
         working-directory: healthconnect_to_gcal/hc_export_app
         env:
-          KEYSTORE_PATH: keystore.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/healthconnect_to_gcal/hc_export_app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           VERSION_MAJOR: '1'
           BUILD_NUMBER: ${{ github.run_number }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew :app:testDebugUnitTest :shared:testDebugUnitTest :app:assembleRelease :wear:assembleRelease
 
       - name: Write version.json
         run: |
@@ -54,5 +54,6 @@ jobs:
           name: HC Sync (build ${{ github.run_number }})
           files: |
             healthconnect_to_gcal/hc_export_app/app/build/outputs/apk/release/app-release.apk
+            healthconnect_to_gcal/hc_export_app/wear/build/outputs/apk/release/wear-release.apk
             version.json
           prerelease: true

@@ -24,13 +24,17 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile     = file(System.getenv("KEYSTORE_PATH") ?: "keystore.jks")
+            storeFile     = rootProject.file(System.getenv("KEYSTORE_PATH") ?: "keystore.jks")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
             keyAlias      = System.getenv("KEY_ALIAS") ?: ""
             keyPassword   = System.getenv("KEYSTORE_PASSWORD") ?: ""
         }
     }
     buildTypes {
+        debug {
+            // Keeps a locally-built debug app from colliding with the release app.
+            applicationIdSuffix = ".debug"
+        }
         release {
             signingConfig  = signingConfigs.getByName("release")
             isMinifyEnabled = false
@@ -44,6 +48,12 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    lint {
+        // The app has no fragments; the check only sees an old transitive version
+        // pulled in by an AndroidX library. ActivityResult is used from Activities.
+        disable += "InvalidFragmentVersionForActivityResult"
+    }
 }
 
 dependencies {
@@ -53,4 +63,7 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("com.google.android.gms:play-services-wearable:18.2.0")
+    implementation(project(":shared"))
+    testImplementation("junit:junit:4.13.2")
 }

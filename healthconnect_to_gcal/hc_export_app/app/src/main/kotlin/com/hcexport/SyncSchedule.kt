@@ -12,10 +12,11 @@ data class SyncSchedule(
     val minute: Int,
     val days: Set<Int> = emptySet(), // 1=Mon..7=Sun, only for weekly
 ) {
-    fun nextTriggerMs(): Long {
-        val now = Calendar.getInstance()
+    fun nextTriggerMs(nowMs: Long = System.currentTimeMillis()): Long {
+        val now = Calendar.getInstance().apply { timeInMillis = nowMs }
         if (type == "daily") {
             val target = Calendar.getInstance().apply {
+                timeInMillis = nowMs
                 set(Calendar.HOUR_OF_DAY, hour)
                 set(Calendar.MINUTE, minute)
                 set(Calendar.SECOND, 0)
@@ -24,9 +25,10 @@ data class SyncSchedule(
             if (!target.after(now)) target.add(Calendar.DAY_OF_MONTH, 1)
             return target.timeInMillis
         } else {
-            val calDays = days.map { d -> if (d == 7) Calendar.SUNDAY else d + 1 }.toSet()
+            val calDays = calendarDays()
             for (i in 0..7) {
                 val candidate = Calendar.getInstance().apply {
+                    timeInMillis = nowMs
                     set(Calendar.HOUR_OF_DAY, hour)
                     set(Calendar.MINUTE, minute)
                     set(Calendar.SECOND, 0)
@@ -37,15 +39,47 @@ data class SyncSchedule(
                     return candidate.timeInMillis
                 }
             }
-            return now.timeInMillis + 7L * 24 * 60 * 60 * 1000
+            return nowMs + 7L * 24 * 60 * 60 * 1000
         }
     }
 
-    fun nextTriggerDelayMs(): Long {
-        val targetMs = nextTriggerMs()
-        val nowMs = System.currentTimeMillis()
-        return (targetMs - nowMs).coerceAtLeast(0L)
+    /** The most recent occurrence at or before [nowMs]; used for catch-up. */
+    fun mostRecentTriggerMs(nowMs: Long = System.currentTimeMillis()): Long {
+        val now = Calendar.getInstance().apply { timeInMillis = nowMs }
+        if (type == "daily") {
+            val target = Calendar.getInstance().apply {
+                timeInMillis = nowMs
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            if (target.after(now)) target.add(Calendar.DAY_OF_MONTH, -1)
+            return target.timeInMillis
+        } else {
+            val calDays = calendarDays()
+            for (i in 0..7) {
+                val candidate = Calendar.getInstance().apply {
+                    timeInMillis = nowMs
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                    if (i > 0) add(Calendar.DAY_OF_MONTH, -i)
+                }
+                if (!candidate.after(now) && candidate.get(Calendar.DAY_OF_WEEK) in calDays) {
+                    return candidate.timeInMillis
+                }
+            }
+            return nowMs - 7L * 24 * 60 * 60 * 1000
+        }
     }
+
+    fun nextTriggerDelayMs(nowMs: Long = System.currentTimeMillis()): Long =
+        (nextTriggerMs(nowMs) - nowMs).coerceAtLeast(0L)
+
+    private fun calendarDays(): Set<Int> =
+        days.map { d -> if (d == 7) Calendar.SUNDAY else d + 1 }.toSet()
 
     fun displayString(): String {
         val t = "%02d:%02d".format(hour, minute)

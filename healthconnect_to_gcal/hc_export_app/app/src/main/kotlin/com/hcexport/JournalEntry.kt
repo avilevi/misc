@@ -20,7 +20,12 @@ data class JournalEntry(
 ) {
     fun effectiveDataJson(): String = customDataJson ?: originalDataJson
 
-    fun narrativeText(): String = customNarrative ?: DiaryNarrator.generate(this)
+    fun narrativeText(): String = customNarrative ?: when (entryType) {
+        "wod" -> try {
+            JSONObject(effectiveDataJson()).optString("wod", "")
+        } catch (_: Exception) { "" }
+        else -> DiaryNarrator.generate(this)
+    }
 
     fun hasCustomizations(): Boolean = customDataJson != null || customNarrative != null
 
@@ -130,7 +135,10 @@ data class JournalEntry(
                 entryType        = "wod",
                 originalDataJson = json.toString(),
                 customDataJson   = null,
-                customNarrative  = content,
+                // Auto content lives only in originalDataJson. customNarrative is
+                // reserved for a genuine user edit, so a later DB update can refresh
+                // the WOD without clobbering the user's words.
+                customNarrative  = null,
                 createdAtMs      = System.currentTimeMillis(),
                 updatedAtMs      = System.currentTimeMillis(),
             )

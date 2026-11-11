@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "HcExport"
 include(":app")
+include(":shared")
+include(":wear")

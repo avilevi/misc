@@ -9,15 +9,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.ComponentActivity
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 
 class SettingsActivity : ComponentActivity() {
 
     private lateinit var sleepLabel: TextView
     private lateinit var exerciseLabel: TextView
     private lateinit var schedulesList: LinearLayout
+    private lateinit var workoutStatus: TextView
+    private lateinit var batteryStatus: TextView
 
     private var calendars = mutableListOf<Triple<Long, String, String>>()
     private lateinit var calSpinner: Spinner
@@ -136,9 +135,9 @@ class SettingsActivity : ComponentActivity() {
 
         root.addView(Ui.sectionSpacer(this, 16))
 
-        // Calendar full resync
-        root.addView(Ui.primaryButton(this, "Full Re-sync Calendar") {
-            triggerCalendarResync()
+        // Full resync
+        root.addView(Ui.primaryButton(this, "Full Re-sync (calendar + journal)") {
+            triggerFullResync()
         })
 
         root.addView(Ui.sectionSpacer(this, 32))
@@ -176,10 +175,61 @@ class SettingsActivity : ComponentActivity() {
 
         root.addView(Ui.sectionSpacer(this, 20))
 
-        // Journal full resync
-        root.addView(Ui.primaryButton(this, "Full Re-sync Journal") {
-            triggerJournalResync()
+        // ── Workouts / watch / reliability ──────────────────────────────────
+        root.addView(sectionTitle("Workouts"))
+        root.addView(Ui.sectionSpacer(this, 8))
+
+        workoutStatus = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 8))
+        }
+        root.addView(workoutStatus)
+
+        root.addView(Ui.secondaryButton(this, "Refresh workouts now") {
+            WorkoutFetchWorker.enqueue(this)
+            Toast.makeText(this, "Refreshing workouts…", Toast.LENGTH_SHORT).show()
         })
+        root.addView(Ui.sectionSpacer(this, 8))
+        root.addView(Ui.secondaryButton(this, "Push to watch") {
+            WearPushWorker.enqueue(this)
+            Toast.makeText(this, "Sending snapshot to the watch…", Toast.LENGTH_SHORT).show()
+        })
+
+        root.addView(Ui.sectionSpacer(this, 20))
+
+        root.addView(sectionTitle("Background reliability"))
+        root.addView(Ui.sectionSpacer(this, 8))
+        batteryStatus = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 8))
+        }
+        root.addView(batteryStatus)
+
+        root.addView(Ui.secondaryButton(this, "Allow unrestricted battery use") {
+            if (BatteryOptimizationHelper.isIgnoringBatteryOptimizations(this)) {
+                Toast.makeText(this, "Already unrestricted", Toast.LENGTH_SHORT).show()
+            } else {
+                runCatching {
+                    startActivity(BatteryOptimizationHelper.requestExemptionIntent(this))
+                }
+            }
+        })
+        root.addView(Ui.sectionSpacer(this, 6))
+        root.addView(TextView(this).apply {
+            text = "On Samsung, also open Battery → Background usage limits and remove HC Sync from Sleeping apps."
+            textSize = 12f
+            setTextColor(Ui.TEXT_MUTED)
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 8))
+        })
+
+        if (BuildConfig.DEBUG) {
+            root.addView(Ui.secondaryButton(this, "Test alarm in 1 minute") {
+                AlarmScheduler.scheduleTestAlarm(this, 60_000L)
+                Toast.makeText(this, "Test alarm armed", Toast.LENGTH_SHORT).show()
+            })
+        }
 
         setContentView(ScrollView(this).apply {
             addView(root)
@@ -192,6 +242,23 @@ class SettingsActivity : ComponentActivity() {
         refreshCalendarSpinner()
         refreshSourceLabels()
         refreshSchedulesList()
+        refreshWorkoutStatus()
+        batteryStatus.text = BatteryOptimizationHelper.statusLine(this)
+    }
+
+    private fun refreshWorkoutStatus() {
+        val total = WorkoutStore.count(this)
+        val latest = WorkoutStore.latestDate(this) ?: "—"
+        workoutStatus.text = buildString {
+            append("$total workouts stored (latest $latest)")
+            append("\n${WorkoutPull.lastPullLine(this@SettingsActivity)}")
+            Prefs.getLastWorkoutPullSummary(this@SettingsActivity)?.let { append("\n$it") }
+            val push = Prefs.getLastWatchPushMs(this@SettingsActivity)
+            if (push != null) {
+                val fmt = java.text.SimpleDateFormat("EEE, dd MMM HH:mm", java.util.Locale.getDefault())
+                append("\nWatch push: ${fmt.format(java.util.Date(push))}")
+            }
+        }
     }
 
     // ── Section title ────────────────────────────────────────────────────────
@@ -222,20 +289,11 @@ class SettingsActivity : ComponentActivity() {
         parent.addView(row)
     }
 
-    // ── Resync triggers ──────────────────────────────────────────────────────
+    // ── Resync trigger ───────────────────────────────────────────────────────
 
-    private fun triggerCalendarResync() {
-        val data = workDataOf(CalendarSyncWorker.KEY_FORCE_RESYNC to true)
-        val req  = OneTimeWorkRequestBuilder<CalendarSyncWorker>().setInputData(data).build()
-        WorkManager.getInstance(this).enqueue(req)
-        Toast.makeText(this, "Calendar full resync started", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun triggerJournalResync() {
-        val data = workDataOf(JournalSyncWorker.KEY_FORCE_RESYNC to true)
-        val req  = OneTimeWorkRequestBuilder<JournalSyncWorker>().setInputData(data).build()
-        WorkManager.getInstance(this).enqueue(req)
-        Toast.makeText(this, "Journal full resync started", Toast.LENGTH_SHORT).show()
+    private fun triggerFullResync() {
+        SyncWorker.enqueue(this, forceCalendar = true, forceJournal = true)
+        Toast.makeText(this, "Full re-sync started", Toast.LENGTH_SHORT).show()
     }
 
     // ── Schedule helpers ─────────────────────────────────────────────────────
@@ -273,7 +331,7 @@ class SettingsActivity : ComponentActivity() {
                         val updated = Prefs.getSyncSchedules(this@SettingsActivity)
                             .filter { it.id != schedule.id }
                         Prefs.setSyncSchedules(this@SettingsActivity, updated)
-                        SyncScheduler.applySchedules(this@SettingsActivity)
+                        AlarmScheduler.scheduleNextSync(this@SettingsActivity)
                         refreshSchedulesList()
                     }
                 }.also { addView(it) }
@@ -372,7 +430,7 @@ class SettingsActivity : ComponentActivity() {
                 days   = selectedDays,
             )
             Prefs.setSyncSchedules(this, Prefs.getSyncSchedules(this) + schedule)
-            SyncScheduler.enqueue(this, schedule)
+            AlarmScheduler.scheduleNextSync(this)
             refreshSchedulesList()
             dialog.dismiss()
         }

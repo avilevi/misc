@@ -61,7 +61,7 @@ object UpdateChecker {
             }
         }
 
-        val uri = FileProvider.getUriForFile(ctx, "com.hcexport.fileprovider", outFile)
+        val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", outFile)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

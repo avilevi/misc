@@ -30,7 +30,7 @@ object NotificationHelper {
         }
         val title = if (merges.size == 1) "Calendar event merged" else "${merges.size} calendar events merged"
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(merges.first().let { (hc, cal) -> "$hc ← $cal" })
             .setStyle(NotificationCompat.BigTextStyle().bigText(lines))
@@ -43,7 +43,7 @@ object NotificationHelper {
     fun notifySyncComplete(ctx: Context, summary: String) {
         createChannel(ctx)
         val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("HC Sync complete")
             .setContentText(summary.lines().firstOrNull() ?: "")
             .setStyle(NotificationCompat.BigTextStyle().bigText(summary))

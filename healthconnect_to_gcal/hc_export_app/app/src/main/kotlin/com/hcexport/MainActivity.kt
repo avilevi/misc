@@ -139,11 +139,9 @@ class MainActivity : ComponentActivity() {
 
         root.addView(Ui.sectionSpacer(this, 20))
 
-        // ── Sync buttons ─────────────────────────────────────────────────────
+        // ── Sync button ──────────────────────────────────────────────────────
 
-        root.addView(Ui.primaryButton(this, "Sync to Calendar") { triggerCalendarSync() })
-        root.addView(Ui.sectionSpacer(this, 10))
-        root.addView(Ui.primaryButton(this, "Sync to Journal") { triggerJournalSync() })
+        root.addView(Ui.primaryButton(this, "Sync now") { triggerSync() })
 
         root.addView(Ui.sectionSpacer(this, 24))
 
@@ -256,69 +254,69 @@ class MainActivity : ComponentActivity() {
                 val schedInfo  = if (schedCount == 0) "No auto-sync scheduled"
                                  else "$schedCount auto-sync schedule(s) active"
                 val calSummary  = Prefs.getLastSyncSummary(this@MainActivity)
-                val journalSummary = Prefs.getJournalLastSyncSummary(this@MainActivity)
+                val pullSummary = Prefs.getLastWorkoutPullSummary(this@MainActivity)
                 val nextLine    = nextSyncLine()
+                val batteryLine = BatteryOptimizationHelper.statusLine(this@MainActivity)
+                ensureArmedAndCatchUp()
                 val detail = buildString {
                     append("Calendar: $calName")
                     append("\n$schedInfo")
+                    append("\n$batteryLine")
                     if (calSummary != null) append("\n$calSummary")
-                    if (journalSummary != null) append("\n$journalSummary")
+                    if (pullSummary != null) append("\n$pullSummary")
                     if (nextLine.isNotEmpty()) append(nextLine)
                 }
                 setStatus(Ui.SUCCESS, "Ready", detail)
-                SyncScheduler.applySchedules(this@MainActivity)
             }
+        }
+    }
+
+    /** Re-arm the alarms and make up a run that was missed while the app was closed. */
+    private fun ensureArmedAndCatchUp() {
+        AlarmScheduler.ensureArmed(this)
+        WorkManager.getInstance(this).cancelAllWorkByTag("scheduled_sync")
+
+        val now = System.currentTimeMillis()
+        val mostRecent = AlarmScheduler.mostRecentScheduleMs(this)
+        val lastSync = Prefs.getLastSyncTime(this)
+        val lastCatchup = Prefs.getLastCatchupMs(this)
+        val catchupDue = mostRecent != null &&
+            (lastSync == null || lastSync < mostRecent) &&
+            now - lastCatchup > 60 * 60 * 1000L
+        val pullDue = (Prefs.getLastWorkoutPullMs(this) ?: 0L) < now - 24 * 60 * 60 * 1000L
+
+        if (catchupDue) {
+            Prefs.setLastCatchupMs(this, now)
+            SyncWorker.enqueue(this)
+        } else if (pullDue) {
+            WorkoutFetchWorker.enqueue(this)
         }
     }
 
     private fun nextSyncLine(): String {
-        val nextMs = SyncScheduler.nextScheduledTimeMs(this)
-        if (nextMs == null) return ""
         val fmt = SimpleDateFormat("EEE, dd MMM HH:mm", Locale.getDefault())
-        return "\nNext auto-sync: ${fmt.format(Date(nextMs))}"
-    }
-
-    private fun triggerCalendarSync() {
-        setStatus(Ui.PRIMARY, "Syncing to Calendar…", "")
-        val req = OneTimeWorkRequestBuilder<CalendarSyncWorker>().build()
-        WorkManager.getInstance(this).enqueue(req)
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(req.id).observe(this) { info ->
-            when (info?.state) {
-                WorkInfo.State.SUCCEEDED -> {
-                    lifecycleScope.launch {
-                        val calId   = Prefs.getCalendarId(this@MainActivity)
-                            ?: CalendarHelper.findCalendarId(this@MainActivity)
-                        val calName = calId?.let { resolveCalendarName(it) } ?: "?"
-                        val summary = Prefs.getLastSyncSummary(this@MainActivity) ?: ""
-                        setStatus(Ui.SUCCESS, "Calendar sync complete",
-                            "Calendar: $calName\n$summary")
-                        WodWidgetProvider.notifyDataChanged(this@MainActivity)
-                    }
-                }
-                WorkInfo.State.FAILED ->
-                    setStatus(Ui.ERROR, "Calendar sync failed",
-                        "Tap View Log for details.")
-                else -> {}
-            }
+        val sync = AlarmScheduler.nextSyncMs(this)
+        val pull = Prefs.getNextPullAlarmMs(this) ?: AlarmScheduler.nextPullTimeMs()
+        return buildString {
+            if (sync != null) append("\nNext auto-sync: ${fmt.format(Date(sync))}")
+            append("\nWorkout refresh: ${fmt.format(Date(pull))}")
         }
     }
 
-    private fun triggerJournalSync() {
-        setStatus(Ui.PRIMARY, "Syncing to Journal…", "")
-        val req = OneTimeWorkRequestBuilder<JournalSyncWorker>().build()
-        WorkManager.getInstance(this).enqueue(req)
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(req.id).observe(this) { info ->
+    private fun triggerSync() {
+        setStatus(Ui.PRIMARY, "Syncing…", "Workouts → calendar → journal → watch")
+        val id = SyncWorker.enqueue(this)
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(id).observe(this) { info ->
             when (info?.state) {
                 WorkInfo.State.SUCCEEDED -> {
                     lifecycleScope.launch {
-                        val summary = Prefs.getJournalLastSyncSummary(this@MainActivity) ?: ""
-                        setStatus(Ui.SUCCESS, "Journal sync complete", summary)
+                        val summary = Prefs.getLastSyncSummary(this@MainActivity) ?: ""
+                        setStatus(Ui.SUCCESS, "Sync complete", summary)
                         WodWidgetProvider.notifyDataChanged(this@MainActivity)
                     }
                 }
                 WorkInfo.State.FAILED ->
-                    setStatus(Ui.ERROR, "Journal sync failed",
-                        "Tap View Log for details.")
+                    setStatus(Ui.ERROR, "Sync failed", "Tap View Log for details.")
                 else -> {}
             }
         }
