@@ -172,11 +172,10 @@ private fun WorkoutDatesScreen(snapshot: Snapshot?, onDate: (String) -> Unit) {
             item {
                 Chip(
                     onClick = { onDate(date) },
-                    label = { Text(prettyDate(date), color = TEXT) },
+                    label = { Text(prettyDate(date)) },
                     secondaryLabel = {
                         Text(
                             items.joinToString(", ") { it.typeLabel },
-                            color = MUTED,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -199,11 +198,10 @@ private fun WorkoutTypesScreen(snapshot: Snapshot?, date: String, onType: (Strin
             item {
                 Chip(
                     onClick = { onType(workout.typeKey) },
-                    label = { Text(workout.typeLabel, color = TEXT) },
+                    label = { Text(workout.typeLabel) },
                     secondaryLabel = {
                         Text(
                             workout.content.lineSequence().firstOrNull().orEmpty(),
-                            color = MUTED,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -235,11 +233,10 @@ private fun JournalDatesScreen(snapshot: Snapshot?, onDate: (String) -> Unit) {
             item {
                 Chip(
                     onClick = { onDate(date) },
-                    label = { Text(prettyDate(date), color = TEXT) },
+                    label = { Text(prettyDate(date)) },
                     secondaryLabel = {
                         Text(
                             items.joinToString(" · ") { it.title },
-                            color = MUTED,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -262,11 +259,10 @@ private fun JournalEntriesScreen(snapshot: Snapshot?, date: String, onEntry: (St
             item {
                 Chip(
                     onClick = { onEntry(entry.id) },
-                    label = { Text(entry.title, color = TEXT, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                    label = { Text(entry.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                     secondaryLabel = {
                         Text(
                             entry.narrative.lineSequence().firstOrNull().orEmpty(),
-                            color = MUTED,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
