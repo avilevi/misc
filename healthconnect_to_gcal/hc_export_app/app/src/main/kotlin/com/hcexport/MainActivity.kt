@@ -257,11 +257,16 @@ class MainActivity : ComponentActivity() {
                 val pullSummary = Prefs.getLastWorkoutPullSummary(this@MainActivity)
                 val nextLine    = nextSyncLine()
                 val batteryLine = BatteryOptimizationHelper.statusLine(this@MainActivity)
+                val exactLine = if (AlarmScheduler.canScheduleExact(this@MainActivity))
+                    "Exact alarms allowed."
+                else
+                    "Exact alarms off — schedules may drift (Settings → Allow exact alarms)."
                 ensureArmedAndCatchUp()
                 val detail = buildString {
                     append("Calendar: $calName")
                     append("\n$schedInfo")
                     append("\n$batteryLine")
+                    append("\n$exactLine")
                     if (calSummary != null) append("\n$calSummary")
                     if (pullSummary != null) append("\n$pullSummary")
                     if (nextLine.isNotEmpty()) append(nextLine)

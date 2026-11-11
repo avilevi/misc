@@ -17,6 +17,7 @@ class SettingsActivity : ComponentActivity() {
     private lateinit var schedulesList: LinearLayout
     private lateinit var workoutStatus: TextView
     private lateinit var batteryStatus: TextView
+    private lateinit var exactAlarmStatus: TextView
 
     private var calendars = mutableListOf<Triple<Long, String, String>>()
     private lateinit var calSpinner: Spinner
@@ -217,6 +218,21 @@ class SettingsActivity : ComponentActivity() {
             }
         })
         root.addView(Ui.sectionSpacer(this, 6))
+
+        exactAlarmStatus = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Ui.TEXT_SECONDARY)
+            setPadding(0, 0, 0, Ui.dp(this@SettingsActivity, 8))
+        }
+        root.addView(exactAlarmStatus)
+        root.addView(Ui.secondaryButton(this, "Allow exact alarms") {
+            if (AlarmScheduler.canScheduleExact(this)) {
+                Toast.makeText(this, "Already allowed", Toast.LENGTH_SHORT).show()
+            } else {
+                runCatching { startActivity(AlarmScheduler.exactAlarmSettingsIntent(this)) }
+            }
+        })
+        root.addView(Ui.sectionSpacer(this, 6))
         root.addView(TextView(this).apply {
             text = "On Samsung, also open Battery → Background usage limits and remove HC Sync from Sleeping apps."
             textSize = 12f
@@ -244,6 +260,11 @@ class SettingsActivity : ComponentActivity() {
         refreshSchedulesList()
         refreshWorkoutStatus()
         batteryStatus.text = BatteryOptimizationHelper.statusLine(this)
+        exactAlarmStatus.text = if (AlarmScheduler.canScheduleExact(this))
+            "Exact alarms allowed."
+        else
+            "Exact alarms not allowed — a scheduled sync can drift up to an hour."
+        AlarmScheduler.ensureArmed(this)
     }
 
     private fun refreshWorkoutStatus() {

@@ -5,6 +5,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import java.util.Calendar
 
@@ -44,18 +46,38 @@ object AlarmScheduler {
             Prefs.setNextSyncAlarmMs(ctx, -1L)
             return
         }
-        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, syncPendingIntent(ctx))
+        setAlarm(ctx, next, syncPendingIntent(ctx))
         Prefs.setNextSyncAlarmMs(ctx, next)
-        Log.i(TAG, "Next sync alarm at $next")
+        Log.i(TAG, "Next sync alarm at $next (exact=${canScheduleExact(ctx)})")
     }
 
     fun scheduleNextPull(ctx: Context) {
         val next = nextPullTimeMs()
-        ctx.getSystemService(AlarmManager::class.java)
-            .setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pullPendingIntent(ctx))
+        setAlarm(ctx, next, pullPendingIntent(ctx))
         Prefs.setNextPullAlarmMs(ctx, next)
-        Log.i(TAG, "Next workout pull alarm at $next")
+        Log.i(TAG, "Next workout pull alarm at $next (exact=${canScheduleExact(ctx)})")
     }
+
+    /** Exact when the user has granted "Alarms & reminders"; otherwise the alarm
+     *  manager's inexact-and-Doze-safe form. */
+    private fun setAlarm(ctx: Context, triggerAtMs: Long, pi: PendingIntent) {
+        val am = ctx.getSystemService(AlarmManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi)
+        } else {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi)
+        }
+    }
+
+    fun canScheduleExact(ctx: Context): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        return ctx.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+    }
+
+    fun exactAlarmSettingsIntent(ctx: Context): Intent =
+        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:${ctx.packageName}")
+        }
 
     /** Debug helper: fires the ordinary sync alarm path in [delayMs]. */
     fun scheduleTestAlarm(ctx: Context, delayMs: Long = 60_000L) {

@@ -27,6 +27,10 @@
     <!-- Allows the user to exempt the app from Samsung's background limits -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Exact alarms are used when the user grants "Alarms & reminders"; otherwise
+         the scheduler falls back to a Doze-safe inexact alarm. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <!-- Required to detect if Health Connect is installed -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
