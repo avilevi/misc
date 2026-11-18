@@ -22,8 +22,10 @@ account already on the device.
   (matched by name, so "WOD", "🔥 WOD", "CrossFit WOD" and "WOD 8:00" all count, and a
   recurring event counts on every occurrence), a watch/strap session was recorded, or
   values were logged into its AI workout. An entry is built from three merged parts:
-  the **workout** (the AI plan with the weights, times, reps and other values you
-  entered, or the original workout text when no plan exists), the **watch data**
+  the **workout** (the AI plan edited in place — its section lines as rows, the
+  weights, times, reps and other values entered right there — with the original
+  workout text one tap away behind *show original*, or just that text when no plan
+  exists), the **watch data**
   Health Connect recorded for it (duration, distance, pace, calories, heart rate and
   the HR curve), and **free comments**. A session merges into the workout whose
   calendar window it overlaps the most; when it is the only workout on the day it
@@ -57,10 +59,14 @@ account already on the device.
     Anthropic Messages, OpenAI-compatible Chat Completions (OpenAI, DeepSeek, Kimi,
     most proxies) and native Gemini `generateContent`. The client adapts to common
     provider differences (`max_tokens` vs `max_completion_tokens`, `response_format`,
-    system-role handling) and the plan is parsed from JSON. The user fills the values in; plans and values
-    are stored in `interactive.db` and included in backup. Every key is stored
-    encrypted with the Android Keystore. Only the workout's date, type and text are
-    sent.
+    system-role handling) and the plan is parsed from JSON. The plan is the workout's
+    presentation: it is embedded in the journal entry and edited there (the same
+    panel is also reachable on its own from a workout's detail screen); plans and
+    values are stored in `interactive.db` and included in backup. Section-level
+    notes keep the workout's own lines, and a section result (total time) is only
+    offered where the piece is scored as a whole — a For Time or AMRAP section —
+    never on strength or accessory work. Every key is stored encrypted with the
+    Android Keystore. Only the workout's date, type and text are sent.
   - **Settings** is a Compose page with a hamburger drawer: Calendar, Sync &
     reliability, Workouts & watch, AI workout, Diagnostics, and About.
 - **Wear OS companion** (`:wear`): all workouts by date and type, plus the workout

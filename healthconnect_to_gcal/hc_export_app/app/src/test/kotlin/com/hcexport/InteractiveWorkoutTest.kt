@@ -1,6 +1,7 @@
 package com.hcexport
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -96,6 +97,65 @@ class InteractiveWorkoutTest {
         val plan = InteractivePlan.fromJson(sample)!!
         val again = InteractivePlan.fromJson(plan.toJson().toString())!!
         assertEquals(plan, again)
+    }
+
+    @Test
+    fun `section notes are one row per line`() {
+        val plan = InteractivePlan.fromJson(
+            """
+            {"title":"X","sections":[{"title":"Strength","kind":"strength","notes":[
+              "Every 1:30 x 6 sets",
+              "Build to a heavy single",
+              "Newer Athletes: 5-5-3-3-3-3 reps"
+            ]}]}
+            """.trimIndent()
+        )!!
+        assertEquals(
+            listOf(
+                "Every 1:30 x 6 sets",
+                "Build to a heavy single",
+                "Newer Athletes: 5-5-3-3-3-3 reps",
+            ),
+            plan.sections.single().notes,
+        )
+    }
+
+    @Test
+    fun `notes merged into one sentence run are split back into rows`() {
+        val plan = InteractivePlan.fromJson(
+            """
+            {"title":"X","sections":[{"title":"Strength","kind":"strength",
+              "notes":"every 1:30 x 6 sets. Build to a heavy single. Newer Athletes: 5-5-3-3-3-3 reps"}]}
+            """.trimIndent()
+        )!!
+        assertEquals(
+            listOf(
+                "every 1:30 x 6 sets.",
+                "Build to a heavy single.",
+                "Newer Athletes: 5-5-3-3-3-3 reps",
+            ),
+            plan.sections.single().notes,
+        )
+    }
+
+    @Test
+    fun `a section result belongs only to scored work`() {
+        val time = MetricDef("total_time", "Total time", MetricKind.TIME)
+        val strength = InteractiveSection(
+            title = "Strength",
+            kind = "strength",
+            metrics = listOf(time),
+        )
+        val metcon = InteractiveSection(
+            title = "Metcon",
+            kind = "metcon",
+            metrics = listOf(time),
+        )
+        // A strength section is never scored on the clock...
+        assertFalse(strength.showsSectionResult(entered = false))
+        // ...unless a value was actually put there before this rule existed.
+        assertTrue(strength.showsSectionResult(entered = true))
+        assertTrue(metcon.showsSectionResult(entered = false))
     }
 
     @Test

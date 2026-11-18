@@ -109,58 +109,17 @@ data class JournalBiometrics(
 
 data class SleepStageTotal(val name: String, val minutes: Long)
 
-/** A workout's AI plan rendered with the values the user actually entered. */
+/**
+ * The headline numbers of a workout's AI plan. The plan itself is rendered by
+ * the one editor in the journal entry; this is what the list cards, the entry
+ * hero and the workout picker need to know.
+ */
 data class JournalAiPlan(
     val title: String,
     val summary: String,
-    val model: String,
     val totalSets: Int,
     val loggedSets: Int,
     val totalVolumeKg: Double?,
-    val sections: List<JournalAiSection>,
-)
-
-data class JournalAiSection(
-    val title: String,
-    val kind: String,
-    val notes: String,
-    val values: List<JournalAiValue>,
-    val exercises: List<JournalAiExercise>,
-    val rounds: List<JournalAiRound> = emptyList(),
-)
-
-data class JournalAiExercise(
-    val name: String,
-    val notes: String,
-    val sets: List<JournalAiSet>,
-)
-
-data class JournalAiSet(
-    val label: String,
-    val target: String,
-    val values: List<JournalAiValue>,
-)
-
-/** One movement within a round, e.g. the power snatches of round 1. */
-data class JournalAiMovement(
-    val name: String,
-    val target: String,
-    val values: List<JournalAiValue>,
-)
-
-/** Several movements performed together, repeated round by round. */
-data class JournalAiRound(
-    val label: String,
-    val notes: String,
-    val movements: List<JournalAiMovement>,
-)
-
-data class JournalAiValue(
-    val label: String,
-    val value: String,
-    val unit: String,
-    /** True for a completion-only metric ("Done"): there is no number to show. */
-    val checked: Boolean = false,
 )
 
 /** A day's journal, ready to render. */
@@ -251,7 +210,6 @@ object JournalFeed {
                     aiPlan(
                         plan = parsed,
                         results = InteractiveResults.fromJson(record.resultsJson),
-                        model = record.model,
                     )
                 }
             }
@@ -483,153 +441,60 @@ object JournalFeed {
 
     // ── AI plan ──────────────────────────────────────────────────────────────
 
+    /**
+     * The headline numbers of a stored plan: how many sets it prescribes, how
+     * many the user has filled in, and the volume those values add up to.
+     */
     fun aiPlan(
         plan: InteractivePlan,
         results: Map<String, Map<String, String>>,
-        model: String,
     ): JournalAiPlan {
         var totalSets = 0
         var loggedSets = 0
         var volume = 0.0
         var volumeKnown = false
 
-        val sections = plan.sections.mapIndexed { sectionIndex, section ->
-            val sectionValues = valuesFor(
-                section.metrics,
-                results[InteractiveKeys.section(sectionIndex)],
-            )
-            var exercises = section.exercises.mapIndexed { exerciseIndex, exercise ->
-                val sets = exercise.sets.mapIndexed { setIndex, set ->
-                    totalSets++
-                    val metrics = set.metrics.ifEmpty { exercise.metrics }
+        fun count(metrics: List<MetricDef>, stored: Map<String, String>, target: String) {
+            totalSets++
+            if (stored.values.any { it.isNotBlank() }) loggedSets++
+            val weight = numericValue(metrics, stored, MetricKind.WEIGHT, target)
+            val reps = numericValue(metrics, stored, MetricKind.REPS, target)
+            if (weight != null && reps != null && weight > 0 && reps > 0) {
+                volume += weight * reps
+                volumeKnown = true
+            }
+        }
+
+        plan.sections.forEachIndexed { sectionIndex, section ->
+            section.exercises.forEachIndexed { exerciseIndex, exercise ->
+                exercise.sets.forEachIndexed { setIndex, set ->
                     val scope = InteractiveKeys.set(sectionIndex, exerciseIndex, setIndex)
-                    val stored = results[scope].orEmpty()
-                    val values = valuesFor(metrics, stored, set.target)
-                    if (stored.values.any { it.isNotBlank() }) loggedSets++
-
-                    val weight = numericValue(metrics, stored, MetricKind.WEIGHT, set.target)
-                    val reps = numericValue(metrics, stored, MetricKind.REPS, set.target)
-                    if (weight != null && reps != null && weight > 0 && reps > 0) {
-                        volume += weight * reps
-                        volumeKnown = true
-                    }
-                    JournalAiSet(label = set.label, target = set.target, values = values)
+                    count(
+                        metrics = set.metrics.ifEmpty { exercise.metrics },
+                        stored = results[scope].orEmpty(),
+                        target = set.target,
+                    )
                 }
-                JournalAiExercise(name = exercise.name, notes = exercise.notes, sets = sets)
             }
-
-            val rounds = section.rounds.mapIndexed { roundIndex, round ->
-                JournalAiRound(
-                    label = round.label,
-                    notes = round.notes,
-                    movements = round.movements.mapIndexed { movementIndex, movement ->
-                        totalSets++
-                        val scope = InteractiveKeys.round(sectionIndex, roundIndex, movementIndex)
-                        val stored = results[scope].orEmpty()
-                        val values = valuesFor(movement.metrics, stored, movement.target)
-                        if (stored.values.any { it.isNotBlank() }) loggedSets++
-
-                        val weight =
-                            numericValue(movement.metrics, stored, MetricKind.WEIGHT, movement.target)
-                        val reps =
-                            numericValue(movement.metrics, stored, MetricKind.REPS, movement.target)
-                        if (weight != null && reps != null && weight > 0 && reps > 0) {
-                            volume += weight * reps
-                            volumeKnown = true
-                        }
-                        JournalAiMovement(
-                            name = movement.name,
-                            target = movement.target,
-                            values = values,
-                        )
-                    },
-                )
+            section.rounds.forEachIndexed { roundIndex, round ->
+                round.movements.forEachIndexed { movementIndex, movement ->
+                    val scope = InteractiveKeys.round(sectionIndex, roundIndex, movementIndex)
+                    count(
+                        metrics = movement.metrics,
+                        stored = results[scope].orEmpty(),
+                        target = movement.target,
+                    )
+                }
             }
-
-            // A circuit stored as one exercise per movement (older plans, and
-            // models that split it) is shown as rounds; it was already counted
-            // above, so drop the exercises rather than render them twice.
-            val grouped = if (rounds.isEmpty()) deriveRounds(exercises) else null
-            if (grouped != null) exercises = emptyList()
-
-            JournalAiSection(
-                title = section.title,
-                kind = section.kind,
-                notes = section.notes,
-                values = sectionValues,
-                exercises = exercises,
-                rounds = grouped ?: rounds,
-            )
         }
 
         return JournalAiPlan(
             title = plan.title,
             summary = plan.summary,
-            model = model,
             totalSets = totalSets,
             loggedSets = loggedSets,
             totalVolumeKg = if (volumeKnown) volume else null,
-            sections = sections,
         )
-    }
-
-    /**
-     * Regroups a section that was stored as one exercise per movement into the
-     * rounds it actually describes. Display only: totals were already taken
-     * from the exercises.
-     */
-    private fun deriveRounds(exercises: List<JournalAiExercise>): List<JournalAiRound>? {
-        val labels = exercises.map { exercise -> exercise.sets.map { it.label } }
-        if (!InteractiveRounds.isRoundGroup(labels)) return null
-        val count = exercises.first().sets.size
-        return (0 until count).map { index ->
-            JournalAiRound(
-                label = exercises.first().sets[index].label,
-                notes = "",
-                movements = exercises.map { exercise ->
-                    val set = exercise.sets[index]
-                    JournalAiMovement(name = exercise.name, target = set.target, values = set.values)
-                },
-            )
-        }
-    }
-
-    /**
-     * The values to show for a block. When the user has not entered one, the
-     * prescription in the set's target is shown — the same default the
-     * interactive screen pre-fills, so the journal reads "3 reps" even if only
-     * the weight was typed.
-     */
-    private fun valuesFor(
-        metrics: List<MetricDef>,
-        values: Map<String, String>?,
-        target: String? = null,
-    ): List<JournalAiValue> = metrics.mapNotNull { metric ->
-        val entered = values?.get(metric.key)?.trim().orEmpty()
-        if (metric.kind == MetricKind.CHECK) {
-            return@mapNotNull if (entered == "1") {
-                JournalAiValue(
-                    label = metric.label,
-                    value = "",
-                    unit = "",
-                    checked = true,
-                )
-            } else {
-                null
-            }
-        }
-        val raw = entered.ifEmpty {
-            target?.let { InteractiveDefaults.forTarget(it, metric) }.orEmpty()
-        }
-        if (raw.isEmpty()) {
-            null
-        } else {
-            JournalAiValue(
-                label = metric.label,
-                value = if (metric.kind == MetricKind.TIME) TimeValue.normalise(raw) else raw,
-                unit = metric.unit,
-            )
-        }
     }
 
     private fun numericValue(

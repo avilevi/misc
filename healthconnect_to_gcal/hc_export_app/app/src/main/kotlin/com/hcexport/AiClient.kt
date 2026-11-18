@@ -52,7 +52,10 @@ object AiClient {
             {
               "title": "section with isolated movements",
               "kind": "strength | metcon | accessory | rest | other",
-              "notes": "time cap, rounds, stimulus or explanation",
+              "notes": [
+                "time cap, rounds, stimulus or explanation",
+                "one entry per line of the original text"
+              ],
               "metrics": [
                 {"key": "total_time", "label": "Total time", "kind": "time", "unit": ""}
               ],
@@ -73,7 +76,7 @@ object AiClient {
             {
               "title": "section built from rounds",
               "kind": "metcon",
-              "notes": "",
+              "notes": [],
               "metrics": [
                 {"key": "total_time", "label": "Total time", "kind": "time", "unit": ""}
               ],
@@ -143,13 +146,20 @@ object AiClient {
            thing worth recording: fixed timed intervals and holds, mobility and
            drills. Never use check for strength, load or rep work — there the input
            is the weight or the reps actually done.
-        10. Section-level metrics are for whole-section results only, such as total
-           time, rounds completed, or a single score for a benchmark.
-        11. Never invent results. The user fills those in later.
-        12. If a movement has no prescribed sets, give it one set labelled "Result".
-        13. Explanatory text with no sets belongs in `notes`; use kind "other".
-        14. If a movement is ambiguous, give it a text metric rather than guessing.
-        15. Keep labels concise and preserve the original target text.
+        10. Section-level `metrics` are only for a section scored as a whole: a
+           For Time piece, an AMRAP's rounds, or a single benchmark score.
+           Strength and accessory sections are never scored on the clock — their
+           results live on each set — so they get NO section metrics at all.
+        11. `notes` is a list of rows, not a paragraph. Keep every line of the
+           original workout as its own entry, in the original order: a line that
+           names the scheme ("Every 1:30 x 6 sets") and the line that follows it
+           ("Build to a heavy single", "Newer Athletes: 5-5-3-3-3-3 reps") are
+           separate entries. Never join them with a full stop.
+        12. Never invent results. The user fills those in later.
+        13. If a movement has no prescribed sets, give it one set labelled "Result".
+        14. Explanatory text with no sets belongs in `notes`; use kind "other".
+        15. If a movement is ambiguous, give it a text metric rather than guessing.
+        16. Keep labels concise and preserve the original target text.
     """.trimIndent()
 
     suspend fun generatePlan(ctx: Context, workout: Workout): Result<GeneratedPlan> =

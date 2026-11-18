@@ -119,9 +119,7 @@ fun HcApp(
                 date = entry.arguments?.getString("date").orEmpty(),
                 entryKey = entry.arguments?.getString("key").orEmpty(),
                 onBack = { nav.popBackStack() },
-                onOpenInteractive = { date, typeKey ->
-                    nav.navigate("interactive/$date/$typeKey")
-                },
+                onOpenAiSettings = onOpenAiSettings,
             )
         }
 

@@ -175,7 +175,7 @@ class InteractiveRoundsTest {
     // ── Journal ─────────────────────────────────────────────────────────────
 
     @Test
-    fun `journal renders rounds with values, defaults and volume`() {
+    fun `journal counts rounds with their logged values and volume`() {
         val plan = InteractivePlan.fromJson(roundsPlan)!!
         val results = InteractiveResults.fromJson(
             """
@@ -185,29 +185,10 @@ class InteractiveRoundsTest {
              "r:0:1:0":{"weight":"30","reps":"12"}}
             """.trimIndent()
         )
-        val journal = JournalFeed.aiPlan(plan, results, model = "test")
-        val section = journal.sections.single()
+        val journal = JournalFeed.aiPlan(plan, results)
         assertEquals(6, journal.totalSets)
         assertEquals(4, journal.loggedSets)
         assertEquals(30.0 * 15 + 30 * 12, journal.totalVolumeKg!!, 0.001)
-
-        assertEquals(2, section.rounds.size)
-        assertTrue(section.exercises.isEmpty())
-        val second = section.rounds[1]
-        assertEquals("Round 2", second.label)
-        assertEquals(
-            listOf("Power Snatch", "Air Squats", "Push-Ups"),
-            second.movements.map { it.name },
-        )
-        assertEquals(
-            listOf(JournalAiValue("Weight", "30", "kg"), JournalAiValue("Reps", "12", "")),
-            second.movements.first().values,
-        )
-        // Air squats round 2 has no stored reps, so the prescription shows.
-        assertEquals(
-            listOf(JournalAiValue("Reps", "15", "")),
-            second.movements[1].values,
-        )
     }
 
     // ── Completion-only work ────────────────────────────────────────────────
@@ -252,45 +233,31 @@ class InteractiveRoundsTest {
     }
 
     @Test
-    fun `a completed check shows as a tick in the journal`() {
+    fun `a completed check counts as a logged movement`() {
         val plan = InteractivePlan.fromJson(emomPlan)!!
         val results = InteractiveResults.fromJson("""{"r:0:0:0":{"done":"1"}}""")
-        val journal = JournalFeed.aiPlan(plan, results, model = "test")
-        val movement = journal.sections.single().rounds.single().movements.first()
+        val journal = JournalFeed.aiPlan(plan, results)
 
-        assertEquals(
-            listOf(JournalAiValue("Done", "", "", checked = true)),
-            movement.values,
-        )
         assertEquals(3, journal.totalSets)
         assertEquals(1, journal.loggedSets)
+        assertNull(journal.totalVolumeKg)
     }
 
     @Test
-    fun `an unchecked completion shows no value`() {
+    fun `an unchecked completion is not logged`() {
         val plan = InteractivePlan.fromJson(emomPlan)!!
-        val journal = JournalFeed.aiPlan(plan, emptyMap(), model = "test")
-        val movement = journal.sections.single().rounds.single().movements.first()
-        assertTrue(movement.values.isEmpty())
+        val journal = JournalFeed.aiPlan(plan, emptyMap())
+
+        assertEquals(3, journal.totalSets)
         assertEquals(0, journal.loggedSets)
     }
 
     @Test
-    fun `journal regroups a legacy circuit without double counting`() {
+    fun `a legacy circuit is counted once per movement and round`() {
         val plan = InteractivePlan.fromJson(legacyCircuit(rounds = 2))!!
-        val journal = JournalFeed.aiPlan(plan, emptyMap(), model = "test")
-        val section = journal.sections.single()
+        val journal = JournalFeed.aiPlan(plan, emptyMap())
 
         assertEquals(6, journal.totalSets)
         assertEquals(0, journal.loggedSets)
-        assertEquals(2, section.rounds.size)
-        assertTrue(section.exercises.isEmpty())
-        assertEquals(3, section.rounds.first().movements.size)
-        assertEquals("Power Snatch", section.rounds.first().movements.first().name)
-        // Target-derived defaults still show for an unlogged circuit.
-        assertEquals(
-            listOf(JournalAiValue("Reps", "15", "")),
-            section.rounds.first().movements[1].values,
-        )
     }
 }

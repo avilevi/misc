@@ -33,20 +33,23 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.hcexport.CalendarHelper
 import com.hcexport.CalendarWorkoutEvent
 import com.hcexport.InteractiveStore
+import com.hcexport.JournalAiPlan
 import com.hcexport.JournalFeed
 import com.hcexport.JournalItem
 import com.hcexport.JournalNotesStore
 import com.hcexport.JournalStorage
 import com.hcexport.R
 import com.hcexport.RecordLogic
+import com.hcexport.Workout
 import com.hcexport.WorkoutStore
+import com.hcexport.ui.AiWorkoutPanel
 import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.EmptyState
 import com.hcexport.ui.HcBackground
 import com.hcexport.ui.LoadingLine
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
-import com.hcexport.ui.SecondaryButton
+import com.hcexport.ui.rememberAiWorkoutState
 import com.hcexport.ui.theme.Amber
 import com.hcexport.ui.theme.Periwinkle
 import com.hcexport.ui.theme.Slate
@@ -60,6 +63,7 @@ import kotlinx.coroutines.withContext
 private data class JournalEntryLoad(
     val loaded: Boolean = false,
     val item: JournalItem? = null,
+    val workouts: List<Workout> = emptyList(),
 )
 
 @Composable
@@ -67,7 +71,7 @@ fun JournalEntryScreen(
     date: String,
     entryKey: String,
     onBack: () -> Unit,
-    onOpenInteractive: (date: String, typeKey: String) -> Unit,
+    onOpenAiSettings: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -102,6 +106,7 @@ fun JournalEntryScreen(
                     sessions = sessions,
                     notes = JournalNotesStore.getAll(context),
                 ).items.firstOrNull { it.key == entryKey },
+                workouts = workouts,
             )
         }
     }
@@ -109,6 +114,24 @@ fun JournalEntryScreen(
     val journalItem = load.item
     val todayIso = remember { java.time.LocalDate.now().toString() }
     val planned = journalItem is JournalItem.Workout && journalItem.date > todayIso
+
+    // The AI workout is edited right here; this state is what the hero counts
+    // and what the workout section renders.
+    val workoutItem = journalItem as? JournalItem.Workout
+    val aiState = workoutItem?.let { item ->
+        rememberAiWorkoutState(
+            date = date,
+            typeKey = item.typeKey,
+            // A legacy WOD entry has no archive row to build a plan from.
+            workout = load.workouts
+                .firstOrNull { it.typeKey == item.typeKey }
+                ?.takeIf { item.canOpenAi },
+            autoGenerate = false,
+        )
+    }
+    val livePlan: JournalAiPlan? = workoutItem?.let { item ->
+        aiState?.plan?.let { JournalFeed.aiPlan(it, aiState.results) } ?: item.plan
+    }
     var note by remember(entryKey, journalItem?.note) {
         mutableStateOf(journalItem?.note.orEmpty())
     }
@@ -117,18 +140,9 @@ fun JournalEntryScreen(
         scope.launch {
             runCatching {
                 withContext(Dispatchers.IO) { JournalNotesStore.set(context, entryKey, note) }
+                aiState?.save()
             }
             onBack()
-        }
-    }
-
-    /** Persist the comment before leaving for another screen. */
-    fun openInteractive(date: String, typeKey: String) {
-        scope.launch {
-            runCatching {
-                withContext(Dispatchers.IO) { JournalNotesStore.set(context, entryKey, note) }
-            }
-            onOpenInteractive(date, typeKey)
         }
     }
 
@@ -174,41 +188,30 @@ fun JournalEntryScreen(
                     ),
                 ) {
                     item {
-                        EntryHero(journalItem, planned)
+                        EntryHero(journalItem, planned, livePlan)
                         Spacer(Modifier.height(24.dp))
                     }
 
                     when (journalItem) {
                         is JournalItem.Workout -> {
                             item {
-                                JournalSectionHeader(
-                                    title = "Workout",
-                                    accent = workoutAccentFor(journalItem),
-                                    subtitle = if (journalItem.plan != null)
-                                        "The AI breakdown with the values you logged."
-                                    else
-                                        "The programmed session.",
-                                )
-                                Spacer(Modifier.height(12.dp))
-                                if (journalItem.plan != null) {
-                                    AiPlanView(journalItem.plan) {
-                                        openInteractive(journalItem.date, journalItem.typeKey)
-                                    }
+                                val panel = aiState
+                                if (panel != null) {
+                                    AiWorkoutPanel(
+                                        state = panel,
+                                        onOpenAiSettings = onOpenAiSettings,
+                                        original = {
+                                            JournalWorkoutText(
+                                                journalItem.content,
+                                                workoutAccentFor(journalItem),
+                                            )
+                                        },
+                                    )
                                 } else {
                                     JournalWorkoutText(
                                         journalItem.content,
                                         workoutAccentFor(journalItem),
                                     )
-                                    if (journalItem.canOpenAi) {
-                                        Spacer(Modifier.height(12.dp))
-                                        SecondaryButton(
-                                            text = "Turn into an AI workout",
-                                            onClick = {
-                                                openInteractive(journalItem.date, journalItem.typeKey)
-                                            },
-                                            accent = Periwinkle,
-                                        )
-                                    }
                                 }
                                 Spacer(Modifier.height(26.dp))
                             }
@@ -292,26 +295,27 @@ fun JournalEntryScreen(
 private fun workoutAccentFor(item: JournalItem.Workout) = workoutAccent(item.typeKey)
 
 @Composable
-private fun EntryHero(item: JournalItem, planned: Boolean) {
+private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPlan?) {
     when (item) {
         is JournalItem.Workout -> {
             val accent = workoutAccentFor(item)
             val bio = item.biometrics.firstOrNull()
+            val plan = livePlan ?: item.plan
             val timeRange = if (item.startMs != null && item.endMs != null) {
                 " · ${clockTime(item.startMs)} – ${clockTime(item.endMs)}"
             } else ""
             val stats = buildList {
                 item.durationMin?.let { add(HeroStat(JournalFeed.formatDuration(it), "DURATION")) }
-                item.plan?.let { plan ->
-                    if (plan.loggedSets > 0) {
+                plan?.let { ai ->
+                    if (ai.loggedSets > 0) {
                         add(
                             HeroStat(
-                                plan.loggedSets.toString(),
-                                if (plan.loggedSets == 1) "SET LOGGED" else "SETS LOGGED",
+                                ai.loggedSets.toString(),
+                                if (ai.loggedSets == 1) "SET LOGGED" else "SETS LOGGED",
                             )
                         )
                     }
-                    plan.totalVolumeKg?.let {
+                    ai.totalVolumeKg?.let {
                         add(HeroStat(JournalFeed.formatVolume(it), "VOLUME KG"))
                     }
                 }
@@ -325,7 +329,7 @@ private fun EntryHero(item: JournalItem, planned: Boolean) {
                 tags = buildList {
                     add("WORKOUT" to accent)
                     if (planned) add("PLANNED" to Amber)
-                    if (item.plan != null) add("AI PLAN" to Teal)
+                    if (plan != null) add("AI PLAN" to Teal)
                     if (item.biometrics.isNotEmpty()) add("WATCH DATA" to Teal)
                 },
                 stats = stats,

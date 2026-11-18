@@ -309,7 +309,7 @@ class JournalFeedTest {
     // ── AI plan ─────────────────────────────────────────────────────────────
 
     @Test
-    fun `ai plan keeps the values that were entered`() {
+    fun `ai plan counts the values that were entered`() {
         val results = """
             {"e:0:0:0":{"weight":"100","reps":"5"},"e:0:0:1":{"weight":"105","reps":"5"}}
         """.trimIndent()
@@ -321,19 +321,9 @@ class JournalFeedTest {
         val plan = item.plan
         assertNotNull(plan)
         assertEquals("Heavy Squat", plan!!.title)
-        assertEquals("deepseek-flash", plan.model)
         assertEquals(2, plan.totalSets)
         assertEquals(2, plan.loggedSets)
         assertEquals(1025.0, plan.totalVolumeKg!!, 0.001)
-
-        val exercise = plan.sections.single().exercises.single()
-        assertEquals("Back Squat", exercise.name)
-        assertEquals(2, exercise.sets.size)
-        assertEquals(
-            listOf(JournalAiValue("Weight", "100", "kg"), JournalAiValue("Reps", "5", "")),
-            exercise.sets.first().values,
-        )
-        assertEquals("5 reps", exercise.sets.first().target)
     }
 
     @Test
