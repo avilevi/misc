@@ -1,9 +1,11 @@
 package com.hcexport.ui.workouts
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -26,16 +28,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,26 +57,31 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.hcexport.AiClient
 import com.hcexport.AiConfigStore
 import com.hcexport.AiDisplay
 import com.hcexport.AiKeyStore
+import com.hcexport.InteractiveDefaults
 import com.hcexport.InteractiveExercise
 import com.hcexport.InteractiveKeys
 import com.hcexport.InteractivePlan
 import com.hcexport.InteractiveResults
+import com.hcexport.InteractiveRounds
 import com.hcexport.InteractiveSection
 import com.hcexport.InteractiveStore
 import com.hcexport.MetricDef
 import com.hcexport.MetricKind
 import com.hcexport.R
+import com.hcexport.TimeValue
 import com.hcexport.Workout
 import com.hcexport.WorkoutStore
 import com.hcexport.WorkoutText
@@ -646,17 +659,76 @@ private fun SectionBlock(
             Spacer(Modifier.height(10.dp))
         }
 
-        section.exercises.forEachIndexed { exerciseIndex, exercise ->
-            ExerciseCard(
-                exercise = exercise,
-                scopePrefix = { setIndex ->
-                    InteractiveKeys.set(sectionIndex, exerciseIndex, setIndex)
-                },
-                results = results,
-                accent = accent,
-                onValue = onValue,
-            )
-            Spacer(Modifier.height(CardGap))
+        val explicitRounds = section.rounds
+        val derivedRounds =
+            if (explicitRounds.isEmpty()) InteractiveRounds.derive(section) else null
+
+        when {
+            explicitRounds.isNotEmpty() -> {
+                RoundsCard(
+                    rounds = explicitRounds.mapIndexed { roundIndex, round ->
+                        RoundView(
+                            label = round.label,
+                            notes = round.notes,
+                            movements = round.movements.mapIndexed { movementIndex, movement ->
+                                RoundMovementView(
+                                    name = movement.name,
+                                    notes = movement.notes,
+                                    target = movement.target,
+                                    metrics = movement.metrics,
+                                    scopeKey = InteractiveKeys.round(
+                                        sectionIndex, roundIndex, movementIndex,
+                                    ),
+                                )
+                            },
+                        )
+                    },
+                    results = results,
+                    accent = accent,
+                    onValue = onValue,
+                )
+                Spacer(Modifier.height(CardGap))
+            }
+            derivedRounds != null -> {
+                RoundsCard(
+                    rounds = derivedRounds.map { round ->
+                        RoundView(
+                            label = round.label,
+                            notes = "",
+                            movements = round.movements.map { movement ->
+                                RoundMovementView(
+                                    name = movement.exercise.name,
+                                    notes = "",
+                                    target = movement.set.target,
+                                    metrics = movement.set.metrics
+                                        .ifEmpty { movement.exercise.metrics },
+                                    scopeKey = InteractiveKeys.set(
+                                        sectionIndex,
+                                        movement.exerciseIndex,
+                                        movement.setIndex,
+                                    ),
+                                )
+                            },
+                        )
+                    },
+                    results = results,
+                    accent = accent,
+                    onValue = onValue,
+                )
+                Spacer(Modifier.height(CardGap))
+            }
+            else -> section.exercises.forEachIndexed { exerciseIndex, exercise ->
+                ExerciseCard(
+                    exercise = exercise,
+                    scopePrefix = { setIndex ->
+                        InteractiveKeys.set(sectionIndex, exerciseIndex, setIndex)
+                    },
+                    results = results,
+                    accent = accent,
+                    onValue = onValue,
+                )
+                Spacer(Modifier.height(CardGap))
+            }
         }
     }
 }
@@ -689,45 +761,206 @@ private fun ExerciseCard(
                 color = Slate,
             )
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
 
         exercise.sets.forEachIndexed { setIndex, set ->
             if (setIndex > 0) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 3.dp)
                         .height(1.dp)
                         .background(Hairline)
                 )
             }
-            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                Row(verticalAlignment = Alignment.Top) {
+            val metrics = set.metrics.ifEmpty { exercise.metrics }
+            val defaultFor: (MetricDef) -> String? = { metric ->
+                InteractiveDefaults.forTarget(set.target, metric)
+            }
+            val hasCheck = metrics.any { it.kind == MetricKind.CHECK }
+            // For a tick-only row the prescription is the interval (e.g. "40s");
+            // keep it beside the tick rather than on a line of its own.
+            val inlineTarget = set.target.takeIf { hasCheck && it.isNotBlank() }
+            // The target only needs its own line when no field already shows it.
+            val showTarget = set.target.isNotBlank() && !hasCheck &&
+                metrics.none { defaultFor(it) != null }
+            Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         set.label,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(54.dp).padding(end = 6.dp),
                         style = MaterialTheme.typography.titleSmall,
                         color = Snow,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    if (set.target.isNotBlank()) {
+                    if (inlineTarget != null) {
                         Text(
-                            set.target,
-                            modifier = Modifier.weight(1.4f),
+                            inlineTarget,
+                            modifier = Modifier.padding(end = 6.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Slate,
+                            maxLines = 1,
+                        )
+                    }
+                    CompactMetrics(
+                        metrics = metrics,
+                        scopeKey = scopePrefix(setIndex),
+                        results = results,
+                        accent = accent,
+                        onValue = onValue,
+                        defaultFor = defaultFor,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (showTarget) {
+                    Text(
+                        set.target,
+                        modifier = Modifier.padding(start = 54.dp, top = 2.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class RoundMovementView(
+    val name: String,
+    val notes: String,
+    val target: String,
+    val metrics: List<MetricDef>,
+    val scopeKey: String,
+)
+
+private data class RoundView(
+    val label: String,
+    val notes: String,
+    val movements: List<RoundMovementView>,
+)
+
+@Composable
+private fun RoundsCard(
+    rounds: List<RoundView>,
+    results: Map<String, Map<String, String>>,
+    accent: Color,
+    onValue: (String, String, String) -> Unit,
+) {
+    HcCard(contentPadding = PaddingValues(16.dp)) {
+        rounds.forEachIndexed { roundIndex, round ->
+            if (roundIndex > 0) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .height(1.dp)
+                        .background(Hairline)
+                )
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accent.copy(alpha = 0.10f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .width(3.dp)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(accent)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    round.label.uppercase(),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    color = accent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (round.notes.isNotBlank()) {
+                    Text(
+                        round.notes,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            round.movements.forEach { movement ->
+                val defaultFor: (MetricDef) -> String? = { metric ->
+                    InteractiveDefaults.forTarget(movement.target, metric)
+                }
+                val hasCheck = movement.metrics.any { it.kind == MetricKind.CHECK }
+                val inlineTarget =
+                    movement.target.takeIf { hasCheck && it.isNotBlank() }
+                val showTarget = movement.target.isNotBlank() && !hasCheck &&
+                    movement.metrics.none { defaultFor(it) != null }
+                Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f).padding(end = 6.dp)) {
+                            Text(
+                                movement.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Snow,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (movement.notes.isNotBlank()) {
+                                Text(
+                                    movement.notes,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Slate,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        if (inlineTarget != null) {
+                            Text(
+                                inlineTarget,
+                                modifier = Modifier.padding(end = 6.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Slate,
+                                maxLines = 1,
+                            )
+                        }
+                        CompactMetrics(
+                            metrics = movement.metrics,
+                            scopeKey = movement.scopeKey,
+                            results = results,
+                            accent = accent,
+                            onValue = onValue,
+                            defaultFor = defaultFor,
+                            modifier = Modifier.width(compactWidth(movement.metrics)),
+                        )
+                    }
+                    if (showTarget) {
+                        Text(
+                            movement.target,
+                            modifier = Modifier.padding(top = 2.dp),
                             style = MaterialTheme.typography.bodySmall,
                             color = Slate,
-                            textAlign = TextAlign.End,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
-                Spacer(Modifier.height(7.dp))
-                val metrics = set.metrics.ifEmpty { exercise.metrics }
-                MetricFlow(
-                    metrics = metrics,
-                    scopeKey = scopePrefix(setIndex),
-                    results = results,
-                    accent = accent,
-                    onValue = onValue,
-                )
             }
         }
     }
@@ -741,6 +974,7 @@ private fun MetricFlow(
     results: Map<String, Map<String, String>>,
     accent: Color,
     onValue: (String, String, String) -> Unit,
+    defaultFor: (MetricDef) -> String? = { null },
 ) {
     FlowRow(
         Modifier.fillMaxWidth(),
@@ -748,11 +982,19 @@ private fun MetricFlow(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         metrics.forEach { metric ->
+            val value =
+                if (InteractiveResults.contains(results, scopeKey, metric.key)) {
+                    InteractiveResults.value(results, scopeKey, metric.key)
+                } else {
+                    // Start filled with the prescription; clearing the field
+                    // stores an explicit empty and keeps it empty.
+                    defaultFor(metric).orEmpty()
+                }
             MetricInput(
                 metric = metric,
-                value = InteractiveResults.value(results, scopeKey, metric.key),
+                value = value,
                 accent = accent,
-                onValue = { value -> onValue(scopeKey, metric.key, value) },
+                onValue = { entered -> onValue(scopeKey, metric.key, entered) },
                 modifier = Modifier.width(118.dp),
             )
         }
@@ -766,23 +1008,48 @@ private fun MetricInput(
     accent: Color,
     onValue: (String) -> Unit,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
 ) {
+    if (metric.kind == MetricKind.TIME) {
+        TimeMetricInput(
+            metric = metric,
+            value = value,
+            accent = accent,
+            onValue = onValue,
+            modifier = modifier,
+            compact = compact,
+        )
+        return
+    }
+    if (metric.kind == MetricKind.CHECK) {
+        CheckMetricInput(
+            metric = metric,
+            value = value,
+            accent = accent,
+            onValue = onValue,
+            modifier = modifier,
+        )
+        return
+    }
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val hint = metricHint(metric)
+    // Compact rows put the label inside the field so a set stays one line.
+    val hint = if (compact) metric.label else metricHint(metric)
     Column(modifier) {
-        Text(
-            if (metric.unit.isBlank()) metric.label else "${metric.label} · ${metric.unit}",
-            style = MaterialTheme.typography.labelSmall,
-            color = Slate,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(4.dp))
-        Box(
+        if (!compact) {
+            Text(
+                if (metric.unit.isBlank()) metric.label else "${metric.label} · ${metric.unit}",
+                style = MaterialTheme.typography.labelSmall,
+                color = Slate,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+        Row(
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 44.dp)
+                .heightIn(min = if (compact) 40.dp else 44.dp)
                 .clip(RoundedCornerShape(13.dp))
                 .background(CardHigh)
                 .border(
@@ -790,39 +1057,383 @@ private fun MetricInput(
                     if (focused) accent.copy(alpha = 0.75f) else Hairline,
                     RoundedCornerShape(13.dp),
                 )
-                .padding(horizontal = 11.dp, vertical = 10.dp),
-            contentAlignment = Alignment.CenterStart,
+                .padding(horizontal = 11.dp, vertical = if (compact) 8.dp else 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (value.isEmpty() && !focused) {
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (value.isEmpty() && !focused) {
+                    Text(
+                        hint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = { raw ->
+                        val clean = sanitiseMetricInput(raw, metric.kind)
+                        if (clean != value) onValue(clean)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleSmall.copy(
+                        color = Snow,
+                        fontFeatureSettings = "tnum",
+                    ),
+                    cursorBrush = SolidColor(accent),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = when (metric.kind) {
+                            MetricKind.WEIGHT, MetricKind.DISTANCE -> KeyboardType.Decimal
+                            MetricKind.REPS, MetricKind.CALORIES, MetricKind.ROUNDS -> KeyboardType.Number
+                            else -> KeyboardType.Text
+                        }
+                    ),
+                    interactionSource = interaction,
+                )
+            }
+            if (compact && value.isNotBlank() && metric.unit.isNotBlank()) {
+                Spacer(Modifier.width(3.dp))
                 Text(
-                    hint,
-                    style = MaterialTheme.typography.bodySmall,
+                    metric.unit,
+                    style = MaterialTheme.typography.labelSmall,
                     color = Slate,
                     maxLines = 1,
                 )
             }
-            BasicTextField(
-                value = value,
-                onValueChange = { raw ->
-                    val clean = sanitiseMetricInput(raw, metric.kind)
-                    if (clean != value) onValue(clean)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.titleSmall.copy(
-                    color = Snow,
+        }
+    }
+}
+
+/** One row of inputs for a set or a round movement, sized to stay on one line. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CompactMetrics(
+    metrics: List<MetricDef>,
+    scopeKey: String,
+    results: Map<String, Map<String, String>>,
+    accent: Color,
+    onValue: (String, String, String) -> Unit,
+    defaultFor: (MetricDef) -> String?,
+    modifier: Modifier = Modifier,
+) {
+    FlowRow(
+        modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        metrics.forEach { metric ->
+            MetricInput(
+                metric = metric,
+                value = resolvedMetricValue(results, scopeKey, metric, defaultFor),
+                accent = accent,
+                onValue = { entered -> onValue(scopeKey, metric.key, entered) },
+                modifier = Modifier.width(compactWidth(metric)),
+                compact = true,
+            )
+        }
+    }
+}
+
+private fun compactWidth(metric: MetricDef): Dp = when (metric.kind) {
+    MetricKind.WEIGHT -> 88.dp
+    MetricKind.REPS, MetricKind.CALORIES, MetricKind.ROUNDS -> 74.dp
+    MetricKind.DISTANCE -> 80.dp
+    MetricKind.TIME -> 84.dp
+    MetricKind.CHECK -> 86.dp
+    MetricKind.TEXT -> 120.dp
+}
+
+private fun compactWidth(metrics: List<MetricDef>): Dp {
+    if (metrics.isEmpty()) return 0.dp
+    return metrics.fold(0.dp) { total, metric -> total + compactWidth(metric) } +
+        6.dp * (metrics.size - 1).coerceAtLeast(0)
+}
+
+private fun resolvedMetricValue(
+    results: Map<String, Map<String, String>>,
+    scopeKey: String,
+    metric: MetricDef,
+    defaultFor: (MetricDef) -> String?,
+): String =
+    if (InteractiveResults.contains(results, scopeKey, metric.key)) {
+        InteractiveResults.value(results, scopeKey, metric.key)
+    } else {
+        // Start filled with the prescription; clearing stores an explicit
+        // empty and keeps it empty.
+        defaultFor(metric).orEmpty()
+    }
+
+/**
+ * A completion-only metric: there is no number to record, just a tick that the
+ * work was done (EMOM intervals, holds, drills).
+ */
+@Composable
+private fun CheckMetricInput(
+    metric: MetricDef,
+    value: String,
+    accent: Color,
+    onValue: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val checked = value == "1"
+    Row(
+        modifier
+            .heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(13.dp))
+            .background(if (checked) accent.copy(alpha = 0.16f) else CardHigh)
+            .border(
+                1.dp,
+                if (checked) accent.copy(alpha = 0.55f) else Hairline,
+                RoundedCornerShape(13.dp),
+            )
+            .clickable { onValue(if (checked) "" else "1") }
+            .padding(horizontal = 11.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Default.Check,
+            contentDescription = null,
+            tint = if (checked) accent else Slate,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            metric.label,
+            style = MaterialTheme.typography.titleSmall,
+            color = if (checked) Snow else Slate,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * Time metrics ("For time", total time, holds) are picked on minute and
+ * second wheels rather than typed as free text.
+ */
+@Composable
+private fun TimeMetricInput(
+    metric: MetricDef,
+    value: String,
+    accent: Color,
+    onValue: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+) {
+    var picking by remember { mutableStateOf(false) }
+    Column(modifier) {
+        if (!compact) {
+            Text(
+                if (metric.unit.isBlank()) metric.label else "${metric.label} · ${metric.unit}",
+                style = MaterialTheme.typography.labelSmall,
+                color = Slate,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = if (compact) 40.dp else 44.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(CardHigh)
+                .border(1.dp, Hairline, RoundedCornerShape(13.dp))
+                .clickable { picking = true }
+                .padding(horizontal = 11.dp, vertical = if (compact) 8.dp else 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                if (value.isBlank()) "mm:ss" else TimeValue.normalise(value),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleSmall.copy(
+                    color = if (value.isBlank()) Slate else Snow,
                     fontFeatureSettings = "tnum",
                 ),
-                cursorBrush = SolidColor(accent),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = when (metric.kind) {
-                        MetricKind.WEIGHT, MetricKind.DISTANCE -> KeyboardType.Decimal
-                        MetricKind.REPS, MetricKind.CALORIES, MetricKind.ROUNDS -> KeyboardType.Number
-                        else -> KeyboardType.Text
-                    }
-                ),
-                interactionSource = interaction,
+                maxLines = 1,
             )
+            Text("▾", style = MaterialTheme.typography.bodySmall, color = Slate)
+        }
+    }
+    if (picking) {
+        TimeSpinnerDialog(
+            title = metric.label,
+            value = value,
+            accent = accent,
+            onConfirm = { picked ->
+                onValue(picked)
+                picking = false
+            },
+            onClear = {
+                onValue("")
+                picking = false
+            },
+            onDismiss = { picking = false },
+        )
+    }
+}
+
+private val WheelItemHeight = 38.dp
+private const val WheelRows = 5
+
+@Composable
+private fun TimeSpinnerDialog(
+    title: String,
+    value: String,
+    accent: Color,
+    onConfirm: (String) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val parsed = remember(value) { TimeValue.parse(value) }
+    var minutes by remember { mutableIntStateOf(parsed?.first ?: 0) }
+    var seconds by remember { mutableIntStateOf(parsed?.second ?: 0) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CardHigh,
+        titleContentColor = Snow,
+        title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    TimeValue.format(minutes, seconds),
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        color = accent,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFeatureSettings = "tnum",
+                    ),
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    WheelColumn(0..99, minutes, "min", accent) { minutes = it }
+                    Box(Modifier.height(WheelItemHeight * WheelRows), contentAlignment = Alignment.Center) {
+                        Text(":", style = MaterialTheme.typography.titleLarge, color = Slate)
+                    }
+                    WheelColumn(0..59, seconds, "sec", accent) { seconds = it }
+                }
+                TextButton(onClick = onClear) {
+                    Text("Clear", color = Danger, style = MaterialTheme.typography.titleSmall)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(TimeValue.format(minutes, seconds)) }) {
+                Text("Save", color = accent, style = MaterialTheme.typography.titleSmall)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Slate, style = MaterialTheme.typography.titleSmall)
+            }
+        },
+    )
+}
+
+@Composable
+private fun WheelColumn(
+    range: IntRange,
+    selected: Int,
+    label: String,
+    accent: Color,
+    onSelected: (Int) -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        NumberWheel(range = range, selected = selected, accent = accent, onSelected = onSelected)
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Slate)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NumberWheel(
+    range: IntRange,
+    selected: Int,
+    accent: Color,
+    onSelected: (Int) -> Unit,
+) {
+    val values = remember(range) { range.toList() }
+    val state = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val half = WheelRows / 2
+    val itemHeightPx = with(LocalDensity.current) { WheelItemHeight.toPx() }
+    var ready by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val initial = values.indexOf(selected).coerceAtLeast(0)
+        state.scrollToItem(initial + half, -half * itemHeightPx.toInt())
+        ready = true
+    }
+
+    val centerItem by remember {
+        derivedStateOf {
+            val info = state.layoutInfo
+            if (info.visibleItemsInfo.isEmpty()) return@derivedStateOf -1
+            val center = (info.viewportStartOffset + info.viewportEndOffset) / 2f
+            info.visibleItemsInfo.minByOrNull { item ->
+                kotlin.math.abs(item.offset + item.size / 2f - center)
+            }?.index ?: -1
+        }
+    }
+
+    LaunchedEffect(centerItem, ready) {
+        if (!ready) return@LaunchedEffect
+        values.getOrNull(centerItem - half)?.let(onSelected)
+    }
+
+    Box(
+        Modifier
+            .width(84.dp)
+            .height(WheelItemHeight * WheelRows),
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .height(WheelItemHeight)
+                .clip(RoundedCornerShape(10.dp))
+                .background(accent.copy(alpha = 0.12f))
+        )
+        LazyColumn(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            flingBehavior = rememberSnapFlingBehavior(state),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            items(half) { Spacer(Modifier.height(WheelItemHeight)) }
+            itemsIndexed(values) { index, number ->
+                val centered = index + half == centerItem
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(WheelItemHeight)
+                        .clickable {
+                            scope.launch {
+                                state.animateScrollToItem(
+                                    index + half,
+                                    -half * itemHeightPx.toInt(),
+                                )
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        number.toString(),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = if (centered) FontWeight.SemiBold else FontWeight.Normal,
+                            fontFeatureSettings = "tnum",
+                        ),
+                        color = if (centered) Snow else Slate,
+                    )
+                }
+            }
+            items(half) { Spacer(Modifier.height(WheelItemHeight)) }
         }
     }
 }
@@ -850,5 +1461,5 @@ private fun sanitiseMetricInput(raw: String, kind: MetricKind): String = when (k
             }
         }
     }
-    MetricKind.TEXT -> raw
+    MetricKind.TEXT, MetricKind.CHECK -> raw
 }

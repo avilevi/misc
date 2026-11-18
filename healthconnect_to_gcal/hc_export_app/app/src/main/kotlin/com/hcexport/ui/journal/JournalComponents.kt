@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,7 +53,9 @@ import androidx.compose.ui.unit.dp
 import com.hcexport.CalendarHelper
 import com.hcexport.HrSample
 import com.hcexport.JournalAiExercise
+import com.hcexport.JournalAiMovement
 import com.hcexport.JournalAiPlan
+import com.hcexport.JournalAiRound
 import com.hcexport.JournalAiSection
 import com.hcexport.JournalAiSet
 import com.hcexport.JournalAiValue
@@ -663,9 +666,101 @@ private fun AiSectionBlock(section: JournalAiSection) {
             Spacer(Modifier.height(10.dp))
         }
 
+        if (section.rounds.isNotEmpty()) {
+            AiRoundsCard(section.rounds, accent)
+            Spacer(Modifier.height(CardGap))
+        }
+
         section.exercises.forEach { exercise ->
             AiExerciseCard(exercise, accent)
             Spacer(Modifier.height(CardGap))
+        }
+    }
+}
+
+@Composable
+private fun AiRoundsCard(rounds: List<JournalAiRound>, accent: Color) {
+    HcCard(contentPadding = PaddingValues(16.dp)) {
+        rounds.forEachIndexed { roundIndex, round ->
+            if (roundIndex > 0) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .height(1.dp)
+                        .background(HairlineSoft)
+                )
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accent.copy(alpha = 0.10f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .width(3.dp)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(accent)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    round.label.uppercase(),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    color = accent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (round.notes.isNotBlank()) {
+                    Text(
+                        round.notes,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            round.movements.forEach { movement ->
+                AiMovementRow(movement, accent)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AiMovementRow(movement: JournalAiMovement, accent: Color) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            movement.name,
+            modifier = Modifier.weight(1f).padding(end = 6.dp),
+            style = MaterialTheme.typography.titleSmall,
+            color = Snow,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (movement.values.isNotEmpty()) {
+            ValueFlow(movement.values, accent, Modifier.weight(1.6f))
+        } else if (movement.target.isNotBlank()) {
+            Text(
+                movement.target,
+                modifier = Modifier.weight(1.6f),
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -698,32 +793,34 @@ private fun AiExerciseCard(exercise: JournalAiExercise, accent: Color) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 9.dp)
+                        .padding(vertical = 3.dp)
                         .height(1.dp)
                         .background(HairlineSoft)
                 )
             }
-            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                Row(verticalAlignment = Alignment.Top) {
-                    Text(
-                        set.label,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = Snow,
-                    )
-                    if (set.target.isNotBlank()) {
-                        Text(
-                            set.target,
-                            modifier = Modifier.weight(1.4f),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Slate,
-                            textAlign = TextAlign.End,
-                        )
-                    }
-                }
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    set.label,
+                    modifier = Modifier.width(54.dp).padding(end = 6.dp),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Snow,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (set.values.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    ValueFlow(set.values, accent)
+                    ValueFlow(set.values, accent, Modifier.weight(1f))
+                } else if (set.target.isNotBlank()) {
+                    Text(
+                        set.target,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -732,10 +829,15 @@ private fun AiExerciseCard(exercise: JournalAiExercise, accent: Color) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ValueFlow(values: List<JournalAiValue>, accent: Color) {
+private fun ValueFlow(
+    values: List<JournalAiValue>,
+    accent: Color,
+    modifier: Modifier = Modifier,
+) {
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         values.forEach { JournalValueChip(it, accent) }
     }
@@ -748,27 +850,42 @@ private fun JournalValueChip(value: JournalAiValue, accent: Color) {
             .clip(RoundedCornerShape(50))
             .background(accent.copy(alpha = 0.12f))
             .border(1.dp, accent.copy(alpha = 0.24f), RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            value.label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Slate,
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            value.value,
-            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
-            color = Snow,
-        )
-        if (value.unit.isNotBlank()) {
-            Spacer(Modifier.width(2.dp))
+        if (value.checked) {
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(12.dp),
+            )
+            Spacer(Modifier.width(4.dp))
             Text(
-                value.unit,
+                value.label,
                 style = MaterialTheme.typography.labelSmall,
                 color = Slate,
             )
+        } else {
+            Text(
+                value.label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Slate,
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                value.value,
+                style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+                color = Snow,
+            )
+            if (value.unit.isNotBlank()) {
+                Spacer(Modifier.width(2.dp))
+                Text(
+                    value.unit,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Slate,
+                )
+            }
         }
     }
 }

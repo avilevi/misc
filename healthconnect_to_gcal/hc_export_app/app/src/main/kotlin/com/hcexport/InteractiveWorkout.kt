@@ -12,6 +12,7 @@ enum class MetricKind(val key: String, val label: String) {
     DISTANCE("distance", "Distance"),
     CALORIES("calories", "Calories"),
     ROUNDS("rounds", "Rounds"),
+    CHECK("check", "Done"),
     TEXT("text", "Note");
 
     companion object {
@@ -24,6 +25,7 @@ enum class MetricKind(val key: String, val label: String) {
                 "distance", "distance_m", "meters" -> DISTANCE
                 "calories", "cal", "cals" -> CALORIES
                 "rounds", "round" -> ROUNDS
+                "check", "done", "complete", "completed", "checkbox" -> CHECK
                 "text", "note", "notes" -> TEXT
                 else -> entries.firstOrNull { it.key == normalized } ?: TEXT
             }
@@ -51,12 +53,27 @@ data class InteractiveExercise(
     val sets: List<InteractiveSet> = emptyList(),
 )
 
+/** One movement inside a round; a round repeats several of them together. */
+data class InteractiveMovement(
+    val name: String,
+    val target: String = "",
+    val notes: String = "",
+    val metrics: List<MetricDef> = emptyList(),
+)
+
+data class InteractiveRound(
+    val label: String = "",
+    val notes: String = "",
+    val movements: List<InteractiveMovement> = emptyList(),
+)
+
 data class InteractiveSection(
     val title: String,
     val kind: String = "other",
     val notes: String = "",
     val metrics: List<MetricDef> = emptyList(),
     val exercises: List<InteractiveExercise> = emptyList(),
+    val rounds: List<InteractiveRound> = emptyList(),
 )
 
 /**
@@ -73,7 +90,10 @@ data class InteractivePlan(
 ) {
     val isEmpty: Boolean
         get() = sections.all { section ->
-            section.exercises.isEmpty() && section.metrics.isEmpty() && section.notes.isBlank()
+            section.exercises.isEmpty() &&
+                section.rounds.isEmpty() &&
+                section.metrics.isEmpty() &&
+                section.notes.isBlank()
         }
 
     fun toJson(): JSONObject = JSONObject().apply {
@@ -109,14 +129,55 @@ data class InteractivePlan(
                     exerciseArray.optJSONObject(i)?.let { exercises += parseExercise(it, i) }
                 }
             }
+            val rounds = mutableListOf<InteractiveRound>()
+            val roundArray = obj.optJSONArray("rounds")
+            if (roundArray != null) {
+                for (i in 0 until roundArray.length()) {
+                    roundArray.optJSONObject(i)?.let { round ->
+                        val parsed = parseRound(round, i)
+                        if (parsed.movements.isNotEmpty()) rounds += parsed
+                    }
+                }
+            }
             return InteractiveSection(
                 title = obj.optString("title").ifBlank { "Section ${index + 1}" }.trim(),
                 kind = normaliseKind(obj.optString("kind")),
                 notes = obj.optString("notes").trim(),
                 metrics = parseMetrics(obj.optJSONArray("metrics")),
                 exercises = exercises,
+                rounds = rounds,
             )
         }
+
+        private fun parseRound(obj: JSONObject, index: Int): InteractiveRound {
+            val movements = mutableListOf<InteractiveMovement>()
+            val array = obj.optJSONArray("movements")
+            if (array != null) {
+                for (i in 0 until array.length()) {
+                    array.optJSONObject(i)?.let { movements += parseMovement(it, i) }
+                }
+            }
+            return InteractiveRound(
+                label = obj.optString("label").ifBlank { "Round ${index + 1}" }.trim(),
+                notes = obj.optString("notes").trim(),
+                movements = movements,
+            )
+        }
+
+        private fun parseMovement(obj: JSONObject, index: Int): InteractiveMovement =
+            InteractiveMovement(
+                name = obj.optString("name")
+                    .ifBlank { obj.optString("exercise") }
+                    .ifBlank { "Movement ${index + 1}" }
+                    .trim(),
+                target = obj.optString("target")
+                    .ifBlank { obj.optString("prescription") }
+                    .trim(),
+                notes = obj.optString("notes").trim(),
+                metrics = parseMetrics(obj.optJSONArray("metrics")).ifEmpty {
+                    listOf(MetricDef("result", "Result", MetricKind.TEXT))
+                },
+            )
 
         private fun parseExercise(obj: JSONObject, index: Int): InteractiveExercise {
             val sets = mutableListOf<InteractiveSet>()
@@ -214,6 +275,20 @@ fun InteractiveSection.toJson(): JSONObject = JSONObject().apply {
     put("notes", notes)
     put("metrics", JSONArray(metrics.map { it.toJson() }))
     put("exercises", JSONArray(exercises.map { it.toJson() }))
+    put("rounds", JSONArray(rounds.map { it.toJson() }))
+}
+
+fun InteractiveRound.toJson(): JSONObject = JSONObject().apply {
+    put("label", label)
+    put("notes", notes)
+    put("movements", JSONArray(movements.map { it.toJson() }))
+}
+
+fun InteractiveMovement.toJson(): JSONObject = JSONObject().apply {
+    put("name", name)
+    put("target", target)
+    put("notes", notes)
+    put("metrics", JSONArray(metrics.map { it.toJson() }))
 }
 
 fun InteractiveExercise.toJson(): JSONObject = JSONObject().apply {
@@ -239,6 +314,69 @@ fun MetricDef.toJson(): JSONObject = JSONObject().apply {
 object InteractiveKeys {
     fun section(section: Int): String = "s:$section"
     fun set(section: Int, exercise: Int, set: Int): String = "e:$section:$exercise:$set"
+    fun round(section: Int, round: Int, movement: Int): String = "r:$section:$round:$movement"
+}
+
+/**
+ * Round detection for plans stored before rounds existed (and for models that
+ * still emit a circuit as several exercises): when every exercise in a section
+ * carries the same ordered "Round N" labels, those exercises are movements of
+ * one circuit, not five separate blocks.
+ *
+ * Value keys are unchanged — each movement still points at the exercise/set it
+ * came from — so grouping never disturbs what the user has already entered.
+ */
+object InteractiveRounds {
+
+    data class Movement(
+        val exerciseIndex: Int,
+        val setIndex: Int,
+        val exercise: InteractiveExercise,
+        val set: InteractiveSet,
+    )
+
+    data class Round(val label: String, val movements: List<Movement>)
+
+    private val ROUND_LABEL = Regex("""round\s*(\d+)""", RegexOption.IGNORE_CASE)
+
+    /**
+     * True when [labelLists] — one list of set labels per exercise — describe
+     * the same ordered rounds (all "Round 1", "Round 2", ...). This is the
+     * shape a circuit has when it was stored as one exercise per movement.
+     */
+    fun isRoundGroup(labelLists: List<List<String>>): Boolean {
+        if (labelLists.size < 2) return false
+        val count = labelLists.first().size
+        if (count < 2) return false
+        if (labelLists.any { it.size != count }) return false
+        val labels = labelLists.first().map { it.trim() }
+        if (labels.distinct().size != labels.size) return false
+        if (labels.any { ROUND_LABEL.find(it) == null }) return false
+        return labelLists.all { list -> list.map { it.trim() } == labels }
+    }
+
+    fun derive(section: InteractiveSection): List<Round>? {
+        if (section.rounds.isNotEmpty()) return null
+        val exercises = section.exercises
+        val labels = exercises.firstOrNull()?.sets?.map { it.label.trim() }.orEmpty()
+        if (!isRoundGroup(exercises.map { exercise -> exercise.sets.map { it.label } })) {
+            return null
+        }
+
+        return labels.mapIndexed { roundIndex, label ->
+            Round(
+                label = label,
+                movements = exercises.mapIndexed { exerciseIndex, exercise ->
+                    Movement(
+                        exerciseIndex = exerciseIndex,
+                        setIndex = roundIndex,
+                        exercise = exercise,
+                        set = exercise.sets[roundIndex],
+                    )
+                },
+            )
+        }
+    }
 }
 
 object InteractiveResults {
@@ -280,6 +418,17 @@ object InteractiveResults {
         metricKey: String,
     ): String = results[scope]?.get(metricKey).orEmpty()
 
+    /**
+     * True when the key exists in the results at all — even as an empty string.
+     * Distinguishes "never touched, show the prescription default" from
+     * "the user cleared it".
+     */
+    fun contains(
+        results: Map<String, Map<String, String>>,
+        scope: String,
+        metricKey: String,
+    ): Boolean = results[scope]?.containsKey(metricKey) == true
+
     fun set(
         results: Map<String, Map<String, String>>,
         scope: String,
@@ -299,5 +448,123 @@ fun metricHint(metric: MetricDef): String = when (metric.kind) {
     MetricKind.DISTANCE -> if (metric.unit.isNotBlank()) metric.unit else "m"
     MetricKind.CALORIES -> if (metric.unit.isNotBlank()) metric.unit else "cal"
     MetricKind.ROUNDS -> if (metric.unit.isNotBlank()) metric.unit else "rounds"
+    MetricKind.CHECK -> "Done"
     MetricKind.TEXT -> "Note"
+}
+
+/**
+ * A duration as minutes and seconds. Stored values use the "m:ss" form the
+ * metric hint advertises ("8:24"); a bare number is read as seconds.
+ */
+object TimeValue {
+
+    fun parse(raw: String): Pair<Int, Int>? {
+        val text = raw.trim()
+        if (text.isEmpty()) return null
+        COLON.matchEntire(text)?.let { match ->
+            val minutes = match.groupValues[1].toIntOrNull() ?: return null
+            val seconds = match.groupValues[2].toIntOrNull() ?: return null
+            return minutes to seconds
+        }
+        val seconds = text.toIntOrNull() ?: return null
+        if (seconds < 0) return null
+        return seconds / 60 to seconds % 60
+    }
+
+    fun format(minutes: Int, seconds: Int): String {
+        val safeMinutes = minutes.coerceAtLeast(0)
+        val safeSeconds = seconds.coerceIn(0, 59)
+        return "$safeMinutes:${safeSeconds.toString().padStart(2, '0')}"
+    }
+
+    /** Canonical "m:ss" form of a stored value, or the raw text when unreadable. */
+    fun normalise(raw: String): String =
+        parse(raw)?.let { (minutes, seconds) -> format(minutes, seconds) } ?: raw
+
+    private val COLON = Regex("""^(\d{1,3}):([0-5]?\d)$""")
+}
+
+/**
+ * The value a set's written prescription already implies, so fields start
+ * filled with what the workout asked for instead of an empty box. Only reps,
+ * time, distance and calories are inferred; **weight is never defaulted** —
+ * it is unknown until the user lifts.
+ */
+object InteractiveDefaults {
+
+    fun forTarget(target: String, metric: MetricDef): String? {
+        val text = target.trim()
+        if (text.isEmpty()) return null
+        return when (metric.kind) {
+            MetricKind.WEIGHT, MetricKind.TEXT, MetricKind.ROUNDS, MetricKind.CHECK -> null
+            MetricKind.REPS -> reps(text)
+            MetricKind.TIME -> time(text)
+            MetricKind.DISTANCE -> distance(metric, text)
+            MetricKind.CALORIES -> calories(text)
+        }
+    }
+
+    private fun reps(text: String): String? {
+        REPS.find(text)?.let { return it.groupValues[1] }
+        // "10/10" or "10 each side" means ten reps per side.
+        SIDES.find(text)?.let { return it.groupValues[1] }
+        return text.takeIf { BARE_NUMBER.matches(it) }
+    }
+
+    private fun time(text: String): String? {
+        COLON.find(text)?.let { match ->
+            val minutes = match.groupValues[1].toIntOrNull() ?: return@let
+            val seconds = match.groupValues[2].toIntOrNull() ?: return@let
+            return TimeValue.format(minutes, seconds)
+        }
+        SECONDS.find(text)?.let { match ->
+            val seconds = decimal(match.groupValues[1]) ?: return@let
+            return TimeValue.format(0, Math.round(seconds).toInt())
+        }
+        MINUTES.find(text)?.let { match ->
+            val minutes = decimal(match.groupValues[1]) ?: return@let
+            val total = Math.round(minutes * 60).toInt()
+            return TimeValue.format(total / 60, total % 60)
+        }
+        return null
+    }
+
+    private fun distance(metric: MetricDef, text: String): String? {
+        val inKilometres = metric.unit.equals("km", ignoreCase = true)
+        KM.find(text)?.let { match ->
+            val km = decimal(match.groupValues[1]) ?: return@let
+            return if (inKilometres) trimNumber(km) else "${Math.round(km * 1000)}"
+        }
+        METERS.find(text)?.let { match ->
+            val meters = decimal(match.groupValues[1]) ?: return@let
+            return if (inKilometres) trimNumber(meters / 1000.0) else trimNumber(meters)
+        }
+        return null
+    }
+
+    private fun calories(text: String): String? =
+        CALORIES.find(text)?.groupValues?.get(1)
+
+    private fun decimal(raw: String): Double? = raw.replace(',', '.').toDoubleOrNull()
+
+    private fun trimNumber(value: Double): String =
+        if (value == Math.floor(value) && !value.isInfinite()) {
+            value.toInt().toString()
+        } else {
+            value.toString()
+        }
+
+    private val REPS = Regex("""(\d+)\s*(?:reps?|repetitions?)\b""", RegexOption.IGNORE_CASE)
+    private val SIDES =
+        Regex("""^\s*(\d+)\s*(?:/|each\b|per\b)""", RegexOption.IGNORE_CASE)
+    private val BARE_NUMBER = Regex("""^\d+$""")
+    private val COLON = Regex("""(\d{1,3}):([0-5]?\d)\b""")
+    private val SECONDS =
+        Regex("""(\d+(?:[.,]\d+)?)\s*(?:s|sec|secs|seconds?)\b""", RegexOption.IGNORE_CASE)
+    private val MINUTES =
+        Regex("""(\d+(?:[.,]\d+)?)\s*(?:mins?|minutes?)\b""", RegexOption.IGNORE_CASE)
+    private val CALORIES = Regex("""(\d+)\s*(?:cals?|calories)\b""", RegexOption.IGNORE_CASE)
+    private val KM = Regex("""(\d+(?:[.,]\d+)?)\s*kms?\b""", RegexOption.IGNORE_CASE)
+    private val METERS =
+        Regex("""(\d+(?:[.,]\d+)?)\s*(?:m|meters?|metres?)\b""", RegexOption.IGNORE_CASE)
 }

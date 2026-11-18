@@ -50,7 +50,7 @@ object AiClient {
           "summary": "one sentence describing the session",
           "sections": [
             {
-              "title": "section name from the workout",
+              "title": "section with isolated movements",
               "kind": "strength | metcon | accessory | rest | other",
               "notes": "time cap, rounds, stimulus or explanation",
               "metrics": [
@@ -69,6 +69,40 @@ object AiClient {
                   ]
                 }
               ]
+            },
+            {
+              "title": "section built from rounds",
+              "kind": "metcon",
+              "notes": "",
+              "metrics": [
+                {"key": "total_time", "label": "Total time", "kind": "time", "unit": ""}
+              ],
+              "rounds": [
+                {
+                  "label": "Round 1",
+                  "notes": "",
+                  "movements": [
+                    {
+                      "name": "Power Snatch",
+                      "target": "15 reps",
+                      "metrics": [
+                        {"key": "weight", "label": "Weight", "kind": "weight", "unit": "kg"},
+                        {"key": "reps", "label": "Reps", "kind": "reps", "unit": ""}
+                      ]
+                    },
+                    {
+                      "name": "Air Squats",
+                      "target": "15 reps",
+                      "metrics": [{"key": "reps", "label": "Reps", "kind": "reps", "unit": ""}]
+                    },
+                    {
+                      "name": "Dual KB Front Rack Hold",
+                      "target": "40s",
+                      "metrics": [{"key": "done", "label": "Done", "kind": "check", "unit": ""}]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -77,21 +111,45 @@ object AiClient {
         1. Split the workout into logical sections (Strength, Metcon, Accessory,
            Stimulus/Notes). Keep the workout's own section titles. `kind` must be one
            of strength, metcon, accessory, rest, other.
-        2. Every distinct movement is an exercise. Use the workout's exact name.
-        3. Create one set per prescribed set, round or minute. Examples of labels:
-           "Set 1", "Round 2", "Min 1". Put the prescription in `target` exactly as
-           written, e.g. "5 reps", "40s", "15 cal".
-        4. Metrics are only what the user can record for that exercise. Allowed kinds:
-           weight, reps, time, distance, calories, rounds, text. Use unit "kg" for
-           weight, "m" for distance, "cal" for calories. Time uses kind "time" and an
-           empty unit, and the user types mm:ss.
-        5. Section-level metrics are for whole-section results only, such as total
+        2. Rounds. When the text repeats SEVERAL movements together in rounds — e.g.
+           "5 rounds of A + B + C", "5 rounds for time: 15 A, 15 B, 15 C", "3 sets:
+           A + B", or "do B and C after each round" — put them in the section's
+           `rounds` array, one entry per prescribed round, with the movements in the
+           order they are performed. Do NOT also list those movements as separate
+           exercises; a round groups them, it does not repeat them sequentially.
+           When the reps change per round (e.g. "15-12-9-6-3 Power Snatch" plus
+           squats and push-ups after each round), each round's movement carries its
+           own target ("15 reps", "12 reps", ...).
+        3. If a round-based section has no fixed round count (AMRAP until the cap),
+           use a single round labelled "Each round"; record the score (rounds
+           completed, total time) as a section metric.
+        4. An EMOM whose movements rotate through a numbered list (e.g. "9:00 EMOM"
+           followed by "1) A 2) B 3) C") is rounds too: one round per full cycle,
+           containing those movements in order. A fixed work interval such as
+           "40s Work / 20s Rest" is the same work in every cycle and needs no
+           number recorded — use a single `check` metric on each movement.
+        5. Use `exercises` only for movements performed on their own, one movement at
+           a time (strength sets, a single-movement metcon). Never emit a section
+           with the same movement in both `rounds` and `exercises`.
+        6. Every distinct movement keeps the workout's exact name.
+        7. For exercises, create one set per prescribed set, round or minute. Examples
+           of labels: "Set 1", "Round 2", "Min 1". Put the prescription in `target`
+           exactly as written, e.g. "5 reps", "40s", "15 cal".
+        8. Metrics are only what the user can record. Allowed kinds: weight, reps,
+           time, distance, calories, rounds, check, text. Use unit "kg" for weight,
+           "m" for distance, "cal" for calories. Time uses kind "time" and an empty
+           unit, and the user picks minutes and seconds.
+        9. Use kind "check" (label "Done", empty unit) when completion is the only
+           thing worth recording: fixed timed intervals and holds, mobility and
+           drills. Never use check for strength, load or rep work — there the input
+           is the weight or the reps actually done.
+        10. Section-level metrics are for whole-section results only, such as total
            time, rounds completed, or a single score for a benchmark.
-        6. Never invent results. The user fills those in later.
-        7. If a movement has no prescribed sets, give it one set labelled "Result".
-        8. Explanatory text with no sets belongs in `notes`; use kind "other".
-        9. If a movement is ambiguous, give it a text metric rather than guessing.
-        10. Keep labels concise and preserve the original target text.
+        11. Never invent results. The user fills those in later.
+        12. If a movement has no prescribed sets, give it one set labelled "Result".
+        13. Explanatory text with no sets belongs in `notes`; use kind "other".
+        14. If a movement is ambiguous, give it a text metric rather than guessing.
+        15. Keep labels concise and preserve the original target text.
     """.trimIndent()
 
     suspend fun generatePlan(ctx: Context, workout: Workout): Result<GeneratedPlan> =
