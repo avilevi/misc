@@ -5,9 +5,29 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
+/** A month with at least one stored workout. Used by the archive index. */
+data class WorkoutMonth(
+    val year: Int,
+    val month: Int,
+    val workouts: Int,
+    val days: Int,
+    val firstDate: String,
+    val lastDate: String,
+)
+
+/** Coverage of the whole append-only workout archive. */
+data class ArchiveSummary(
+    val workouts: Int,
+    val days: Int,
+    val firstDate: String?,
+    val lastDate: String?,
+)
+
 /**
  * Local, append-only workout history. Rows are never deleted when the website
- * drops a date; first_seen is preserved across updates.
+ * drops a date; first_seen is preserved across updates. This database is the
+ * only permanent copy of workouts the site has rotated out, so no code may
+ * prune it.
  */
 object WorkoutStore {
 
@@ -100,6 +120,18 @@ object WorkoutStore {
         return out
     }
 
+    /** Inclusive ISO-date range, oldest first. Used by the calendar views. */
+    fun getBetween(ctx: Context, fromIso: String, toIso: String): List<Workout> {
+        val out = mutableListOf<Workout>()
+        db(ctx).query(
+            TABLE, null, "date BETWEEN ? AND ?", arrayOf(fromIso, toIso), null, null,
+            "date ASC, sort_order ASC, type_label ASC",
+        ).use { c ->
+            while (c.moveToNext()) out += read(c)
+        }
+        return out
+    }
+
     /** The workout that belongs in a calendar event titled "WOD". */
     fun getWod(ctx: Context, date: String): Workout? {
         getByDate(ctx, date).firstOrNull { it.typeKey == WorkoutTypes.WOD_KEY }?.let { return it }
@@ -114,6 +146,59 @@ object WorkoutStore {
     fun latestDate(ctx: Context): String? =
         db(ctx).rawQuery("SELECT MAX(date) FROM $TABLE", null).use { c ->
             if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null
+        }
+
+    /**
+     * One row per month that has stored workouts, newest first. This is the
+     * archive index: it never loads workout content, so a decade of history is
+     * cheap to browse.
+     */
+    fun getMonthCounts(ctx: Context): List<WorkoutMonth> {
+        val out = mutableListOf<WorkoutMonth>()
+        db(ctx).rawQuery(
+            """
+            SELECT CAST(substr(date,1,4) AS INTEGER) AS y,
+                   CAST(substr(date,6,2) AS INTEGER) AS m,
+                   COUNT(*) AS n,
+                   COUNT(DISTINCT date) AS d,
+                   MIN(date) AS first_date,
+                   MAX(date) AS last_date
+            FROM $TABLE
+            GROUP BY y, m
+            ORDER BY y DESC, m DESC
+            """.trimIndent(),
+            null,
+        ).use { c ->
+            while (c.moveToNext()) {
+                out += WorkoutMonth(
+                    year = c.getInt(0),
+                    month = c.getInt(1),
+                    workouts = c.getInt(2),
+                    days = c.getInt(3),
+                    firstDate = c.getString(4),
+                    lastDate = c.getString(5),
+                )
+            }
+        }
+        return out
+    }
+
+    /** Totals and coverage of the whole archive. */
+    fun archiveSummary(ctx: Context): ArchiveSummary =
+        db(ctx).rawQuery(
+            "SELECT COUNT(*), COUNT(DISTINCT date), MIN(date), MAX(date) FROM $TABLE",
+            null,
+        ).use { c ->
+            if (c.moveToFirst()) {
+                ArchiveSummary(
+                    workouts = c.getInt(0),
+                    days = c.getInt(1),
+                    firstDate = if (c.isNull(2)) null else c.getString(2),
+                    lastDate = if (c.isNull(3)) null else c.getString(3),
+                )
+            } else {
+                ArchiveSummary(0, 0, null, null)
+            }
         }
 
     private fun read(c: android.database.Cursor) = Workout(

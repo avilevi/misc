@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -103,6 +104,27 @@ object Ui {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
         }
+
+    /** Dark-theme spinner adapter: the platform default paints black text on our dark cards. */
+    fun darkAdapter(context: Context, items: List<String>): ArrayAdapter<String> =
+        object : ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, items) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent) as TextView
+                view.setTextColor(TEXT_PRIMARY)
+                view.textSize = 15f
+                view.setPadding(dp(context, 16), dp(context, 14), dp(context, 16), dp(context, 14))
+                return view
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                view.setTextColor(TEXT_PRIMARY)
+                view.textSize = 15f
+                view.setBackgroundColor(SURFACE_ELEVATED)
+                view.setPadding(dp(context, 16), dp(context, 14), dp(context, 16), dp(context, 14))
+                return view
+            }
+        }.also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
     fun secondaryButton(context: Context, label: String, onClick: () -> Unit): Button =
         Button(context).apply {

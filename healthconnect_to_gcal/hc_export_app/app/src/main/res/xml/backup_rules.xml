@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Back up only the append-only workout archive and the records database.
+  The journal (sleep/exercise health data) and all preferences stay on the
+  device; they are deliberately not included.
+-->
+<full-backup-content>
+    <include domain="database" path="workouts.db" />
+    <include domain="database" path="records.db" />
+    <include domain="database" path="interactive.db" />
+</full-backup-content>

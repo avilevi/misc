@@ -99,7 +99,27 @@ object Prefs {
     fun setJournalLastSyncSummary(ctx: Context, summary: String) =
         prefs(ctx).edit().putString("journal_last_sync_summary", summary).apply()
 
+    // ── AI ─────────────────────────────────────────────────────────────────
+
+    /**
+     * The pre-provider model preference. It is read only to seed the Claude
+     * provider on upgrade; new code uses [AiConfigStore].
+     */
+    internal fun legacyAiModel(ctx: Context): String? =
+        prefs(ctx).getString("ai_model", null)?.takeIf { it.isNotBlank() }
+
+    internal fun clearLegacyAiModel(ctx: Context) {
+        prefs(ctx).edit().remove("ai_model").apply()
+    }
+
     // ── Workout database ───────────────────────────────────────────────────
+
+    /** "week" (default), "month" or "day" — the calendar view Workouts opens in. */
+    fun getDefaultWorkoutView(ctx: Context): String =
+        prefs(ctx).getString("default_workout_view", "week") ?: "week"
+
+    fun setDefaultWorkoutView(ctx: Context, view: String) =
+        prefs(ctx).edit().putString("default_workout_view", view).apply()
 
     fun getWorkoutEtag(ctx: Context): String? =
         prefs(ctx).getString("workout_etag", null)

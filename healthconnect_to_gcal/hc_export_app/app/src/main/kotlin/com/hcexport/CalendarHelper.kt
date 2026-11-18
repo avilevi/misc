@@ -1,5 +1,6 @@
 package com.hcexport
 
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.provider.CalendarContract
@@ -9,6 +10,17 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
+
+/** An event on any calendar that may name a programmed workout. */
+data class CalendarWorkoutEvent(
+    val id: Long,
+    val title: String,
+    val startMs: Long,
+    val endMs: Long,
+    /** Local ISO date the event starts on. */
+    val date: String,
+    val description: String?,
+)
 
 object CalendarHelper {
 
@@ -235,6 +247,56 @@ object CalendarHelper {
     // ── WOD events ────────────────────────────────────────────────────────
 
     data class WodEventInfo(val id: Long, val dateStr: String, val startMs: Long, val endMs: Long, val title: String, val description: String?)
+
+    /**
+     * Every event instance in [startMs, endMs) on **any** calendar, recurring
+     * events included. The caller decides which events name a workout; events
+     * this app wrote for Health Connect sessions are excluded so a recorded
+     * session cannot masquerade as a programmed workout. The app's own "WOD"
+     * events stay in — they are the programmed session on the training calendar.
+     */
+    fun findWorkoutEvents(context: Context, startMs: Long, endMs: Long): List<CalendarWorkoutEvent> {
+        val builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
+        ContentUris.appendId(builder, startMs)
+        ContentUris.appendId(builder, endMs)
+        val projection = arrayOf(
+            CalendarContract.Instances.EVENT_ID,
+            CalendarContract.Instances.TITLE,
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.DESCRIPTION,
+        )
+
+        val results = mutableListOf<CalendarWorkoutEvent>()
+        context.contentResolver.query(builder.build(), projection, null, null, null)?.use { cursor ->
+            val idCol = cursor.getColumnIndex(CalendarContract.Instances.EVENT_ID)
+            val titleCol = cursor.getColumnIndex(CalendarContract.Instances.TITLE)
+            val startCol = cursor.getColumnIndex(CalendarContract.Instances.BEGIN)
+            val endCol = cursor.getColumnIndex(CalendarContract.Instances.END)
+            val descCol = cursor.getColumnIndex(CalendarContract.Instances.DESCRIPTION)
+            while (cursor.moveToNext()) {
+                val desc = cursor.getString(descCol)
+                if (desc?.contains(HC_MARKER) == true) continue
+                val title = cursor.getString(titleCol)?.trim().orEmpty()
+                if (title.isEmpty()) continue
+                val eventStart = cursor.getLong(startCol)
+                val eventEnd = cursor.getLong(endCol).takeIf { it > eventStart } ?: (eventStart + 60_000)
+                val date = Instant.ofEpochMilli(eventStart)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .format(DateTimeFormatter.ISO_LOCAL_DATE)
+                results += CalendarWorkoutEvent(
+                    id = cursor.getLong(idCol),
+                    title = title,
+                    startMs = eventStart,
+                    endMs = eventEnd,
+                    date = date,
+                    description = desc,
+                )
+            }
+        }
+        return results
+    }
 
     fun findWodEvents(context: Context, daysAhead: Int, daysBack: Int = 0): List<WodEventInfo> {
         val todayStart = Instant.now().truncatedTo(ChronoUnit.DAYS)

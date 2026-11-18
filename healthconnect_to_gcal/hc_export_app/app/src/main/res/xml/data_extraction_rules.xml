@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- See backup_rules.xml: only the workout archive and records survive a
+     cloud backup or a device-to-device transfer. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="workouts.db" />
+        <include domain="database" path="records.db" />
+    <include domain="database" path="interactive.db" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="workouts.db" />
+        <include domain="database" path="records.db" />
+    <include domain="database" path="interactive.db" />
+    </device-transfer>
+</data-extraction-rules>
