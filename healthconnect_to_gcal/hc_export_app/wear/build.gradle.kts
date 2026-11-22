@@ -52,6 +52,13 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    lint {
+        // The wear app has no fragments; the check only sees an old transitive
+        // version pulled in by an AndroidX library. ActivityResult is used from
+        // Activities, as in the phone app, which carries the same disable.
+        disable += "InvalidFragmentVersionForActivityResult"
+    }
 }
 
 dependencies {
