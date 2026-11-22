@@ -61,6 +61,7 @@ import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.EmptyState
 import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
+import com.hcexport.ui.HighlightOnArrival
 import com.hcexport.ui.IconAction
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.PageHeader
@@ -258,10 +259,13 @@ private data class WeightDetailLoad(
 @Composable
 fun WeightDetailScreen(
     exerciseKey: String,
+    focusRecordId: Long = 0L,
+    origin: String = "",
     onBack: () -> Unit,
+    onBackToOrigin: () -> Unit = onBack,
     onAdd: (exerciseKey: String, name: String) -> Unit,
     onEdit: (id: Long) -> Unit,
-    onOpenWorkout: (date: String, typeKey: String) -> Unit,
+    onOpenWorkout: (date: String, typeKey: String, recordId: Long) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -332,6 +336,17 @@ fun WeightDetailScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenPadding)
             ) {
+                if (origin.isNotBlank()) {
+                    WorkoutLinkChip(
+                        label = when (origin) {
+                            "journal" -> "Back to journal entry"
+                            "workout" -> "Back to workout"
+                            else -> "Back"
+                        },
+                        onClick = onBackToOrigin,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                }
                 if (!load.loaded) {
                     com.hcexport.ui.LoadingLine("Loading records…", Amber)
                 } else if (hero == null) {
@@ -370,6 +385,7 @@ fun WeightDetailScreen(
                         RepHistoryCard(
                             reps = reps,
                             records = group,
+                            focusRecordId = focusRecordId,
                             onEdit = onEdit,
                             onDelete = { pendingDelete = it },
                             onOpenWorkout = onOpenWorkout,
@@ -390,7 +406,7 @@ fun WeightDetailScreen(
 }
 
 @Composable
-private fun BestHero(record: WeightRecord, onOpenWorkout: (String, String) -> Unit) {
+private fun BestHero(record: WeightRecord, onOpenWorkout: (String, String, Long) -> Unit) {
     HcCard(accent = Amber, contentPadding = PaddingValues(20.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Tag("${record.reps}RM", Amber)
@@ -433,8 +449,10 @@ private fun BestHero(record: WeightRecord, onOpenWorkout: (String, String) -> Un
         if (record.workoutDate != null && record.workoutTypeKey != null) {
             Spacer(Modifier.height(12.dp))
             WorkoutLinkChip(
-                label = "View source workout",
-                onClick = { onOpenWorkout(record.workoutDate, record.workoutTypeKey) },
+                label = "View in journal",
+                onClick = {
+                    onOpenWorkout(record.workoutDate, record.workoutTypeKey, record.id)
+                },
             )
         }
         if (!record.note.isNullOrBlank()) {
@@ -510,9 +528,10 @@ private fun RepTile(reps: Int, record: WeightRecord?, modifier: Modifier = Modif
 private fun RepHistoryCard(
     reps: Int,
     records: List<WeightRecord>,
+    focusRecordId: Long,
     onEdit: (Long) -> Unit,
     onDelete: (WeightRecord) -> Unit,
-    onOpenWorkout: (String, String) -> Unit,
+    onOpenWorkout: (String, String, Long) -> Unit,
 ) {
     HcCard(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -539,7 +558,9 @@ private fun RepHistoryCard(
                 if (index > 0) {
                     Box(Modifier.fillMaxWidth().height(1.dp).background(HairlineSoft))
                 }
-                WeightHistoryRow(record, onEdit, onDelete, onOpenWorkout)
+                HighlightOnArrival(active = record.id == focusRecordId, color = Amber) {
+                    WeightHistoryRow(record, onEdit, onDelete, onOpenWorkout)
+                }
             }
         }
     }
@@ -550,7 +571,7 @@ private fun WeightHistoryRow(
     record: WeightRecord,
     onEdit: (Long) -> Unit,
     onDelete: (WeightRecord) -> Unit,
-    onOpenWorkout: (String, String) -> Unit,
+    onOpenWorkout: (String, String, Long) -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(vertical = 10.dp),
@@ -585,8 +606,10 @@ private fun WeightHistoryRow(
             if (record.workoutDate != null && record.workoutTypeKey != null) {
                 Spacer(Modifier.height(5.dp))
                 WorkoutLinkChip(
-                    label = "Workout · ${RecordLogic.formatDateShort(record.workoutDate)}",
-                    onClick = { onOpenWorkout(record.workoutDate, record.workoutTypeKey) },
+                    label = "Journal · ${RecordLogic.formatDateShort(record.workoutDate)}",
+                    onClick = {
+                        onOpenWorkout(record.workoutDate, record.workoutTypeKey, record.id)
+                    },
                     compact = true,
                 )
             }

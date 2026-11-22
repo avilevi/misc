@@ -46,6 +46,10 @@ sealed interface JournalItem {
         override val note: String,
         /** False for a WOD that only the journal remembers (no archive row to open). */
         val canOpenAi: Boolean = true,
+        /** Put there by a live "Schedule session", not by the calendar or the watch. */
+        val scheduled: Boolean = false,
+        /** The journal.db WOD row behind a legacy workout, when there is one. */
+        val sourceEntryId: String? = null,
         /** Keeps two WOD entries on one date from sharing a comment key. */
         private val keySuffix: String? = null,
     ) : JournalItem {
@@ -120,6 +124,8 @@ data class JournalAiPlan(
     val totalSets: Int,
     val loggedSets: Int,
     val totalVolumeKg: Double?,
+    /** Rows past a section's "reached here" marker: never started, not counted. */
+    val notReachedSets: Int = 0,
 )
 
 /** A day's journal, ready to render. */
@@ -138,11 +144,11 @@ data class JournalDayMark(
  * archive, the calendars, the Health Connect journal entries and the AI
  * sessions.
  *
- * A workout earns a journal entry only when at least one of these is true:
- *  - an event on **any** calendar names it (matched by name),
- *  - a watch/strap session was recorded on the day, or
- *  - values were logged into its AI workout.
- * Everything that qualifies for the same workout is merged into one entry.
+ * A workout earns a journal entry when an event on **any** calendar names it
+ * (matched by name) or values were logged into its AI workout. A watch session
+ * never adds a workout of its own; it merges into the workout whose calendar
+ * event it overlaps, and each entry carries at most **one** recorded session.
+ * A session the calendar does not account for stays its own activity.
  */
 object JournalFeed {
 
@@ -153,27 +159,63 @@ object JournalFeed {
         entries: List<JournalEntry>,
         sessions: Map<String, InteractiveSessionRecord>,
         notes: Map<String, String>,
+        sleepSourcePriority: List<String> = emptyList(),
+        /** Sessions the athlete scheduled in the app for this day. */
+        scheduledSessions: List<ScheduledSession> = emptyList(),
+        /** Entry keys the athlete deleted; they stay out until scheduled again. */
+        hiddenKeys: Set<String> = emptySet(),
     ): JournalDay {
         val ordered = orderedWorkouts(workouts)
         val eventMatches = calendarMatches(ordered, calendarEvents)
+        val scheduledByType = scheduledSessions
+            .filter { it.date == date }
+            .associateBy { it.typeKey }
         val included = ordered.filter { workout ->
-            eventMatches.containsKey(workout.typeKey) || sessions[workout.typeKey].hasLoggedValues()
+            eventMatches.containsKey(workout.typeKey) ||
+                scheduledByType.containsKey(workout.typeKey) ||
+                sessions[workout.typeKey].hasLoggedValues()
         }
         val exercises = entries.filter { it.entryType == "exercise" }
             .sortedBy { startOf(it) }
         val wodEntries = entries.filter { it.entryType == "wod" }
         val sleepEntries = entries.filter { it.entryType == "sleep" }
 
+        // A scheduled session's window stands in for a calendar event for the
+        // entry's planned time. It deliberately does **not** create a merge
+        // window: only evidence on a calendar accounts for a recorded session.
+        fun scheduledEvent(workout: Workout): CalendarWorkoutEvent? {
+            val schedule = scheduledByType[workout.typeKey] ?: return null
+            val start = schedule.startMs ?: return null
+            val end = schedule.endMs ?: (start + 60 * 60_000L)
+            if (end <= start) return null
+            return CalendarWorkoutEvent(
+                id = -(schedule.createdAtMs.coerceAtLeast(1L)),
+                title = WorkoutText.displayType(workout.typeLabel),
+                startMs = start,
+                endMs = end,
+                date = workout.date,
+                description = null,
+            )
+        }
+
         // The earliest matching event gives the entry its time; every matched
         // event participates in the watch-session merge below.
         val anchors = included.associate { workout ->
-            workout.typeKey to eventMatches[workout.typeKey]?.minByOrNull { it.startMs }
+            workout.typeKey to (
+                eventMatches[workout.typeKey]?.minByOrNull { it.startMs }
+                    ?: scheduledEvent(workout)
+                )
         }
 
         // ── Match watch sessions to workouts ──────────────────────────────────
-        // A session can belong to only one workout: the one whose calendar
-        // window it overlaps the most.
-        val attached = mutableMapOf<String, MutableList<JournalEntry>>()
+        // A session belongs to a workout only when it overlaps that workout's
+        // calendar window, and a workout entry carries a single recorded
+        // session — the one it overlaps the most. A session the calendar does
+        // not account for stays its own activity: it is never bundled into a
+        // workout it does not overlap, and two different sessions never share
+        // one entry.
+        val attached = mutableMapOf<String, JournalEntry>()
+        val attachedOverlap = mutableMapOf<String, Long>()
         val remaining = exercises.toMutableList()
         for (entry in exercises) {
             var bestKey: String? = null
@@ -187,17 +229,20 @@ object JournalFeed {
                     }
                 }
             }
-            if (bestKey != null) {
-                attached.getOrPut(bestKey) { mutableListOf() }.add(entry)
+            val key = bestKey ?: continue
+            val current = attached[key]
+            if (current == null) {
+                attached[key] = entry
+                attachedOverlap[entry.id] = bestOverlap
                 remaining.remove(entry)
+            } else if (bestOverlap > (attachedOverlap[current.id] ?: 0L)) {
+                attached[key] = entry
+                attachedOverlap[entry.id] = bestOverlap
+                remaining.remove(entry)
+                remaining.add(current)
             }
         }
-        // One workout on the day: a recorded session is that workout, even when
-        // the calendar event and the watch disagree about the hour.
-        if (included.size == 1 && remaining.isNotEmpty()) {
-            attached.getOrPut(included.first().typeKey) { mutableListOf() }.addAll(remaining)
-            remaining.clear()
-        }
+        remaining.sortBy { startOf(it) }
 
         val items = mutableListOf<JournalItem>()
 
@@ -221,10 +266,11 @@ object JournalFeed {
                 plan = plan,
                 startMs = anchor?.startMs,
                 endMs = anchor?.endMs,
-                biometrics = attached[workout.typeKey].orEmpty()
-                    .sortedBy { startOf(it) }
-                    .mapNotNull { biometrics(it) },
+                biometrics = attached[workout.typeKey]
+                    ?.let { listOfNotNull(biometrics(it)) }
+                    .orEmpty(),
                 note = notes[JournalKeys.workout(date, workout.typeKey)].orEmpty(),
+                scheduled = scheduledByType.containsKey(workout.typeKey),
             )
         }
 
@@ -237,12 +283,14 @@ object JournalFeed {
                 if (content.isBlank()) continue
                 val start = startOf(entry)
                 val end = endOf(entry)
-                val hits = if (start > 0 && end > start) {
-                    remaining.filter { overlaps(it, start, end) }
-                } else {
-                    emptyList()
-                }
-                remaining.removeAll(hits)
+                // One recorded session per entry, the one it overlaps the most;
+                // any other session stays its own activity.
+                val hit = if (start > 0 && end > start) {
+                    remaining
+                        .filter { overlapLength(it, start, end) > 0 }
+                        .maxByOrNull { overlapLength(it, start, end) }
+                } else null
+                hit?.let { remaining.remove(it) }
                 val suffix = if (legacyIndex == 0) null else entry.id
                 val noteKey = JournalKeys.workout(date, WorkoutTypes.WOD_KEY) +
                     (suffix?.let { ":$it" } ?: "")
@@ -254,9 +302,10 @@ object JournalFeed {
                     plan = null,
                     startMs = start.takeIf { it > 0 },
                     endMs = end.takeIf { it > 0 },
-                    biometrics = hits.mapNotNull { biometrics(it) },
+                    biometrics = listOfNotNull(hit?.let { biometrics(it) }),
                     note = notes[noteKey].orEmpty(),
                     canOpenAi = false,
+                    sourceEntryId = entry.id,
                     keySuffix = suffix,
                 )
                 legacyIndex++
@@ -276,7 +325,10 @@ object JournalFeed {
         }
 
         // ── Sleep, placed on the day it ended ────────────────────────────────
-        for (entry in sleepEntries.sortedBy { startOf(it) }) {
+        // A night recorded by two sources is one night: the highest-priority
+        // source is shown once, and its comment follows the night.
+        for (cluster in SleepSessions.clusters(sleepEntries)) {
+            val entry = SleepSessions.preferred(cluster, sleepSourcePriority)
             val start = startOf(entry)
             val end = endOf(entry)
             if (start <= 0 || end <= start) continue
@@ -287,12 +339,11 @@ object JournalFeed {
                 endMs = end,
                 stages = sleepStages(entry),
                 sourcePkg = sourceOf(entry),
-                note = notes[JournalKeys.sleep(entry.id)]
-                    ?: entry.customNarrative?.takeIf { it.isNotBlank() }.orEmpty(),
+                note = SleepSessions.note(cluster, entry, notes),
             )
         }
 
-        return JournalDay(date, items)
+        return JournalDay(date, items.filterNot { it.key in hiddenKeys })
     }
 
     /**
@@ -304,11 +355,14 @@ object JournalFeed {
         workouts: List<Workout>,
         calendarEvents: List<CalendarWorkoutEvent>,
         sessions: Map<String, InteractiveSessionRecord>,
+        scheduledTypeKeys: Set<String> = emptySet(),
     ): List<String> {
         val ordered = orderedWorkouts(workouts)
         val matches = calendarMatches(ordered, calendarEvents)
         return ordered.filter { workout ->
-            matches.containsKey(workout.typeKey) || sessions[workout.typeKey].hasLoggedValues()
+            matches.containsKey(workout.typeKey) ||
+                scheduledTypeKeys.contains(workout.typeKey) ||
+                sessions[workout.typeKey].hasLoggedValues()
         }.map { it.typeKey }
     }
 
@@ -330,6 +384,28 @@ object JournalFeed {
         return out
     }
 
+    /**
+     * The calendar events a watch session may merge with: events on the
+     * session's day ([workouts] are that day's stored workouts) that name one
+     * of them — the same name matching that puts a workout in the journal — and
+     * that overlap the session. A meeting that merely happens at the same time
+     * names no workout and is never merged.
+     *
+     * [events] should already exclude the app's own Health Connect events
+     * (`CalendarHelper.findWorkoutEvents` does that).
+     */
+    fun journalEventsForSession(
+        workouts: List<Workout>,
+        events: List<CalendarWorkoutEvent>,
+        startMs: Long,
+        endMs: Long,
+    ): List<CalendarWorkoutEvent> =
+        calendarMatches(orderedWorkouts(workouts), events)
+            .values.flatten()
+            .filter { it.startMs < endMs && it.endMs > startMs }
+            .distinctBy { it.id to it.startMs }
+            .sortedBy { it.startMs }
+
     /** Day marks for a month of the calendar grid. */
     fun marks(
         workouts: List<Workout>,
@@ -337,15 +413,41 @@ object JournalFeed {
         entries: List<JournalEntry>,
         sessions: List<InteractiveSessionRecord>,
         notes: Map<String, String>,
+        scheduledTypeKeysByDate: Map<String, Set<String>> = emptyMap(),
+        hiddenKeys: Set<String> = emptySet(),
     ): Map<String, JournalDayMark> {
         val workoutsByDate = workouts.groupBy { it.date }
         val eventsByDate = calendarEvents.groupBy { it.date }
         val sessionsByDate = sessions.groupBy { it.date }
-        val wodDates = entries.filter { it.entryType == "wod" }.map { it.date }.toSet()
-        val exerciseDates = entries.filter { it.entryType == "exercise" }.map { it.date }.toSet()
-        val sleepDates = entries.filter { it.entryType == "sleep" }.map { it.date }.toSet()
+        // A deleted watch session or night must not leave a mark behind.
+        val visibleEntries = entries.filterNot { entry ->
+            when (entry.entryType) {
+                "exercise" -> JournalKeys.activity(entry.id) in hiddenKeys
+                "sleep" -> JournalKeys.sleep(entry.id) in hiddenKeys
+                else -> false
+            }
+        }
+        val wodDates = visibleEntries.filter { it.entryType == "wod" }.map { it.date }.toSet()
+        val exerciseDates = visibleEntries.filter { it.entryType == "exercise" }
+            .map { it.date }.toSet()
+        val sleepDates = visibleEntries.filter { it.entryType == "sleep" }
+            .map { it.date }.toSet()
 
-        val entryDates = entries.associate { it.id to it.date }
+        val entryDates = visibleEntries.associate { it.id to it.date }
+
+        // A hidden workout keeps its dot off the grid even when a calendar
+        // event elsewhere still names it.
+        val hiddenWorkoutTypes = hiddenKeys.mapNotNull { key ->
+            if (!key.startsWith("w:")) return@mapNotNull null
+            val rest = key.removePrefix("w:")
+            val hiddenDate = rest.substringBefore(':')
+            val type = rest.substringAfter(':', "")
+            if (hiddenDate.length == 10 && type.isNotBlank() && ':' !in type) {
+                hiddenDate to type
+            } else {
+                null
+            }
+        }.groupBy({ it.first }, { it.second })
         val noteDates = notes.keys.mapNotNull { key ->
             when {
                 key.startsWith("w:") -> JournalKeys.dateOf(key)
@@ -356,15 +458,24 @@ object JournalFeed {
         }.toSet()
 
         val allDates = workoutsByDate.keys + eventsByDate.keys + wodDates +
-            exerciseDates + sleepDates + noteDates
+            exerciseDates + sleepDates + noteDates + scheduledTypeKeysByDate.keys
         return allDates.associateWith { date ->
             val types = includedTypeKeys(
                 workouts = workoutsByDate[date].orEmpty(),
                 calendarEvents = eventsByDate[date].orEmpty(),
                 sessions = sessionsByDate[date].orEmpty().associateBy { it.typeKey },
-            ).ifEmpty {
-                if (date in wodDates) listOf(WorkoutTypes.WOD_KEY) else emptyList()
-            }
+                scheduledTypeKeys = scheduledTypeKeysByDate[date].orEmpty(),
+            )
+                .filterNot { it in hiddenWorkoutTypes[date].orEmpty() }
+                .ifEmpty {
+                    if (date in wodDates &&
+                        JournalKeys.workout(date, WorkoutTypes.WOD_KEY) !in hiddenKeys
+                    ) {
+                        listOf(WorkoutTypes.WOD_KEY)
+                    } else {
+                        emptyList()
+                    }
+                }
             JournalDayMark(
                 workoutTypes = types,
                 hasWatchData = date in exerciseDates,
@@ -439,6 +550,12 @@ object JournalFeed {
         return (end - start).coerceAtLeast(0L)
     }
 
+    private fun overlapLength(entry: JournalEntry, startMs: Long, endMs: Long): Long {
+        val start = maxOf(startOf(entry), startMs)
+        val end = minOf(endOf(entry), endMs)
+        return (end - start).coerceAtLeast(0L)
+    }
+
     // ── AI plan ──────────────────────────────────────────────────────────────
 
     /**
@@ -451,39 +568,94 @@ object JournalFeed {
     ): JournalAiPlan {
         var totalSets = 0
         var loggedSets = 0
+        var notReachedSets = 0
         var volume = 0.0
         var volumeKnown = false
-
-        fun count(metrics: List<MetricDef>, stored: Map<String, String>, target: String) {
-            totalSets++
-            if (stored.values.any { it.isNotBlank() }) loggedSets++
-            val weight = numericValue(metrics, stored, MetricKind.WEIGHT, target)
-            val reps = numericValue(metrics, stored, MetricKind.REPS, target)
-            if (weight != null && reps != null && weight > 0 && reps > 0) {
-                volume += weight * reps
-                volumeKnown = true
-            }
-        }
+        // A plan nobody has touched is not "logged" just because its fields
+        // carry the prescription. Once anything is entered, the plan is being
+        // filled in, and with no "reached here" marker that means the whole
+        // workout was done: every row counts, prefilled or not.
+        val engaged = InteractiveResults.hasAnyValue(results)
 
         plan.sections.forEachIndexed { sectionIndex, section ->
-            section.exercises.forEachIndexed { exerciseIndex, exercise ->
-                exercise.sets.forEachIndexed { setIndex, set ->
-                    val scope = InteractiveKeys.set(sectionIndex, exerciseIndex, setIndex)
-                    count(
-                        metrics = set.metrics.ifEmpty { exercise.metrics },
-                        stored = results[scope].orEmpty(),
-                        target = set.target,
-                    )
+            val rows = InteractiveRows.scopes(section, sectionIndex)
+            val marker = InteractiveReached.indexOf(results, sectionIndex, rows)
+
+            fun count(
+                metrics: List<MetricDef>,
+                scope: String,
+                target: String,
+                rowIndex: Int,
+            ) {
+                // Past the "reached here" marker nothing was started: the row
+                // is shown greyed and stays out of both totals.
+                if (marker != null && rowIndex > marker) {
+                    notReachedSets++
+                    return
+                }
+                totalSets++
+                val stored = results[scope].orEmpty()
+                if (engaged) loggedSets++
+                val weight = numericValue(metrics, stored, MetricKind.WEIGHT, target)
+                val reps = numericValue(metrics, stored, MetricKind.REPS, target)
+                if (weight != null && reps != null && weight > 0 && reps > 0) {
+                    volume += weight * reps
+                    volumeKnown = true
                 }
             }
-            section.rounds.forEachIndexed { roundIndex, round ->
-                round.movements.forEachIndexed { movementIndex, movement ->
-                    val scope = InteractiveKeys.round(sectionIndex, roundIndex, movementIndex)
-                    count(
-                        metrics = movement.metrics,
-                        stored = results[scope].orEmpty(),
-                        target = movement.target,
-                    )
+
+            // Walk the same rows the editor shows: explicit rounds, a circuit
+            // regrouped from Round-labelled sets, or plain sets.
+            val derived =
+                if (section.rounds.isEmpty()) InteractiveRounds.derive(section) else null
+            when {
+                section.rounds.isNotEmpty() -> {
+                    var rowIndex = 0
+                    section.rounds.forEachIndexed { roundIndex, round ->
+                        round.movements.forEachIndexed { movementIndex, movement ->
+                            count(
+                                metrics = movement.metrics,
+                                scope = InteractiveKeys.round(
+                                    sectionIndex, roundIndex, movementIndex,
+                                ),
+                                target = movement.target,
+                                rowIndex = rowIndex++,
+                            )
+                        }
+                    }
+                }
+                derived != null -> {
+                    var rowIndex = 0
+                    derived.forEach { round ->
+                        round.movements.forEach { movement ->
+                            count(
+                                metrics = movement.set.metrics
+                                    .ifEmpty { movement.exercise.metrics },
+                                scope = InteractiveKeys.set(
+                                    sectionIndex,
+                                    movement.exerciseIndex,
+                                    movement.setIndex,
+                                ),
+                                target = movement.set.target,
+                                rowIndex = rowIndex++,
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    var rowIndex = 0
+                    section.exercises.forEachIndexed { exerciseIndex, exercise ->
+                        exercise.sets.forEachIndexed { setIndex, set ->
+                            count(
+                                metrics = set.metrics.ifEmpty { exercise.metrics },
+                                scope = InteractiveKeys.set(
+                                    sectionIndex, exerciseIndex, setIndex,
+                                ),
+                                target = set.target,
+                                rowIndex = rowIndex++,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -494,6 +666,7 @@ object JournalFeed {
             totalSets = totalSets,
             loggedSets = loggedSets,
             totalVolumeKg = if (volumeKnown) volume else null,
+            notReachedSets = notReachedSets,
         )
     }
 
@@ -600,9 +773,6 @@ object JournalFeed {
 
     private fun wodContentOf(entry: JournalEntry): String =
         parse(entry)?.optString("wod", "").orEmpty()
-
-    private fun overlaps(entry: JournalEntry, startMs: Long, endMs: Long): Boolean =
-        startOf(entry) < endMs && endOf(entry) > startMs
 }
 
 private fun JSONObject.optDoubleOrNull(key: String): Double? =

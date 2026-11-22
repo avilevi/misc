@@ -29,13 +29,24 @@ class AiException(message: String, cause: Throwable? = null) : Exception(message
 object AiClient {
 
     private const val API_VERSION = "2023-06-01"
-    private const val MAX_TOKENS = 8192
+
+    /**
+     * Output budgets for a plan. On the OpenAI-compatible protocol the budget
+     * covers thinking as well as the answer: DeepSeek V4 and other reasoning
+     * models count their reasoning tokens against max_tokens, and thinking is
+     * on by default — a plan can take over 5000 tokens of thinking before the
+     * first JSON character is written. Anthropic and Gemini are called without
+     * thinking, where 8192 is ample.
+     */
+    private const val PLAN_TOKENS_OPENAI = 32_768
+    private const val PLAN_TOKENS_ANTHROPIC = 8_192
+    private const val PLAN_TOKENS_GEMINI = 8_192
     private const val TEST_TOKENS = 1024
     private const val CONNECT_TIMEOUT_MS = 20_000
     private const val READ_TIMEOUT_MS = 300_000
 
     private const val MAX_TOKENS_MESSAGE =
-        "The plan was too long for this model. Try a shorter workout or another model."
+        "The model ran out of output tokens before it finished the plan. Try again, or use another model."
     private const val REFUSAL_MESSAGE =
         "The AI provider declined to build this plan. Try another model or regenerate."
 
@@ -52,10 +63,7 @@ object AiClient {
             {
               "title": "section with isolated movements",
               "kind": "strength | metcon | accessory | rest | other",
-              "notes": [
-                "time cap, rounds, stimulus or explanation",
-                "one entry per line of the original text"
-              ],
+              "notes": "time cap, rounds, stimulus or explanation",
               "metrics": [
                 {"key": "total_time", "label": "Total time", "kind": "time", "unit": ""}
               ],
@@ -64,7 +72,7 @@ object AiClient {
                   "name": "exercise name",
                   "notes": "optional cue",
                   "metrics": [
-                    {"key": "weight", "label": "Weight", "kind": "weight", "unit": "kg"},
+                    {"key": "weight", "label": "Weight", "kind": "weight", "unit": "kg", "hint": "70% of 1RM"},
                     {"key": "reps", "label": "Reps", "kind": "reps", "unit": ""}
                   ],
                   "sets": [
@@ -76,7 +84,7 @@ object AiClient {
             {
               "title": "section built from rounds",
               "kind": "metcon",
-              "notes": [],
+              "notes": "",
               "metrics": [
                 {"key": "total_time", "label": "Total time", "kind": "time", "unit": ""}
               ],
@@ -124,8 +132,12 @@ object AiClient {
            squats and push-ups after each round), each round's movement carries its
            own target ("15 reps", "12 reps", ...).
         3. If a round-based section has no fixed round count (AMRAP until the cap),
-           use a single round labelled "Each round"; record the score (rounds
-           completed, total time) as a section metric.
+           use a single round labelled "Each round"; record the score as a
+           section metric with kind "rounds" — the full rounds the athlete
+           completed. The app derives the reps of the unfinished round from the
+           movements marked done and the values entered. Do NOT add a total-time
+           metric to an AMRAP: its clock is fixed by the workout, so the time is
+           not a result.
         4. An EMOM whose movements rotate through a numbered list (e.g. "9:00 EMOM"
            followed by "1) A 2) B 3) C") is rounds too: one round per full cycle,
            containing those movements in order. A fixed work interval such as
@@ -147,19 +159,22 @@ object AiClient {
            drills. Never use check for strength, load or rep work — there the input
            is the weight or the reps actually done.
         10. Section-level `metrics` are only for a section scored as a whole: a
-           For Time piece, an AMRAP's rounds, or a single benchmark score.
+           For Time piece's time, an AMRAP's rounds, or a single benchmark score.
            Strength and accessory sections are never scored on the clock — their
-           results live on each set — so they get NO section metrics at all.
-        11. `notes` is a list of rows, not a paragraph. Keep every line of the
-           original workout as its own entry, in the original order: a line that
-           names the scheme ("Every 1:30 x 6 sets") and the line that follows it
-           ("Build to a heavy single", "Newer Athletes: 5-5-3-3-3-3 reps") are
-           separate entries. Never join them with a full stop.
-        12. Never invent results. The user fills those in later.
-        13. If a movement has no prescribed sets, give it one set labelled "Result".
-        14. Explanatory text with no sets belongs in `notes`; use kind "other".
-        15. If a movement is ambiguous, give it a text metric rather than guessing.
-        16. Keep labels concise and preserve the original target text.
+           results live on each set — so they get NO section metrics at all. An
+           AMRAP gets a rounds metric, never a total-time metric.
+        11. Never invent results. The user fills those in later.
+        12. If a movement has no prescribed sets, give it one set labelled "Result".
+        13. Explanatory text with no sets belongs in `notes`; use kind "other".
+        14. If a movement is ambiguous, give it a text metric rather than guessing.
+        15. Keep labels concise and preserve the original target text.
+        16. Weight guidance. When the workout states a load, copy that guidance into
+           the weight metric's `hint`, using the workout's own numbers: "70% of 1RM",
+           "70–80%", "60 kg", "20–32 kg", "bodyweight", "empty bar". Keep it at most
+           16 characters. When a movement's load changes from set to set (60% → 85%,
+           or a different weight per round), give each set its own metrics — its own
+           weight metric carrying that set's hint. When no load is stated, leave
+           `hint` out.
     """.trimIndent()
 
     suspend fun generatePlan(ctx: Context, workout: Workout): Result<GeneratedPlan> =
@@ -175,7 +190,7 @@ object AiClient {
                     apiKey = key,
                     system = SYSTEM_PROMPT,
                     user = userPrompt(workout),
-                    maxTokens = MAX_TOKENS,
+                    maxTokens = planTokenBudget(config.protocol),
                     jsonMode = true,
                 )
                 val json = extractJsonObject(raw)
@@ -200,6 +215,13 @@ object AiClient {
                 )
             }
         }
+
+    /** How many output tokens a plan may use on [protocol], thinking included. */
+    internal fun planTokenBudget(protocol: AiProtocol): Int = when (protocol) {
+        AiProtocol.OPENAI -> PLAN_TOKENS_OPENAI
+        AiProtocol.ANTHROPIC -> PLAN_TOKENS_ANTHROPIC
+        AiProtocol.GEMINI -> PLAN_TOKENS_GEMINI
+    }
 
     suspend fun testConnection(ctx: Context): Result<String> = withContext(Dispatchers.IO) {
         val config = AiConfigStore.getActive(ctx)
@@ -404,7 +426,10 @@ object AiClient {
                     message.contains("exceed") ||
                     message.contains("limit"))
             ) {
-                maxTokens = 4096
+                // Halve rather than snapping to 4096: models cap out anywhere
+                // from 4K to 32K, and 4096 can leave no room for the plan once
+                // a reasoning model has spent its thinking budget.
+                maxTokens = maxOf(4096, maxTokens / 2)
                 changed = true
             }
             if (!changed) break

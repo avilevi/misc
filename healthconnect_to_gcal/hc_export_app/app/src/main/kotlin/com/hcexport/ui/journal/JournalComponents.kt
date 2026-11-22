@@ -28,6 +28,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -68,6 +72,7 @@ import com.hcexport.ui.theme.Card
 import com.hcexport.ui.theme.CardHigh
 import com.hcexport.ui.theme.CardLift
 import com.hcexport.ui.theme.Coral
+import com.hcexport.ui.theme.Danger
 import com.hcexport.ui.theme.Hairline
 import com.hcexport.ui.theme.HairlineSoft
 import com.hcexport.ui.theme.Mist
@@ -214,12 +219,108 @@ private fun FlowRowAtLeastTwo(stats: List<HeroStat>) {
 
 // ── Day list cards ──────────────────────────────────────────────────────────
 
+/** The actions the card's three-dot menu and long-press offer. */
+internal data class JournalCardActions(
+    val menuOpen: Boolean,
+    val onMenuClick: () -> Unit,
+    val onDismissMenu: () -> Unit,
+    val onCreateAi: () -> Unit,
+    val onStartLive: () -> Unit,
+    val onDelete: () -> Unit,
+    val onLongClick: () -> Unit,
+)
+
 @Composable
-internal fun JournalItemCard(item: JournalItem, planned: Boolean = false, onClick: () -> Unit) {
+internal fun JournalItemCard(
+    item: JournalItem,
+    planned: Boolean = false,
+    actions: JournalCardActions,
+    onClick: () -> Unit,
+) {
     when (item) {
-        is JournalItem.Workout -> WorkoutJournalCard(item, planned, onClick)
-        is JournalItem.Activity -> ActivityJournalCard(item, onClick)
-        is JournalItem.Sleep -> SleepJournalCard(item, onClick)
+        is JournalItem.Workout -> WorkoutJournalCard(item, planned, actions, onClick)
+        is JournalItem.Activity -> ActivityJournalCard(item, actions, onClick)
+        is JournalItem.Sleep -> SleepJournalCard(item, actions, onClick)
+    }
+}
+
+/**
+ * The small three-dot at a card's top-right, and the quick actions behind it.
+ * The same menu opens on a long press of the card.
+ */
+@Composable
+private fun JournalCardMenu(item: JournalItem, actions: JournalCardActions) {
+    val workout = item as? JournalItem.Workout
+    val canCreateAi = workout?.canOpenAi == true
+    val hasPlan = workout?.plan != null
+
+    Box {
+        Box(
+            Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .clickable(
+                    onClickLabel = "Entry actions",
+                    onClick = actions.onMenuClick,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.MoreVert,
+                contentDescription = "Entry actions",
+                tint = Slate,
+                modifier = Modifier.size(19.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = actions.menuOpen,
+            onDismissRequest = actions.onDismissMenu,
+        ) {
+            if (canCreateAi) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (hasPlan) "Open AI workout" else "Create AI workout",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Snow,
+                        )
+                    },
+                    onClick = {
+                        actions.onDismissMenu()
+                        actions.onCreateAi()
+                    },
+                )
+            }
+            if (hasPlan) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "Start live workout",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Snow,
+                        )
+                    },
+                    onClick = {
+                        actions.onDismissMenu()
+                        actions.onStartLive()
+                    },
+                )
+            }
+            if (canCreateAi || hasPlan) HorizontalDivider(color = Hairline)
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        "Delete entry",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Danger,
+                    )
+                },
+                onClick = {
+                    actions.onDismissMenu()
+                    actions.onDelete()
+                },
+            )
+        }
     }
 }
 
@@ -228,10 +329,16 @@ internal fun JournalItemCard(item: JournalItem, planned: Boolean = false, onClic
 private fun WorkoutJournalCard(
     item: JournalItem.Workout,
     planned: Boolean,
+    actions: JournalCardActions,
     onClick: () -> Unit,
 ) {
     val accent = workoutAccent(item.typeKey)
-    HcCard(accent = accent, contentPadding = PaddingValues(15.dp), onClick = onClick) {
+    HcCard(
+        accent = accent,
+        contentPadding = PaddingValues(15.dp),
+        onClick = onClick,
+        onLongClick = actions.onLongClick,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
@@ -259,6 +366,8 @@ private fun WorkoutJournalCard(
                             color = Slate,
                         )
                     }
+                    Spacer(Modifier.width(2.dp))
+                    JournalCardMenu(item, actions)
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
@@ -274,6 +383,7 @@ private fun WorkoutJournalCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
+                    if (item.scheduled) Tag("SCHEDULED", Periwinkle)
                     if (planned) Tag("PLANNED", Amber)
                     if (item.plan != null) Tag("AI", Periwinkle)
                     if (item.biometrics.isNotEmpty()) Tag("WATCH DATA", Teal)
@@ -327,10 +437,19 @@ private fun WorkoutJournalCard(
 }
 
 @Composable
-private fun ActivityJournalCard(item: JournalItem.Activity, onClick: () -> Unit) {
+private fun ActivityJournalCard(
+    item: JournalItem.Activity,
+    actions: JournalCardActions,
+    onClick: () -> Unit,
+) {
     val bio = item.biometrics
     val (emoji, typeLabel) = CalendarHelper.EXERCISE_TYPES[bio.typeCode] ?: ("🏃" to "Activity")
-    HcCard(accent = Teal, contentPadding = PaddingValues(15.dp), onClick = onClick) {
+    HcCard(
+        accent = Teal,
+        contentPadding = PaddingValues(15.dp),
+        onClick = onClick,
+        onLongClick = actions.onLongClick,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
@@ -358,6 +477,8 @@ private fun ActivityJournalCard(item: JournalItem.Activity, onClick: () -> Unit)
                         style = MaterialTheme.typography.labelSmall,
                         color = Slate,
                     )
+                    Spacer(Modifier.width(2.dp))
+                    JournalCardMenu(item, actions)
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
@@ -399,8 +520,17 @@ private fun ActivityJournalCard(item: JournalItem.Activity, onClick: () -> Unit)
 }
 
 @Composable
-private fun SleepJournalCard(item: JournalItem.Sleep, onClick: () -> Unit) {
-    HcCard(accent = Periwinkle, contentPadding = PaddingValues(15.dp), onClick = onClick) {
+private fun SleepJournalCard(
+    item: JournalItem.Sleep,
+    actions: JournalCardActions,
+    onClick: () -> Unit,
+) {
+    HcCard(
+        accent = Periwinkle,
+        contentPadding = PaddingValues(15.dp),
+        onClick = onClick,
+        onLongClick = actions.onLongClick,
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
@@ -431,6 +561,8 @@ private fun SleepJournalCard(item: JournalItem.Sleep, onClick: () -> Unit) {
                         style = MaterialTheme.typography.labelSmall,
                         color = Slate,
                     )
+                    Spacer(Modifier.width(2.dp))
+                    JournalCardMenu(item, actions)
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(

@@ -51,6 +51,7 @@ object JournalNotesStore {
         val trimmed = note.trim()
         if (trimmed.isEmpty()) {
             db(ctx).delete(TABLE, "entry_key = ?", arrayOf(key))
+            WearPushWorker.enqueue(ctx, delayMs = 1_500L)
             return
         }
         val values = ContentValues().apply {
@@ -59,6 +60,12 @@ object JournalNotesStore {
             put("updated_at", System.currentTimeMillis())
         }
         db(ctx).insertWithOnConflict(TABLE, null, values, SQLiteDatabase.CONFLICT_REPLACE)
+        WearPushWorker.enqueue(ctx, delayMs = 1_500L)
+    }
+
+    /** Remove the comment attached to [key]. */
+    fun remove(ctx: Context, key: String) {
+        db(ctx).delete(TABLE, "entry_key = ?", arrayOf(key))
     }
 
     fun count(ctx: Context): Int =

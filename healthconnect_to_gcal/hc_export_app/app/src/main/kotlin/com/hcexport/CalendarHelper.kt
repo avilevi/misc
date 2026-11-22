@@ -168,8 +168,12 @@ object CalendarHelper {
 
     // ── Event insertion ────────────────────────────────────────────────────
 
+    /**
+     * Insert a timed event and return its id, so the caller can keep a link
+     * back to it — the scheduled-session record stores the event it created.
+     */
     fun insertEvent(context: Context, calendarId: Long, title: String,
-                    description: String, startMs: Long, endMs: Long) {
+                    description: String, startMs: Long, endMs: Long): Long? {
         val values = ContentValues().apply {
             put(CalendarContract.Events.CALENDAR_ID,   calendarId)
             put(CalendarContract.Events.TITLE,         title)
@@ -178,7 +182,9 @@ object CalendarHelper {
             put(CalendarContract.Events.DTEND,         endMs)
             put(CalendarContract.Events.EVENT_TIMEZONE, tz)
         }
-        context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
+        return context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
+            ?.lastPathSegment
+            ?.toLongOrNull()
     }
 
     // ── Title & description formatting ────────────────────────────────────
@@ -341,64 +347,15 @@ object CalendarHelper {
         return results
     }
 
-    /** Find any calendar events overlapping [startMs, endMs], excluding events this
-     *  app wrote and the target/fitness calendars. */
-    fun findOverlappingEvents(context: Context, startMs: Long, endMs: Long): List<WodEventInfo> {
-        val excluded = listOfNotNull(
-            Prefs.getCalendarId(context),
-            findCalendarId(context, "Fitness"),
-        ).distinct()
-
-        val selection = buildString {
-            append("${CalendarContract.Events.DTSTART} < ? AND ${CalendarContract.Events.DTEND} > ? ")
-            append("AND ${CalendarContract.Events.DELETED} = 0")
-            if (excluded.isNotEmpty()) {
-                append(" AND ${CalendarContract.Events.CALENDAR_ID} NOT IN (")
-                append(excluded.joinToString(",") { "?" })
-                append(")")
-            }
-        }
-        val selArgs = buildList {
-            add(endMs.toString())
-            add(startMs.toString())
-            excluded.forEach { add(it.toString()) }
-        }.toTypedArray()
-
-        val projection = arrayOf(
-            CalendarContract.Events._ID,
-            CalendarContract.Events.TITLE,
-            CalendarContract.Events.DTSTART,
-            CalendarContract.Events.DTEND,
-            CalendarContract.Events.DESCRIPTION,
-        )
-        val results = mutableListOf<WodEventInfo>()
-        context.contentResolver.query(
+    /** Delete one event; returns true when the provider removed a row. */
+    fun deleteEvent(context: Context, eventId: Long): Boolean = try {
+        context.contentResolver.delete(
             CalendarContract.Events.CONTENT_URI,
-            projection,
-            selection,
-            selArgs,
-            null,
-        )?.use { cursor ->
-            val idCol    = cursor.getColumnIndex(CalendarContract.Events._ID)
-            val titleCol = cursor.getColumnIndex(CalendarContract.Events.TITLE)
-            val startCol = cursor.getColumnIndex(CalendarContract.Events.DTSTART)
-            val endCol   = cursor.getColumnIndex(CalendarContract.Events.DTEND)
-            val descCol  = cursor.getColumnIndex(CalendarContract.Events.DESCRIPTION)
-            while (cursor.moveToNext()) {
-                val desc = cursor.getString(descCol)
-                if (desc?.contains(HC_MARKER) == true) continue
-                val id      = cursor.getLong(idCol)
-                val title   = cursor.getString(titleCol) ?: ""
-                val sMs     = cursor.getLong(startCol)
-                val eMs     = cursor.getLong(endCol)
-                val date    = Instant.ofEpochMilli(sMs)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDate()
-                    .format(DateTimeFormatter.ISO_LOCAL_DATE)
-                results += WodEventInfo(id, date, sMs, eMs, title, desc)
-            }
-        }
-        return results
+            "${CalendarContract.Events._ID} = ?",
+            arrayOf(eventId.toString()),
+        ) > 0
+    } catch (_: Exception) {
+        false
     }
 
     fun updateEventDescription(context: Context, eventId: Long, description: String) {

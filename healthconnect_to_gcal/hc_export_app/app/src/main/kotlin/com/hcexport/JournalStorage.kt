@@ -46,34 +46,55 @@ object JournalStorage {
         return readAll(ctx).filter { it.date.startsWith(prefix) }
     }
 
-    fun addEntryIfAbsent(ctx: Context, entry: JournalEntry): Boolean {
+    /**
+     * Sleep sessions, one entry per night. A session that overlaps a night
+     * already stored (from another source, or the same source reporting a
+     * correction) replaces that entry's data in place when its source has the
+     * higher priority — the entry id and the user's customizations survive, so
+     * a comment stays with the night it was written on. A session from a
+     * lower-priority source is ignored.
+     *
+     * Returns (created, updated).
+     */
+    fun upsertSleepEntries(
+        ctx: Context,
+        entries: List<JournalEntry>,
+        sourcePriority: List<String>,
+    ): Pair<Int, Int> {
+        if (entries.isEmpty()) return 0 to 0
         val all = readAll(ctx).toMutableList()
-        val entryStartMs = extractStartMs(entry)
-        val entrySrcPkg  = extractSourcePkg(entry)
-        val idx = all.indexOfFirst {
-            extractStartMs(it) == entryStartMs && extractSourcePkg(it) == entrySrcPkg
-        }
-        if (idx >= 0) return false
-        all.add(entry)
-        writeAll(ctx, all)
-        return true
-    }
-
-    /** Batched [addEntryIfAbsent]: one read + one write for a whole sync phase. */
-    fun addEntriesIfAbsent(ctx: Context, entries: List<JournalEntry>): Int {
-        if (entries.isEmpty()) return 0
-        val all = readAll(ctx).toMutableList()
-        var added = 0
+        var created = 0
+        var updated = 0
         for (entry in entries) {
-            val startMs = extractStartMs(entry)
-            val srcPkg = extractSourcePkg(entry)
-            if (all.none { extractStartMs(it) == startMs && extractSourcePkg(it) == srcPkg }) {
+            val start = SleepSessions.startOf(entry)
+            val end = SleepSessions.endOf(entry)
+            if (start <= 0 || end <= start) continue
+            val idx = all.indexOfFirst { existing ->
+                existing.entryType == "sleep" && try {
+                    val j = org.json.JSONObject(existing.originalDataJson)
+                    j.getLong("sm") < end && j.getLong("em") > start
+                } catch (_: Exception) { false }
+            }
+            if (idx < 0) {
                 all.add(entry)
-                added++
+                created++
+                continue
+            }
+            val existing = all[idx]
+            val unchanged = entry.date == existing.date &&
+                entry.originalDataJson == existing.originalDataJson
+            if (!unchanged && SleepSessions.outranks(entry, existing, sourcePriority)) {
+                all[idx] = entry.copy(
+                    id = existing.id,
+                    customDataJson = existing.customDataJson,
+                    customNarrative = existing.customNarrative,
+                    customTitle = existing.customTitle,
+                )
+                updated++
             }
         }
-        if (added > 0) writeAll(ctx, all)
-        return added
+        if (created > 0 || updated > 0) writeAll(ctx, all)
+        return created to updated
     }
 
     /** Insert or replace an entry matching by start time + source package.

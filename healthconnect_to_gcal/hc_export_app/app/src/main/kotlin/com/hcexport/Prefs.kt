@@ -3,6 +3,9 @@ package com.hcexport
 import android.content.Context
 import android.content.SharedPreferences
 import org.json.JSONArray
+import java.time.DayOfWeek
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 object Prefs {
     private const val NAME = "hc_sync_prefs"
@@ -27,6 +30,15 @@ object Prefs {
 
     fun setCalendarId(ctx: Context, id: Long) =
         prefs(ctx).edit().putLong("calendar_id", id).apply()
+
+    /** The calendar last chosen when scheduling a session from the journal. */
+    fun getScheduledCalendarId(ctx: Context): Long? {
+        val id = prefs(ctx).getLong("scheduled_calendar_id", -1L)
+        return if (id == -1L) null else id
+    }
+
+    fun setScheduledCalendarId(ctx: Context, id: Long) =
+        prefs(ctx).edit().putLong("scheduled_calendar_id", id).apply()
 
     // ── Source priority ────────────────────────────────────────────────────
 
@@ -121,6 +133,30 @@ object Prefs {
     fun setDefaultWorkoutView(ctx: Context, view: String) =
         prefs(ctx).edit().putString("default_workout_view", view).apply()
 
+    /** "week" (default), "month" or "day" — the calendar view the Journal opens in. */
+    fun getJournalView(ctx: Context): String =
+        prefs(ctx).getString("journal_view", "week") ?: "week"
+
+    fun setJournalView(ctx: Context, view: String) =
+        prefs(ctx).edit().putString("journal_view", view).apply()
+
+    /**
+     * The first day of the week in the Journal and Workouts calendars. It
+     * defaults to the device locale's own first day (Sunday in Israel and the
+     * US, Monday in most of Europe), never to a hardcoded Monday.
+     */
+    fun getFirstDayOfWeek(ctx: Context): DayOfWeek {
+        val stored = prefs(ctx).getInt("first_day_of_week", 0)
+        val value = if (stored in 1..7) stored else localeFirstDayOfWeek().value
+        return DayOfWeek.of(value)
+    }
+
+    fun setFirstDayOfWeek(ctx: Context, day: DayOfWeek) =
+        prefs(ctx).edit().putInt("first_day_of_week", day.value).apply()
+
+    private fun localeFirstDayOfWeek(): DayOfWeek =
+        WeekFields.of(Locale.getDefault()).firstDayOfWeek
+
     fun getWorkoutEtag(ctx: Context): String? =
         prefs(ctx).getString("workout_etag", null)
 
@@ -196,6 +232,68 @@ object Prefs {
         prefs(ctx).edit().putLong("next_pull_alarm_at", ms).apply()
 
 
+
+    // ── Live workout ──────────────────────────────────────────────────────
+
+    /** The get-ready countdown before a live section starts. Zero turns it off. */
+    fun getLiveLeadInSeconds(ctx: Context): Int =
+        prefs(ctx).getInt("live_lead_in_seconds", 10)
+
+    fun setLiveLeadInSeconds(ctx: Context, seconds: Int) =
+        prefs(ctx).edit().putInt("live_lead_in_seconds", seconds.coerceIn(0, 60)).apply()
+
+    /** The set window used when the workout text does not prescribe one. */
+    fun getLiveSetIntervalSeconds(ctx: Context): Int =
+        prefs(ctx).getInt("live_set_interval_seconds", 90)
+
+    fun setLiveSetIntervalSeconds(ctx: Context, seconds: Int) =
+        prefs(ctx).edit().putInt("live_set_interval_seconds", seconds.coerceIn(10, 900)).apply()
+
+    fun getLiveSound(ctx: Context): Boolean =
+        prefs(ctx).getBoolean("live_sound", true)
+
+    fun setLiveSound(ctx: Context, enabled: Boolean) =
+        prefs(ctx).edit().putBoolean("live_sound", enabled).apply()
+
+    fun getLiveVibration(ctx: Context): Boolean =
+        prefs(ctx).getBoolean("live_vibration", true)
+
+    fun setLiveVibration(ctx: Context, enabled: Boolean) =
+        prefs(ctx).edit().putBoolean("live_vibration", enabled).apply()
+
+    fun getLiveKeepScreenOn(ctx: Context): Boolean =
+        prefs(ctx).getBoolean("live_keep_screen_on", true)
+
+    fun setLiveKeepScreenOn(ctx: Context, enabled: Boolean) =
+        prefs(ctx).edit().putBoolean("live_keep_screen_on", enabled).apply()
+
+    // ── BridgeAthletic ─────────────────────────────────────────────────────
+
+    fun getLastBridgePullMs(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("bridge_last_pull_ms", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setLastBridgePullMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("bridge_last_pull_ms", ms).apply()
+
+    fun getBridgeLastSummary(ctx: Context): String? =
+        prefs(ctx).getString("bridge_last_summary", null)
+
+    fun setBridgeLastSummary(ctx: Context, summary: String?) =
+        prefs(ctx).edit().putString("bridge_last_summary", summary).apply()
+
+    fun getBridgeLastError(ctx: Context): String? =
+        prefs(ctx).getString("bridge_last_error", null)?.takeIf { it.isNotBlank() }
+
+    fun setBridgeLastError(ctx: Context, error: String?) =
+        prefs(ctx).edit().putString("bridge_last_error", error).apply()
+
+    fun getBridgeProfileName(ctx: Context): String? =
+        prefs(ctx).getString("bridge_profile_name", null)?.takeIf { it.isNotBlank() }
+
+    fun setBridgeProfileName(ctx: Context, name: String) =
+        prefs(ctx).edit().putString("bridge_profile_name", name).apply()
 
     // ── Sync schedules ─────────────────────────────────────────────────────
 

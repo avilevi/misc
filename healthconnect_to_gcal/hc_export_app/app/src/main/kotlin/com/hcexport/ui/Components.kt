@@ -3,9 +3,11 @@ package com.hcexport.ui
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -151,6 +153,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier, color: Color = Sla
 }
 
 /** A layered, quietly glowing card. `accent = null` gives the neutral surface. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HcCard(
     modifier: Modifier = Modifier,
@@ -158,6 +161,7 @@ fun HcCard(
     shape: Shape = RoundedCornerShape(24.dp),
     contentPadding: PaddingValues = PaddingValues(18.dp),
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val borderColor = accent?.copy(alpha = 0.24f) ?: Hairline
@@ -174,7 +178,16 @@ fun HcCard(
             .clip(shape)
             .background(backgroundBrush)
             .border(1.dp, borderColor, shape)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                when {
+                    onClick != null && onLongClick != null -> Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    )
+                    onClick != null -> Modifier.clickable(onClick = onClick)
+                    else -> Modifier
+                }
+            )
             .padding(contentPadding),
         content = content,
     )

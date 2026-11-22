@@ -5,6 +5,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.Wearable
 import com.hcexport.shared.PATH_META
 import com.hcexport.shared.PATH_PREFIX
+import com.hcexport.shared.PlanDto
 import com.hcexport.shared.Snapshot
 import com.hcexport.shared.SnapshotCodec
 import kotlinx.coroutines.Dispatchers
@@ -17,13 +18,13 @@ import java.io.File
 /**
  * The watch's copy of the phone snapshot.
  *
- * DataItems are replicated to the watch by the Data Layer, so a launch can rebuild
- * the latest snapshot even with the phone absent. The decoded payload is also cached
- * on disk, which makes the app usable with no Bluetooth at all.
+ * DataItems are replicated to the watch by the Data Layer, so a launch can
+ * rebuild the latest snapshot even with the phone absent. The decoded payload
+ * is also cached on disk, which makes the app usable with no Bluetooth at all.
  */
 object WatchStore {
 
-    private const val CACHE_NAME = "snapshot.bin"
+    private const val CACHE_NAME = "snapshot2.bin"
 
     private val _snapshot = MutableStateFlow<Snapshot?>(null)
     val snapshot: StateFlow<Snapshot?> = _snapshot
@@ -32,7 +33,7 @@ object WatchStore {
         val file = File(ctx.filesDir, CACHE_NAME)
         if (!file.exists()) return
         runCatching { SnapshotCodec.decode(file.readBytes()) }
-            .onSuccess { _snapshot.value = it }
+            .onSuccess { if (it.days.isNotEmpty() || it.plans.isNotEmpty()) _snapshot.value = it }
     }
 
     suspend fun refresh(ctx: Context): Boolean = withContext(Dispatchers.IO) {
@@ -76,6 +77,27 @@ object WatchStore {
         } catch (_: Exception) {
             false
         }
+    }
+
+    fun plan(date: String, typeKey: String): PlanDto? =
+        _snapshot.value?.plans?.firstOrNull { it.date == date && it.typeKey == typeKey }
+
+    fun day(date: String) = _snapshot.value?.days?.firstOrNull { it.date == date }
+
+    /**
+     * A watch live session just wrote values the phone will store; show them
+     * here too, so the journal is right before the phone's next push.
+     */
+    fun applyResults(date: String, typeKey: String, resultsJson: String, updatedAt: Long) {
+        val current = _snapshot.value ?: return
+        val plans = current.plans.map { plan ->
+            if (plan.date == date && plan.typeKey == typeKey && updatedAt >= plan.updatedAt) {
+                plan.copy(resultsJson = resultsJson, updatedAt = updatedAt)
+            } else {
+                plan
+            }
+        }
+        _snapshot.value = current.copy(plans = plans)
     }
 
     private fun writeCache(ctx: Context, bytes: ByteArray) {

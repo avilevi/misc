@@ -187,7 +187,9 @@ class InteractiveRoundsTest {
         )
         val journal = JournalFeed.aiPlan(plan, results)
         assertEquals(6, journal.totalSets)
-        assertEquals(4, journal.loggedSets)
+        // Nothing says the workout was cut short, so the prefilled rows count too.
+        assertEquals(6, journal.loggedSets)
+        assertEquals(0, journal.notReachedSets)
         assertEquals(30.0 * 15 + 30 * 12, journal.totalVolumeKg!!, 0.001)
     }
 
@@ -233,13 +235,13 @@ class InteractiveRoundsTest {
     }
 
     @Test
-    fun `a completed check counts as a logged movement`() {
+    fun `once a check is entered the whole section is assumed done`() {
         val plan = InteractivePlan.fromJson(emomPlan)!!
         val results = InteractiveResults.fromJson("""{"r:0:0:0":{"done":"1"}}""")
         val journal = JournalFeed.aiPlan(plan, results)
 
         assertEquals(3, journal.totalSets)
-        assertEquals(1, journal.loggedSets)
+        assertEquals(3, journal.loggedSets)
         assertNull(journal.totalVolumeKg)
     }
 
@@ -259,5 +261,91 @@ class InteractiveRoundsTest {
 
         assertEquals(6, journal.totalSets)
         assertEquals(0, journal.loggedSets)
+    }
+
+    // ── Reached-here marker ─────────────────────────────────────────────────
+
+    @Test
+    fun `rows are listed in the order the plan shows them`() {
+        val plan = InteractivePlan.fromJson(roundsPlan)!!
+        assertEquals(
+            listOf("r:0:0:0", "r:0:0:1", "r:0:0:2", "r:0:1:0", "r:0:1:1", "r:0:1:2"),
+            InteractiveRows.scopes(plan.sections.single(), 0),
+        )
+        val legacy = InteractivePlan.fromJson(legacyCircuit(rounds = 2))!!
+        assertEquals(
+            listOf("e:0:0:0", "e:0:1:0", "e:0:2:0", "e:0:0:1", "e:0:1:1", "e:0:2:1"),
+            InteractiveRows.scopes(legacy.sections.single(), 0),
+        )
+    }
+
+    @Test
+    fun `toggling the marker sets and clears it`() {
+        val plan = InteractivePlan.fromJson(roundsPlan)!!
+        val rows = InteractiveRows.scopes(plan.sections.single(), 0)
+
+        var results = InteractiveReached.toggle(emptyMap(), section = 0, rowScope = "r:0:1:0")
+        assertEquals("r:0:1:0", InteractiveReached.rowOf(results, 0))
+        assertEquals(3, InteractiveReached.indexOf(results, 0, rows))
+
+        results = InteractiveReached.toggle(results, section = 0, rowScope = "r:0:1:0")
+        assertNull(InteractiveReached.rowOf(results, 0))
+        assertNull(InteractiveReached.indexOf(results, 0, rows))
+    }
+
+    @Test
+    fun `without a marker any entry counts every row`() {
+        val plan = InteractivePlan.fromJson(roundsPlan)!!
+        // Only one weight typed: the plan is being logged, and nothing says
+        // the workout was cut short, so all six rows count.
+        val results = InteractiveResults.fromJson("""{"r:0:0:0":{"weight":"30"}}""")
+        val journal = JournalFeed.aiPlan(plan, results)
+
+        assertEquals(6, journal.totalSets)
+        assertEquals(6, journal.loggedSets)
+        assertEquals(0, journal.notReachedSets)
+    }
+
+    @Test
+    fun `a marked row stops the count and counts prefilled rows as done`() {
+        val plan = InteractivePlan.fromJson(roundsPlan)!! // 2 rounds × 3 rows
+        // Stopped after the first round's push-ups: nothing typed into the
+        // air squats or push-ups, only the prescription in the fields.
+        val results = InteractiveResults.fromJson("""{"m:0":{"reached":"r:0:0:2"}}""")
+        val journal = JournalFeed.aiPlan(plan, results)
+
+        assertEquals(3, journal.totalSets)
+        assertEquals(3, journal.loggedSets)
+        assertEquals(3, journal.notReachedSets)
+    }
+
+    @Test
+    fun `the marker follows the round order of a regrouped circuit`() {
+        val plan = InteractivePlan.fromJson(legacyCircuit(rounds = 5))!! // 15 rows
+        // Round 3, air squats: two full rounds plus this round's three rows.
+        val results = InteractiveResults.fromJson("""{"m:0":{"reached":"e:0:1:2"}}""")
+        val journal = JournalFeed.aiPlan(plan, results)
+
+        assertEquals(8, journal.totalSets)
+        assertEquals(8, journal.loggedSets)
+        assertEquals(7, journal.notReachedSets)
+    }
+
+    @Test
+    fun `a partial last set keeps its entered reps and volume`() {
+        val plan = InteractivePlan.fromJson(roundsPlan)!!
+        val results = InteractiveResults.fromJson(
+            """
+            {"m:0":{"reached":"r:0:0:2"},
+             "r:0:0:0":{"weight":"30","reps":"15"},
+             "r:0:0:1":{"reps":"10"}}
+            """.trimIndent()
+        )
+        val journal = JournalFeed.aiPlan(plan, results)
+
+        assertEquals(3, journal.totalSets)
+        assertEquals(3, journal.loggedSets)
+        assertEquals(3, journal.notReachedSets)
+        assertEquals(30.0 * 15, journal.totalVolumeKg!!, 0.001)
     }
 }

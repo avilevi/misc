@@ -68,7 +68,7 @@ fun InteractiveWorkoutScreen(
         ) {
             PageHeader(
                 title = "AI workout",
-                eyebrow = "Interactive",
+                eyebrow = "Preview",
                 onBack = onBack,
             )
             LazyColumn(
@@ -92,6 +92,7 @@ fun InteractiveWorkoutScreen(
                         AiWorkoutPanel(
                             state = state,
                             onOpenAiSettings = onOpenAiSettings,
+                            readOnly = true,
                             original = { OriginalWorkoutCard(state.workout) },
                         )
                     }

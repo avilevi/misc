@@ -18,6 +18,7 @@ class SettingsActivity : ComponentActivity() {
         const val PAGE_SYNC = "sync"
         const val PAGE_WORKOUTS = "workouts"
         const val PAGE_AI = "ai"
+        const val PAGE_LIVE = "live"
         const val PAGE_DIAGNOSTICS = "diagnostics"
         const val PAGE_ABOUT = "about"
 

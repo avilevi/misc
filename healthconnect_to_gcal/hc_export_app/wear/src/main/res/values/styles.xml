@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="WatchTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">#070B13</item>
+        <item name="android:colorAccent">#34E3C4</item>
+    </style>
+</resources>

@@ -22,6 +22,7 @@ object JournalSync {
     private const val TAG = "JournalSync"
     private const val DAYS_AHEAD = 7
     private val dateFmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    private val dayFmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     data class Result(
         val ok: Boolean,
@@ -68,18 +69,34 @@ object JournalSync {
             val exercises = HealthConnectReader.readExercises(ctx, start, now)
             SyncLogger.log(ctx, "Journal exercise sessions: ${exercises.size}")
 
+            // Workouts per day, read once per day even when it has several sessions.
+            val workoutsByDay = mutableMapOf<String, List<Workout>>()
+            fun workoutsOn(day: String): List<Workout> =
+                workoutsByDay.getOrPut(day) { WorkoutStore.getByDate(ctx, day) }
+
             val exerciseEntries = mutableListOf<JournalEntry>()
             for (event in exercises) {
-                val overlapping = CalendarHelper.findOverlappingEvents(ctx, event.startMs, event.endMs)
+                // A session merges only with an event that names a workout the
+                // journal has. A meeting that merely overlaps in time names no
+                // workout and is never merged into the entry.
+                val day = dayFmt.format(Date(event.startMs))
+                val dayEvents = CalendarHelper.findWorkoutEvents(ctx, event.startMs, event.endMs)
+                    .filter { it.date == day }
+                val named = JournalFeed.journalEventsForSession(
+                    workouts = workoutsOn(day),
+                    events = dayEvents,
+                    startMs = event.startMs,
+                    endMs = event.endMs,
+                )
                 val mergedInfos = mutableListOf<MergedWodInfo>()
-                for (calEvent in overlapping) {
+                for (calEvent in named) {
                     mergedInfos += MergedWodInfo(
-                        dateStr = calEvent.dateStr,
+                        dateStr = calEvent.date,
                         title = calEvent.title,
                         content = WodCalendarSync.stripMarker(calEvent.description),
                     )
                     merges += CalendarHelper.exerciseTitle(event) to calEvent.title
-                    SyncLogger.log(ctx, "  MERGE ${calEvent.title} ${calEvent.dateStr} into exercise")
+                    SyncLogger.log(ctx, "  MERGE ${calEvent.title} ${calEvent.date} into exercise")
                 }
                 val merged = if (mergedInfos.isNotEmpty()) event.copy(mergedWods = mergedInfos) else event
                 exerciseEntries += JournalEntry.fromExerciseEvent(merged)
@@ -93,9 +110,12 @@ object JournalSync {
             val sleeps = HealthConnectReader.readSleep(ctx, start, now)
             SyncLogger.log(ctx, "Journal sleep sessions: ${sleeps.size}")
             val sleepEntries = sleeps.map { JournalEntry.fromSleepEvent(it) }
-            val sleepAdded = JournalStorage.addEntriesIfAbsent(ctx, sleepEntries)
-            created += sleepAdded
-            skipped += sleepEntries.size - sleepAdded
+            val (sleepCreated, sleepUpdated) = JournalStorage.upsertSleepEntries(
+                ctx, sleepEntries, Prefs.getSleepSourcePriority(ctx),
+            )
+            created += sleepCreated
+            updated += sleepUpdated
+            skipped += sleepEntries.size - sleepCreated - sleepUpdated
 
             Prefs.setJournalLastSyncTime(ctx, now.toEpochMilli())
             SyncLogger.log(ctx, "=== Journal sync done: $created new, $updated updated, $skipped skipped ===")

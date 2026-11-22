@@ -14,7 +14,14 @@ data class WeightRecord(
     val workoutTypeKey: String? = null,
     val note: String? = null,
     val createdAtMs: Long = 0L,
-)
+    /** Who wrote it: the user, or the journal's strength sets. */
+    val origin: String = ORIGIN_MANUAL,
+) {
+    companion object {
+        const val ORIGIN_MANUAL = "manual"
+        const val ORIGIN_AUTO = "auto"
+    }
+}
 
 enum class BenchmarkScoreType(val key: String, val label: String, val lowerIsBetter: Boolean) {
     TIME("time", "For time", true),

@@ -100,40 +100,32 @@ class InteractiveWorkoutTest {
     }
 
     @Test
-    fun `section notes are one row per line`() {
+    fun `section notes are one block of text`() {
         val plan = InteractivePlan.fromJson(
             """
-            {"title":"X","sections":[{"title":"Strength","kind":"strength","notes":[
-              "Every 1:30 x 6 sets",
-              "Build to a heavy single",
-              "Newer Athletes: 5-5-3-3-3-3 reps"
-            ]}]}
+            {"title":"X","sections":[{"title":"Strength","kind":"strength",
+              "notes":"  Every 1:30 x 6 sets. Build to a heavy single.  "}]}
             """.trimIndent()
         )!!
         assertEquals(
-            listOf(
-                "Every 1:30 x 6 sets",
-                "Build to a heavy single",
-                "Newer Athletes: 5-5-3-3-3-3 reps",
-            ),
+            "Every 1:30 x 6 sets. Build to a heavy single.",
             plan.sections.single().notes,
         )
     }
 
     @Test
-    fun `notes merged into one sentence run are split back into rows`() {
+    fun `notes stored as rows are joined back into one block`() {
         val plan = InteractivePlan.fromJson(
             """
-            {"title":"X","sections":[{"title":"Strength","kind":"strength",
-              "notes":"every 1:30 x 6 sets. Build to a heavy single. Newer Athletes: 5-5-3-3-3-3 reps"}]}
+            {"title":"X","sections":[{"title":"Strength","kind":"strength","notes":[
+              "Every 1:30 x 6 Sets:",
+              "- Build to Heavy Single",
+              "- Newer Athletes:"
+            ]}]}
             """.trimIndent()
         )!!
         assertEquals(
-            listOf(
-                "every 1:30 x 6 sets.",
-                "Build to a heavy single.",
-                "Newer Athletes: 5-5-3-3-3-3 reps",
-            ),
+            "Every 1:30 x 6 Sets: Build to Heavy Single Newer Athletes:",
             plan.sections.single().notes,
         )
     }

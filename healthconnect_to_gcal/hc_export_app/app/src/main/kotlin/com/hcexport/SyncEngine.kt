@@ -27,6 +27,7 @@ object SyncEngine {
 
     data class Report(
         val pull: WorkoutPull.Result?,
+        val bridge: BridgePull.Result?,
         val calendar: HealthConnectToCalendar.Result?,
         val wodFilled: Int,
         val journal: JournalSync.Result?,
@@ -54,13 +55,18 @@ object SyncEngine {
         }
         if (!pull.ok) errors += "workouts: ${pull.error}"
 
+        // 1b. BridgeAthletic -> DB (only when connected)
+        val bridge = runCatching { BridgePull.refresh(ctx) }
+            .getOrElse { BridgePull.Result(ok = false, error = it.message ?: "failed") }
+        if (!bridge.ok) errors += "bridgeathletic: ${bridge.error}"
+
         if (pullOnly) {
             val watchOk = WearSnapshotPublisher.publish(ctx)
             if (!watchOk) errors += "watch push failed"
             return@withContext Report(
-                pull = pull, calendar = null, wodFilled = 0, journal = null,
+                pull = pull, bridge = bridge, calendar = null, wodFilled = 0, journal = null,
                 watchOk = watchOk, errors = errors,
-                summary = pullSummary(pull, errors),
+                summary = pullSummary(pull, bridge, errors),
             )
         }
 
@@ -99,6 +105,9 @@ object SyncEngine {
                 append("\nWODs filled: $wodFilled")
                 append("\nJournal: ${journal.created} new, ${journal.updated} updated")
                 append("\nWorkouts: ${WorkoutStore.count(ctx)} in database")
+                if (!bridge.skipped) {
+                    append("\nBridgeAthletic: ${bridge.created} new, ${bridge.updated} updated")
+                }
                 if (errors.isNotEmpty()) append("\n⚠ ${errors.joinToString("; ")}")
             },
         )
@@ -116,6 +125,7 @@ object SyncEngine {
 
         Report(
             pull = pull,
+            bridge = bridge,
             calendar = calendar,
             wodFilled = wodFilled,
             journal = journal,
@@ -125,11 +135,18 @@ object SyncEngine {
         )
     }
 
-    private fun pullSummary(pull: WorkoutPull.Result, errors: List<String>): String = buildString {
+    private fun pullSummary(
+        pull: WorkoutPull.Result,
+        bridge: BridgePull.Result,
+        errors: List<String>,
+    ): String = buildString {
         append(
             if (pull.notModified) "Workouts unchanged"
             else "Workouts: ${pull.created} new, ${pull.updated} updated"
         )
+        if (!bridge.skipped) {
+            append("\nBridgeAthletic: ${bridge.created} new, ${bridge.updated} updated")
+        }
         if (errors.isNotEmpty()) append("\n⚠ ${errors.joinToString("; ")}")
     }
 }

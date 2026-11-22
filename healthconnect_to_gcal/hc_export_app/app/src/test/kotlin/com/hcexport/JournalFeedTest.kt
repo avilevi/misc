@@ -109,11 +109,12 @@ class JournalFeedTest {
         startMs: Long,
         endMs: Long,
         stages: List<Pair<Int, Long>>,
+        source: String = "com.sec.android.app.shealth",
     ): JournalEntry {
         val json = JSONObject().apply {
             put("sm", startMs)
             put("em", endMs)
-            put("sp", "com.sec.android.app.shealth")
+            put("sp", source)
             put("sg", JSONArray(stages.map { (code, lengthMs) ->
                 JSONObject().put("sc", code).put("sm", startMs).put("em", startMs + lengthMs)
             }))
@@ -151,6 +152,9 @@ class JournalFeedTest {
         entries: List<JournalEntry> = emptyList(),
         sessions: Map<String, InteractiveSessionRecord> = emptyMap(),
         notes: Map<String, String> = emptyMap(),
+        sleepSourcePriority: List<String> = emptyList(),
+        scheduled: List<ScheduledSession> = emptyList(),
+        hiddenKeys: Set<String> = emptySet(),
     ) = JournalFeed.buildDay(
         date = date,
         workouts = workouts,
@@ -158,6 +162,9 @@ class JournalFeedTest {
         entries = entries,
         sessions = sessions,
         notes = notes,
+        sleepSourcePriority = sleepSourcePriority,
+        scheduledSessions = scheduled,
+        hiddenKeys = hiddenKeys,
     )
 
     private val plannerJson = """
@@ -213,7 +220,8 @@ class JournalFeedTest {
         ).items.single() as JournalItem.Workout
 
         assertNotNull(item.plan)
-        assertEquals(1, item.plan!!.loggedSets)
+        // One value entered and no "reached here" marker: the whole plan counts.
+        assertEquals(2, item.plan!!.loggedSets)
         assertNull(item.startMs)
     }
 
@@ -231,6 +239,112 @@ class JournalFeedTest {
         assertEquals(end, item.endMs)
         assertNull(item.plan)
         assertEquals("HYROX text", item.content)
+    }
+
+    @Test
+    fun `a scheduled workout enters the journal without a calendar event`() {
+        val start = base + 7 * hour
+        val end = start + hour
+        val item = day(
+            workouts = listOf(workout("pump", "PUMP", "Five by five")),
+            scheduled = listOf(
+                ScheduledSession(date, "pump", start, end, createdAtMs = 1L),
+            ),
+        ).items.single() as JournalItem.Workout
+
+        assertTrue(item.scheduled)
+        assertEquals("pump", item.typeKey)
+        assertEquals(start, item.startMs)
+        assertEquals(end, item.endMs)
+    }
+
+    @Test
+    fun `a scheduled workout does not absorb a watch session without a calendar event`() {
+        val start = base + 7 * hour
+        val day = day(
+            workouts = listOf(workout("pump", "PUMP", "Five by five")),
+            scheduled = listOf(
+                ScheduledSession(date, "pump", start, start + hour, createdAtMs = 1L),
+            ),
+            entries = listOf(
+                exerciseEntry("watch-1", start + 10 * minute, start + 50 * minute),
+            ),
+        )
+
+        val workout = day.items.filterIsInstance<JournalItem.Workout>().single()
+        val activity = day.items.filterIsInstance<JournalItem.Activity>().single()
+        assertTrue(workout.scheduled)
+        assertTrue(workout.biometrics.isEmpty())
+        assertEquals("watch-1", activity.biometrics.entryId)
+    }
+
+    @Test
+    fun `a scheduled workout with a calendar event merges the session as usual`() {
+        val start = base + 7 * hour
+        val day = day(
+            workouts = listOf(workout("pump", "PUMP", "Five by five")),
+            events = listOf(event("PUMP", start, start + hour)),
+            scheduled = listOf(
+                ScheduledSession(date, "pump", start, start + hour, createdAtMs = 1L),
+            ),
+            entries = listOf(
+                exerciseEntry("watch-1", start + 10 * minute, start + 50 * minute),
+            ),
+        )
+
+        val workout = day.items.filterIsInstance<JournalItem.Workout>().single()
+        assertEquals(1, workout.biometrics.size)
+        assertEquals("watch-1", workout.biometrics.single().entryId)
+    }
+
+    @Test
+    fun `a hidden workout stays out of the day and the month marks`() {
+        val start = base + 7 * hour
+        val hidden = setOf(JournalKeys.workout(date, "pump"))
+        val theDay = day(
+            workouts = listOf(workout("pump", "PUMP", "Five by five")),
+            events = listOf(event("PUMP", start, start + hour)),
+            hiddenKeys = hidden,
+        )
+        assertTrue(theDay.items.isEmpty())
+
+        val marks = JournalFeed.marks(
+            workouts = listOf(workout("pump", "PUMP", "Five by five")),
+            calendarEvents = listOf(event("PUMP", start, start + hour)),
+            entries = emptyList(),
+            sessions = emptyList(),
+            notes = emptyMap(),
+            hiddenKeys = hidden,
+        )
+        assertTrue(marks[date]?.workoutTypes.isNullOrEmpty())
+    }
+
+    @Test
+    fun `a hidden watch session leaves no mark`() {
+        val entry = exerciseEntry("watch-hidden", base, base + hour)
+        val marks = JournalFeed.marks(
+            workouts = emptyList(),
+            calendarEvents = emptyList(),
+            entries = listOf(entry),
+            sessions = emptyList(),
+            notes = emptyMap(),
+            hiddenKeys = setOf(JournalKeys.activity(entry.id)),
+        )
+        assertTrue(marks[date]?.hasWatchData != true)
+    }
+
+    @Test
+    fun `the month marks a scheduled day with no calendar event`() {
+        val marks = JournalFeed.marks(
+            workouts = listOf(workout("pump", "PUMP", "Five by five")),
+            calendarEvents = emptyList(),
+            entries = emptyList(),
+            sessions = emptyList(),
+            notes = emptyMap(),
+            scheduledTypeKeysByDate = mapOf(date to setOf("pump")),
+        )
+
+        assertEquals(listOf("pump"), marks.getValue(date).workoutTypes)
     }
 
     @Test
@@ -382,7 +496,7 @@ class JournalFeedTest {
         assertEquals(1, item.biometrics.size)
         assertEquals(50, item.biometrics.single().durationMin)
         assertEquals(50L, item.durationMin)
-        assertEquals(1, item.plan!!.loggedSets)
+        assertEquals(2, item.plan!!.loggedSets)
         assertEquals(400.0, item.plan!!.totalVolumeKg!!, 0.001)
     }
 
@@ -411,15 +525,69 @@ class JournalFeedTest {
     }
 
     @Test
-    fun `the only workout of a day takes every session even outside the window`() {
+    fun `a session outside the only workout's window stays its own activity`() {
         val day = day(
             workouts = listOf(workout("wod", "🔥WOD", "21-15-9 Thrusters")),
             events = listOf(event("WOD", base + 12 * hour, base + 13 * hour)),
             entries = listOf(exerciseEntry("e1", base, base + hour)),
         )
 
-        val item = day.items.single() as JournalItem.Workout
-        assertEquals(1, item.biometrics.size)
+        // The watch recorded something else that day: it is not the WOD, even
+        // though the WOD is the only workout.
+        val wod = day.items.filterIsInstance<JournalItem.Workout>().single()
+        assertTrue(wod.biometrics.isEmpty())
+        assertEquals("e1", day.items.filterIsInstance<JournalItem.Activity>().single().entryId)
+
+        // A session that does overlap the window is the one that merges.
+        val withWod = day(
+            workouts = listOf(workout("wod", "🔥WOD", "21-15-9 Thrusters")),
+            events = listOf(event("WOD", base + 12 * hour, base + 13 * hour)),
+            entries = listOf(
+                exerciseEntry("e1", base, base + hour),
+                exerciseEntry("e2", base + 12 * hour + 5 * minute, base + 12 * hour + 55 * minute),
+            ),
+        )
+        val merged = withWod.items.filterIsInstance<JournalItem.Workout>().single()
+        assertEquals(listOf("e2"), merged.biometrics.map { it.entryId })
+        assertEquals("e1", withWod.items.filterIsInstance<JournalItem.Activity>().single().entryId)
+        assertEquals(50L, merged.durationMin)
+    }
+
+    @Test
+    fun `a workout entry takes a single watch session`() {
+        val day = day(
+            workouts = listOf(workout("wod", "🔥WOD", "21-15-9 Thrusters")),
+            events = listOf(event("WOD", base + 12 * hour, base + 13 * hour)),
+            entries = listOf(
+                exerciseEntry("strength", base + 12 * hour + 5 * minute, base + 12 * hour + 45 * minute),
+                exerciseEntry("kickboxing", base + 12 * hour + 50 * minute, base + 14 * hour, typeCode = 34),
+            ),
+        )
+
+        val wod = day.items.filterIsInstance<JournalItem.Workout>().single()
+        // The bigger overlap books the entry; the other session is not bundled in.
+        assertEquals(listOf("strength"), wod.biometrics.map { it.entryId })
+        assertEquals(40L, wod.durationMin)
+        assertEquals("kickboxing", day.items.filterIsInstance<JournalItem.Activity>().single().entryId)
+    }
+
+    @Test
+    fun `only an event naming a workout merges with a watch session`() {
+        val start = base + 19 * hour
+        val end = start + 45 * minute
+        val merged = JournalFeed.journalEventsForSession(
+            workouts = listOf(workout("wod", "🔥WOD", "Text")),
+            events = listOf(
+                event("WOD", start, end),
+                event("זום עם מירי", start + 10 * minute, end - 5 * minute),
+                event("Dentist", start - hour, end),
+                event("Lunch with Dana", start, end),
+            ),
+            startMs = start,
+            endMs = end,
+        )
+
+        assertEquals(listOf("WOD"), merged.map { it.title })
     }
 
     @Test
@@ -495,6 +663,25 @@ class JournalFeedTest {
     }
 
     @Test
+    fun `a legacy WOD merges only the session it overlaps the most`() {
+        val day = day(
+            entries = listOf(
+                wodEntry(startMs = base, endMs = base + hour, content = "Original"),
+                exerciseEntry("small", base, base + 10 * minute),
+                exerciseEntry("big", base + 15 * minute, base + 55 * minute),
+                exerciseEntry("outside", base + 3 * hour, base + 4 * hour),
+            ),
+        )
+
+        val item = day.items.filterIsInstance<JournalItem.Workout>().single()
+        assertEquals("big", item.biometrics.single().entryId)
+        assertEquals(
+            setOf("small", "outside"),
+            day.items.filterIsInstance<JournalItem.Activity>().map { it.entryId }.toSet(),
+        )
+    }
+
+    @Test
     fun `two legacy WOD entries on one day keep separate keys`() {
         val day = day(
             entries = listOf(
@@ -548,6 +735,108 @@ class JournalFeedTest {
         assertEquals(listOf("Deep Sleep", "REM", "Light Sleep"), item.stages.map { it.name })
         assertEquals(listOf(90L, 90L, 120L), item.stages.map { it.minutes })
     }
+
+    @Test
+    fun `one night recorded by two sources is shown once`() {
+        val item = day(
+            entries = listOf(
+                sleepEntry(
+                    id = "samsung",
+                    startMs = base,
+                    endMs = base + 8 * hour,
+                    stages = listOf(4 to 8 * hour),
+                ),
+                sleepEntry(
+                    id = "fitbit",
+                    startMs = base + 3 * minute,
+                    endMs = base + 8 * hour + 3 * minute,
+                    stages = listOf(5 to 8 * hour),
+                    source = "com.fitbit.FitbitMobile",
+                ),
+            ),
+            sleepSourcePriority = listOf(
+                "com.fitbit.FitbitMobile",
+                "com.sec.android.app.shealth",
+            ),
+        ).items.single() as JournalItem.Sleep
+
+        assertEquals("fitbit", item.entryId)
+        assertEquals("com.fitbit.FitbitMobile", item.sourcePkg)
+        assertEquals(480, item.durationMin)
+    }
+
+    @Test
+    fun `without a priority list the earliest recording is shown`() {
+        val item = day(
+            entries = listOf(
+                sleepEntry(
+                    id = "fitbit",
+                    startMs = base + 3 * minute,
+                    endMs = base + 8 * hour + 3 * minute,
+                    stages = emptyList(),
+                    source = "com.fitbit.FitbitMobile",
+                ),
+                sleepEntry(
+                    id = "samsung",
+                    startMs = base,
+                    endMs = base + 8 * hour,
+                    stages = emptyList(),
+                ),
+            ),
+        ).items.single() as JournalItem.Sleep
+
+        assertEquals("samsung", item.entryId)
+    }
+
+    @Test
+    fun `a comment on either recording follows the night`() {
+        val item = day(
+            entries = listOf(
+                sleepEntry(
+                    id = "samsung",
+                    startMs = base,
+                    endMs = base + 8 * hour,
+                    stages = emptyList(),
+                ),
+                sleepEntry(
+                    id = "fitbit",
+                    startMs = base + 3 * minute,
+                    endMs = base + 8 * hour + 3 * minute,
+                    stages = emptyList(),
+                    source = "com.fitbit.FitbitMobile",
+                ),
+            ),
+            notes = mapOf(JournalKeys.sleep("samsung") to "Woke up twice"),
+            sleepSourcePriority = listOf("com.fitbit.FitbitMobile"),
+        ).items.single() as JournalItem.Sleep
+
+        assertEquals("fitbit", item.entryId)
+        assertEquals("Woke up twice", item.note)
+    }
+
+    @Test
+    fun `separate sleep sessions on one day stay separate`() {
+        val items = day(
+            entries = listOf(
+                sleepEntry(
+                    id = "night",
+                    startMs = base,
+                    endMs = base + 8 * hour,
+                    stages = emptyList(),
+                ),
+                sleepEntry(
+                    id = "nap",
+                    startMs = base + 10 * hour,
+                    endMs = base + 11 * hour,
+                    stages = emptyList(),
+                ),
+            ),
+        ).items.filterIsInstance<JournalItem.Sleep>()
+
+        assertEquals(listOf("night", "nap"), items.map { it.entryId })
+    }
+
+    // ── Comments and notes ──────────────────────────────────────────────────
 
     @Test
     fun `comments are attached to the entry key`() {

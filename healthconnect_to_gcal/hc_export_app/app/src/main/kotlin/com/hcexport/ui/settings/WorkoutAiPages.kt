@@ -49,12 +49,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.hcexport.AiClient
 import com.hcexport.AiKeyStore
+import com.hcexport.BridgePull
+import com.hcexport.BridgeSecretStore
 import com.hcexport.InteractiveStore
 import com.hcexport.Prefs
 import com.hcexport.R
 import com.hcexport.RecordLogic
 import com.hcexport.SettingsBackend
 import com.hcexport.WearPushWorker
+import com.hcexport.WeekStart
 import com.hcexport.WorkoutFetchWorker
 import com.hcexport.WorkoutSettingsStatus
 import com.hcexport.WorkoutStore
@@ -75,6 +78,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
 
@@ -82,7 +86,18 @@ import java.util.Locale
 fun WorkoutSettingsPage() {
     val context = LocalContext.current
     var viewKey by remember { mutableStateOf(Prefs.getDefaultWorkoutView(context)) }
+    var journalViewKey by remember { mutableStateOf(Prefs.getJournalView(context)) }
+    var firstDay by remember { mutableStateOf(Prefs.getFirstDayOfWeek(context)) }
     var refreshKey by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    var bridgeEmail by remember { mutableStateOf(BridgeSecretStore.getEmail(context).orEmpty()) }
+    var bridgePassword by remember { mutableStateOf("") }
+    var bridgeReveal by remember { mutableStateOf(false) }
+    var bridgeBusy by remember { mutableStateOf(false) }
+    var bridgeError by remember { mutableStateOf<String?>(null) }
+    val bridge by produceState<BridgePull.Status?>(null, refreshKey) {
+        value = withContext(Dispatchers.IO) { BridgePull.status(context) }
+    }
     val status by produceState<WorkoutSettingsStatus?>(null, refreshKey) {
         value = withContext(Dispatchers.IO) { SettingsBackend.workoutStatus(context) }
     }
@@ -116,6 +131,40 @@ fun WorkoutSettingsPage() {
                     onSelect = {
                         viewKey = it.key
                         Prefs.setDefaultWorkoutView(context, it.key)
+                    },
+                    accent = Periwinkle,
+                )
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    "The view the Journal opens in.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+                Spacer(Modifier.height(10.dp))
+                SegmentedControl(
+                    options = CalendarView.entries,
+                    selected = CalendarView.fromKey(journalViewKey),
+                    label = { it.label },
+                    onSelect = {
+                        journalViewKey = it.key
+                        Prefs.setJournalView(context, it.key)
+                    },
+                    accent = Periwinkle,
+                )
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    "The first day of the week in both calendars.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+                Spacer(Modifier.height(10.dp))
+                SegmentedControl(
+                    options = WeekStart.selectable,
+                    selected = firstDay,
+                    label = { day -> day.getDisplayName(TextStyle.SHORT, Locale.getDefault()) },
+                    onSelect = {
+                        firstDay = it
+                        Prefs.setFirstDayOfWeek(context, it)
                     },
                     accent = Periwinkle,
                 )
@@ -162,6 +211,132 @@ fun WorkoutSettingsPage() {
                 SettingsSecondaryAction("Push snapshot to watch", Periwinkle) {
                     WearPushWorker.enqueue(context)
                     Toast.makeText(context, "Sending snapshot to the watch…", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        item { SettingsSectionHeader("BridgeAthletic") }
+        item {
+            val current = bridge
+            when {
+                current == null -> com.hcexport.ui.LoadingLine("Reading BridgeAthletic status…", Periwinkle)
+                !current.connected -> SettingsCard(contentPadding = PaddingValues(16.dp)) {
+                    Text(
+                        "Pull the weightlifting workouts assigned to you in BridgeAthletic. " +
+                            "The login is kept encrypted on this phone and is only used to read your workouts.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    SettingsTextField(
+                        value = bridgeEmail,
+                        onValueChange = {
+                            bridgeEmail = it
+                            bridgeError = null
+                        },
+                        label = "BridgeAthletic email",
+                        accent = Periwinkle,
+                        keyboardType = KeyboardType.Email,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    SettingsTextField(
+                        value = bridgePassword,
+                        onValueChange = {
+                            bridgePassword = it
+                            bridgeError = null
+                        },
+                        label = "Password",
+                        accent = Periwinkle,
+                        keyboardType = KeyboardType.Password,
+                        visualTransformation = if (bridgeReveal) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+                        trailingIcon = {
+                            Text(
+                                if (bridgeReveal) "HIDE" else "SHOW",
+                                modifier = Modifier
+                                    .clickable { bridgeReveal = !bridgeReveal }
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Periwinkle,
+                            )
+                        },
+                    )
+                    bridgeError?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = Danger)
+                    }
+                }
+                else -> SettingsCard {
+                    SettingsRow(
+                        title = "Account",
+                        subtitle = current.profileName ?: current.email,
+                        value = null,
+                    )
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Workouts from BridgeAthletic",
+                        value = "${current.workouts}",
+                    )
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Last pull",
+                        subtitle = current.lastSummary,
+                        value = formatSettingsTime(current.lastPullMs) ?: "Never",
+                    )
+                    current.lastError?.let {
+                        SettingsDivider()
+                        SettingsRow(title = "Last error", subtitle = it)
+                    }
+                }
+            }
+        }
+        item {
+            val connected = bridge?.connected == true
+            Column(Modifier.padding(top = 10.dp)) {
+                if (!connected) {
+                    SettingsPrimaryAction(
+                        if (bridgeBusy) "Connecting…" else "Connect BridgeAthletic",
+                        Periwinkle,
+                    ) {
+                        if (bridgeBusy) return@SettingsPrimaryAction
+                        if (bridgeEmail.isBlank() || bridgePassword.isBlank()) {
+                            bridgeError = "Enter your BridgeAthletic email and password"
+                            return@SettingsPrimaryAction
+                        }
+                        bridgeBusy = true
+                        bridgeError = null
+                        scope.launch {
+                            val error = BridgePull.connect(context, bridgeEmail, bridgePassword)
+                            bridgeBusy = false
+                            if (error == null) {
+                                bridgePassword = ""
+                                Toast.makeText(
+                                    context,
+                                    "Connected to BridgeAthletic",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                                WorkoutFetchWorker.enqueue(context)
+                                refreshKey += 1
+                            } else {
+                                bridgeError = error
+                            }
+                        }
+                    }
+                } else {
+                    SettingsPrimaryAction("Pull BridgeAthletic now", Periwinkle) {
+                        WorkoutFetchWorker.enqueue(context)
+                        Toast.makeText(context, "Pulling BridgeAthletic…", Toast.LENGTH_SHORT).show()
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    SettingsSecondaryAction("Disconnect BridgeAthletic", Periwinkle) {
+                        BridgeSecretStore.clearCredentials(context)
+                        bridgePassword = ""
+                        Toast.makeText(context, "BridgeAthletic disconnected", Toast.LENGTH_SHORT).show()
+                        refreshKey += 1
+                    }
                 }
             }
         }

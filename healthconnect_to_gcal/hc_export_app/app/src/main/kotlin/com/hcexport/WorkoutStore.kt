@@ -143,6 +143,11 @@ object WorkoutStore {
             if (c.moveToFirst()) c.getInt(0) else 0
         }
 
+    fun countType(ctx: Context, typeKey: String): Int =
+        db(ctx).rawQuery("SELECT COUNT(*) FROM $TABLE WHERE type_key = ?", arrayOf(typeKey)).use { c ->
+            if (c.moveToFirst()) c.getInt(0) else 0
+        }
+
     fun latestDate(ctx: Context): String? =
         db(ctx).rawQuery("SELECT MAX(date) FROM $TABLE", null).use { c ->
             if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null

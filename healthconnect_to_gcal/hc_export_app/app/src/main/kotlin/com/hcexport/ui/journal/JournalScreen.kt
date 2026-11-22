@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,8 +35,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,13 +56,21 @@ import com.hcexport.InteractiveSessionRecord
 import com.hcexport.InteractiveStore
 import com.hcexport.JournalDayMark
 import com.hcexport.JournalEntry
+import com.hcexport.JournalDeleter
 import com.hcexport.JournalFeed
+import com.hcexport.JournalHiddenStore
 import com.hcexport.JournalItem
 import com.hcexport.JournalNotesStore
 import com.hcexport.JournalStorage
+import com.hcexport.Prefs
 import com.hcexport.R
+import com.hcexport.ScheduledSession
+import com.hcexport.ScheduledSessionStore
+import com.hcexport.WeekStart
 import com.hcexport.Workout
 import com.hcexport.WorkoutStore
+import com.hcexport.ui.ConfirmDialog
+import com.hcexport.ui.workouts.CalendarView
 import com.hcexport.ui.CardGap
 import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.EmptyState
@@ -68,6 +78,8 @@ import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.IconAction
 import com.hcexport.ui.LoadingLine
+import com.hcexport.ui.SegmentedControl
+import com.hcexport.ui.SwipeCarousel
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
@@ -80,6 +92,7 @@ import com.hcexport.ui.theme.Snow
 import com.hcexport.ui.theme.Teal
 import com.hcexport.ui.theme.workoutAccent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -94,7 +107,9 @@ private data class JournalMonthLoad(
     val workouts: Map<String, List<Workout>> = emptyMap(),
     val events: Map<String, List<CalendarWorkoutEvent>> = emptyMap(),
     val sessions: Map<String, List<InteractiveSessionRecord>> = emptyMap(),
+    val scheduled: List<ScheduledSession> = emptyList(),
     val notes: Map<String, String> = emptyMap(),
+    val hiddenKeys: Set<String> = emptySet(),
     val marks: Map<String, JournalDayMark> = emptyMap(),
     val hasAnything: Boolean = false,
 )
@@ -109,8 +124,11 @@ fun JournalScreen(
     onBack: () -> Unit,
     onOpenItem: (date: String, key: String) -> Unit,
     onSync: () -> Unit,
+    onCreateAi: (date: String, typeKey: String) -> Unit,
+    onStartLive: (date: String, typeKey: String) -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val refresh by DataRefresh.tick.collectAsState()
     var resumeTick by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
@@ -122,73 +140,142 @@ fun JournalScreen(
     val todayIso = today.toString()
     var selectedIso by rememberSaveable { mutableStateOf(today.toString()) }
     var monthIso by rememberSaveable { mutableStateOf(today.withDayOfMonth(1).toString()) }
-    val selected = LocalDate.parse(selectedIso)
-    val month = YearMonth.from(LocalDate.parse(monthIso))
+    var showSchedule by rememberSaveable { mutableStateOf(false) }
+    var menuKey by remember { mutableStateOf<String?>(null) }
+    var deleteTarget by remember { mutableStateOf<JournalItem?>(null) }
     val accent = Teal
 
-    val monthLoad by produceState(JournalMonthLoad(), month.toString(), refresh, resumeTick) {
-        value = JournalMonthLoad()
-        value = withContext(Dispatchers.IO) {
+    var viewKey by rememberSaveable { mutableStateOf(Prefs.getJournalView(context)) }
+    val journalView = CalendarView.fromKey(viewKey)
+    val selected = LocalDate.parse(selectedIso)
+    val month = YearMonth.from(LocalDate.parse(monthIso))
+    // Re-read on resume so a change in Settings lands without a restart.
+    val firstDay = remember(resumeTick) { Prefs.getFirstDayOfWeek(context) }
+    val weekStart = WeekStart.startOfWeek(selected, firstDay)
+
+    // The window covers the displayed period plus one on each side, so both
+    // neighbours are loaded before a swipe can reveal them.
+    val rangeStartIso: String
+    val rangeEndIso: String
+    when (journalView) {
+        CalendarView.MONTH -> {
+            rangeStartIso = month.minusMonths(1).atDay(1).toString()
+            rangeEndIso = month.plusMonths(1).atEndOfMonth().toString()
+        }
+        CalendarView.WEEK -> {
+            rangeStartIso = weekStart.minusWeeks(1).toString()
+            rangeEndIso = weekStart.plusWeeks(1).plusDays(6).toString()
+        }
+        CalendarView.DAY -> {
+            rangeStartIso = selected.minusDays(1).toString()
+            rangeEndIso = selected.plusDays(1).toString()
+        }
+    }
+    val rangeKey = "$rangeStartIso:$rangeEndIso"
+
+    // The previous window's data stays on screen while the new window loads;
+    // a committed swipe never lands on a blank page.
+    var monthLoad by remember { mutableStateOf(JournalMonthLoad()) }
+    LaunchedEffect(rangeKey, refresh, resumeTick) {
+        monthLoad = withContext(Dispatchers.IO) {
+            val startDate = LocalDate.parse(rangeStartIso)
+            val endDate = LocalDate.parse(rangeEndIso)
             val zone = java.time.ZoneId.systemDefault()
-            val monthStartMs = month.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val monthEndMs = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val workouts = WorkoutStore.getBetween(
-                context,
-                month.atDay(1).toString(),
-                month.atEndOfMonth().toString(),
-            )
+            val rangeStartMs = startDate.atStartOfDay(zone).toInstant().toEpochMilli()
+            val rangeEndMs = endDate.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val workouts = WorkoutStore.getBetween(context, rangeStartIso, rangeEndIso)
             val events = runCatching {
-                CalendarHelper.findWorkoutEvents(context, monthStartMs, monthEndMs)
+                CalendarHelper.findWorkoutEvents(context, rangeStartMs, rangeEndMs)
             }.getOrDefault(emptyList())
             val sessions = runCatching {
-                InteractiveStore.getBetween(
-                    context,
-                    month.atDay(1).toString(),
-                    month.atEndOfMonth().toString(),
-                )
+                InteractiveStore.getBetween(context, rangeStartIso, rangeEndIso)
             }.getOrDefault(emptyList())
             val entries = runCatching {
-                JournalStorage.getEntriesForMonth(context, month.year, month.monthValue - 1)
+                JournalStorage.getEntries(context)
+                    .filter { it.date >= rangeStartIso && it.date <= rangeEndIso }
+            }.getOrDefault(emptyList())
+            val scheduled = runCatching {
+                ScheduledSessionStore.getAll(context)
+                    .filter { it.date >= rangeStartIso && it.date <= rangeEndIso }
             }.getOrDefault(emptyList())
             val notes = JournalNotesStore.getAll(context)
+            val hidden = runCatching { JournalHiddenStore.getAll(context) }
+                .getOrDefault(emptySet())
+            val allEntries = runCatching { JournalStorage.getEntries(context) }
+                .getOrDefault(emptyList())
             JournalMonthLoad(
                 loaded = true,
                 entries = entries.groupBy { it.date },
                 workouts = workouts.groupBy { it.date },
                 events = events.groupBy { it.date },
                 sessions = sessions.groupBy { it.date },
+                scheduled = scheduled,
                 notes = notes,
-                marks = JournalFeed.marks(workouts, events, entries, sessions, notes),
+                hiddenKeys = hidden,
+                marks = JournalFeed.marks(
+                    workouts = workouts,
+                    calendarEvents = events,
+                    entries = entries,
+                    sessions = sessions,
+                    notes = notes,
+                    scheduledTypeKeysByDate = scheduled.groupBy(
+                        { it.date },
+                        { it.typeKey },
+                    ).mapValues { (_, types) -> types.toSet() },
+                    hiddenKeys = hidden,
+                ),
                 hasAnything = entries.isNotEmpty() || workouts.isNotEmpty() ||
-                    JournalStorage.getEntries(context).isNotEmpty(),
+                    allEntries.isNotEmpty(),
             )
         }
     }
 
-    val dayLoad by produceState(JournalDayLoad(), monthLoad, selectedIso, refresh, resumeTick) {
-        val monthData = monthLoad
-        if (!monthData.loaded) return@produceState
-        value = withContext(Dispatchers.IO) {
-            JournalDayLoad(
-                loaded = true,
-                items = JournalFeed.buildDay(
-                    date = selectedIso,
-                    workouts = monthData.workouts[selectedIso].orEmpty(),
-                    calendarEvents = monthData.events[selectedIso].orEmpty(),
-                    entries = monthData.entries[selectedIso].orEmpty(),
-                    sessions = monthData.sessions[selectedIso].orEmpty()
-                        .associateBy { it.typeKey },
-                    notes = monthData.notes,
-                ).items,
-            )
+    // The day at -1, 0 and +1, built from the range already in memory so each
+    // page — including the one sliding in — is real content.
+    val dayLoads = remember(monthLoad, selectedIso, refresh, resumeTick) {
+        val data = monthLoad
+        (-1..1).associateWith { step ->
+            val iso = selected.plusDays(step.toLong()).toString()
+            if (!data.loaded) {
+                JournalDayLoad()
+            } else {
+                JournalDayLoad(
+                    loaded = true,
+                    items = JournalFeed.buildDay(
+                        date = iso,
+                        workouts = data.workouts[iso].orEmpty(),
+                        calendarEvents = data.events[iso].orEmpty(),
+                        entries = data.entries[iso].orEmpty(),
+                        sessions = data.sessions[iso].orEmpty()
+                            .associateBy { it.typeKey },
+                        notes = data.notes,
+                        sleepSourcePriority = Prefs.getSleepSourcePriority(context),
+                        scheduledSessions = data.scheduled.filter { it.date == iso },
+                        hiddenKeys = data.hiddenKeys,
+                    ).items,
+                )
+            }
         }
     }
 
-    fun shiftMonth(delta: Long) {
-        val next = month.plusMonths(delta)
-        monthIso = next.atDay(1).toString()
-        val day = selected.dayOfMonth.coerceAtMost(next.lengthOfMonth())
-        selectedIso = next.atDay(day).toString()
+    fun setSelected(date: LocalDate) {
+        selectedIso = date.toString()
+        monthIso = date.withDayOfMonth(1).toString()
+    }
+
+    fun shiftDay(delta: Long) = setSelected(selected.plusDays(delta))
+
+    fun shiftPeriod(delta: Long) {
+        when (journalView) {
+            CalendarView.MONTH -> {
+                val next = month.plusMonths(delta)
+                val day = selected.dayOfMonth.coerceAtMost(next.lengthOfMonth())
+                monthIso = next.atDay(1).toString()
+                selectedIso = next.atDay(day).toString()
+            }
+            CalendarView.WEEK -> shiftDay(7 * delta)
+            CalendarView.DAY -> shiftDay(delta)
+        }
     }
 
     HcBackground(accent = accent) {
@@ -227,70 +314,276 @@ fun JournalScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenPadding)
             ) {
-                MonthNavigator(
-                    label = month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
-                    onPrevious = { shiftMonth(-1) },
-                    onNext = { shiftMonth(1) },
+                SegmentedControl(
+                    options = CalendarView.entries,
+                    selected = journalView,
+                    label = { it.label },
+                    onSelect = { viewKey = it.key },
+                    accent = accent,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(18.dp))
 
-                HcCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)) {
-                    WeekdayHeader()
-                    Spacer(Modifier.height(6.dp))
-                    MonthGrid(
-                        month = month,
-                        selected = selected,
-                        today = today,
-                        marks = monthLoad.marks,
-                        accent = accent,
-                        onSelect = { selectedIso = it.toString() },
-                    )
-                }
+                SwipeCarousel(
+                    modifier = Modifier.fillMaxWidth(),
+                    onSwitch = { direction ->
+                        menuKey = null
+                        shiftPeriod(direction.toLong())
+                    },
+                ) { step ->
+                    when (journalView) {
+                        CalendarView.MONTH -> {
+                            val pageMonth = month.plusMonths(step.toLong())
+                            val pageSelected = pageMonth.atDay(
+                                selected.dayOfMonth.coerceAtMost(pageMonth.lengthOfMonth())
+                            )
+                            Column {
+                                MonthNavigator(
+                                    label = pageMonth.format(
+                                        DateTimeFormatter.ofPattern(
+                                            "MMMM yyyy",
+                                            Locale.getDefault(),
+                                        )
+                                    ),
+                                    onPrevious = { shiftPeriod(-1) },
+                                    onNext = { shiftPeriod(1) },
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                HcCard(
+                                    contentPadding = PaddingValues(
+                                        horizontal = 12.dp,
+                                        vertical = 12.dp,
+                                    )
+                                ) {
+                                    WeekdayHeader(firstDay)
+                                    Spacer(Modifier.height(6.dp))
+                                    MonthGrid(
+                                        month = pageMonth,
+                                        selected = pageSelected,
+                                        today = today,
+                                        marks = monthLoad.marks,
+                                        accent = accent,
+                                        firstDay = firstDay,
+                                        onSelect = ::setSelected,
+                                    )
+                                }
+                            }
+                        }
 
-                Spacer(Modifier.height(26.dp))
-                DayHeading(date = selected, count = dayLoad.items.size, accent = accent)
-                Spacer(Modifier.height(14.dp))
+                        CalendarView.WEEK -> {
+                            val pageWeekStart = weekStart.plusWeeks(step.toLong())
+                            val pageSelected = selected.plusWeeks(step.toLong())
+                            Column {
+                                MonthNavigator(
+                                    label = weekLabel(pageWeekStart),
+                                    onPrevious = { shiftPeriod(-1) },
+                                    onNext = { shiftPeriod(1) },
+                                )
+                                Spacer(Modifier.height(12.dp))
+                                HcCard(
+                                    contentPadding = PaddingValues(
+                                        horizontal = 12.dp,
+                                        vertical = 12.dp,
+                                    )
+                                ) {
+                                    WeekdayHeader(firstDay)
+                                    Spacer(Modifier.height(6.dp))
+                                    WeekStrip(
+                                        weekStart = pageWeekStart,
+                                        selected = pageSelected,
+                                        today = today,
+                                        marks = monthLoad.marks,
+                                        accent = accent,
+                                        onSelect = ::setSelected,
+                                    )
+                                }
+                            }
+                        }
 
-                when {
-                    !monthLoad.loaded || !dayLoad.loaded -> {
-                        LoadingLine("Reading your journal…", accent)
-                    }
-                    dayLoad.items.isEmpty() -> {
-                        val emptyJournal = !monthLoad.hasAnything
-                        EmptyState(
-                            iconRes = R.drawable.ic_journal,
-                            title = if (emptyJournal) "The journal is empty" else "Nothing on this day",
-                            message = if (emptyJournal)
-                                "Sync to pull your workouts, watch sessions and sleep into the journal."
-                            else
-                                "No calendar workout, watch session or logged AI workout for this day. Sync for the latest.",
-                            accent = accent,
-                            actionText = "Sync now",
-                            onAction = onSync,
-                        )
-                    }
-                    else -> {
-                        dayLoad.items.forEach { item ->
-                            JournalItemCard(
-                                item = item,
-                                planned = item.date > todayIso,
-                            ) { onOpenItem(item.date, item.key) }
-                            Spacer(Modifier.height(CardGap))
+                        CalendarView.DAY -> {
+                            val pageDate = selected.plusDays(step.toLong())
+                            MonthNavigator(
+                                label = pageDate.format(
+                                    DateTimeFormatter.ofPattern(
+                                        "EEE, d MMMM yyyy",
+                                        Locale.getDefault(),
+                                    )
+                                ),
+                                onPrevious = { shiftDay(-1) },
+                                onNext = { shiftDay(1) },
+                            )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    "Workouts, watch data and notes merge into one entry on every sync.",
+                Spacer(Modifier.height(26.dp))
+
+                SwipeCarousel(
                     modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Slate,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(28.dp))
+                    onSwitch = { direction ->
+                        menuKey = null
+                        shiftDay(direction.toLong())
+                    },
+                ) { step ->
+                    JournalDayPage(
+                        date = selected.plusDays(step.toLong()),
+                        load = dayLoads.getValue(step),
+                        monthLoaded = monthLoad.loaded,
+                        hasAnything = monthLoad.hasAnything,
+                        todayIso = todayIso,
+                        accent = accent,
+                        menuKey = menuKey,
+                        onMenuClick = { key ->
+                            menuKey = if (menuKey == key) null else key
+                        },
+                        onLongClick = { key -> menuKey = key },
+                        onDismissMenu = { menuKey = null },
+                        onCreateAi = onCreateAi,
+                        onStartLive = onStartLive,
+                        onDelete = { deleteTarget = it },
+                        onOpenItem = onOpenItem,
+                        onSchedule = { showSchedule = true },
+                        onSync = onSync,
+                    )
+                }
             }
         }
+
+        if (showSchedule) {
+            val dayEvents = monthLoad.events[selectedIso].orEmpty()
+            val suggestedStartMs = dayEvents.minByOrNull { it.startMs }?.startMs
+                ?: LocalDate.parse(selectedIso)
+                    .atTime(7, 0)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+            ScheduleSessionDialog(
+                date = selectedIso,
+                workouts = monthLoad.workouts[selectedIso].orEmpty(),
+                existingTypeKeys = (
+                    dayLoads.getValue(0).items
+                        .filterIsInstance<JournalItem.Workout>()
+                        .map { it.typeKey } +
+                        monthLoad.scheduled
+                            .filter { it.date == selectedIso }
+                            .map { it.typeKey }
+                    ).toSet(),
+                suggestedStartMs = suggestedStartMs,
+                loading = !monthLoad.loaded || !dayLoads.getValue(0).loaded,
+                onDismiss = { showSchedule = false },
+                onScheduled = { DataRefresh.bump() },
+            )
+        }
+    }
+
+    deleteTarget?.let { target ->
+        ConfirmDialog(
+            title = "Delete this entry?",
+            message = JournalDeleter.confirmMessage(target),
+            confirmText = "Delete",
+            destructive = true,
+            onConfirm = {
+                deleteTarget = null
+                scope.launch {
+                    withContext(Dispatchers.IO) {
+                        JournalDeleter.delete(context, target)
+                    }
+                    DataRefresh.bump()
+                }
+            },
+            onDismiss = { deleteTarget = null },
+        )
+    }
+}
+
+/** One day as a carousel page; its neighbours are fully rendered too. */
+@Composable
+private fun JournalDayPage(
+    date: LocalDate,
+    load: JournalDayLoad,
+    monthLoaded: Boolean,
+    hasAnything: Boolean,
+    todayIso: String,
+    accent: Color,
+    menuKey: String?,
+    onMenuClick: (String) -> Unit,
+    onLongClick: (String) -> Unit,
+    onDismissMenu: () -> Unit,
+    onCreateAi: (date: String, typeKey: String) -> Unit,
+    onStartLive: (date: String, typeKey: String) -> Unit,
+    onDelete: (JournalItem) -> Unit,
+    onOpenItem: (date: String, key: String) -> Unit,
+    onSchedule: () -> Unit,
+    onSync: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        DayHeading(date = date, count = load.items.size, accent = accent)
+        Spacer(Modifier.height(12.dp))
+        ScheduleSessionButton(enabled = monthLoaded, onClick = onSchedule)
+        Spacer(Modifier.height(14.dp))
+
+        when {
+            !monthLoaded || !load.loaded -> {
+                LoadingLine("Reading your journal…", accent)
+            }
+
+            load.items.isEmpty() -> {
+                val emptyJournal = !hasAnything
+                EmptyState(
+                    iconRes = R.drawable.ic_journal,
+                    title = if (emptyJournal) {
+                        "The journal is empty"
+                    } else {
+                        "Nothing on this day"
+                    },
+                    message = if (emptyJournal) {
+                        "Sync to pull your workouts, watch sessions and sleep into the journal."
+                    } else {
+                        "No calendar workout, watch session or logged AI workout for this day. Sync for the latest."
+                    },
+                    accent = accent,
+                    actionText = "Sync now",
+                    onAction = onSync,
+                )
+            }
+
+            else -> {
+                load.items.forEach { item ->
+                    JournalItemCard(
+                        item = item,
+                        planned = item.date > todayIso,
+                        actions = JournalCardActions(
+                            menuOpen = menuKey == item.key,
+                            onMenuClick = { onMenuClick(item.key) },
+                            onDismissMenu = onDismissMenu,
+                            onCreateAi = {
+                                (item as? JournalItem.Workout)?.let {
+                                    onCreateAi(it.date, it.typeKey)
+                                }
+                            },
+                            onStartLive = {
+                                (item as? JournalItem.Workout)?.let {
+                                    onStartLive(it.date, it.typeKey)
+                                }
+                            },
+                            onDelete = { onDelete(item) },
+                            onLongClick = { onLongClick(item.key) },
+                        ),
+                        onClick = { onOpenItem(item.date, item.key) },
+                    )
+                    Spacer(Modifier.height(CardGap))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Text(
+            "Workouts, watch data and notes merge into one entry on every sync.",
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.bodySmall,
+            color = Slate,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(28.dp))
     }
 }
 
@@ -341,9 +634,9 @@ private fun MonthNavigator(
 }
 
 @Composable
-private fun WeekdayHeader() {
+private fun WeekdayHeader(firstDay: DayOfWeek) {
     Row(Modifier.fillMaxWidth()) {
-        DayOfWeek.values().forEach { day ->
+        WeekStart.daysFrom(firstDay).forEach { day ->
             Text(
                 day.getDisplayName(TextStyle.SHORT, Locale.getDefault()).uppercase(),
                 modifier = Modifier.weight(1f),
@@ -356,15 +649,50 @@ private fun WeekdayHeader() {
 }
 
 @Composable
-private fun MonthGrid(
-    month: YearMonth,
+private fun WeekStrip(
+    weekStart: LocalDate,
     selected: LocalDate,
     today: LocalDate,
     marks: Map<String, JournalDayMark>,
     accent: Color,
     onSelect: (LocalDate) -> Unit,
 ) {
-    val leading = month.atDay(1).dayOfWeek.value - DayOfWeek.MONDAY.value
+    Row(Modifier.fillMaxWidth()) {
+        for (offset in 0L..6L) {
+            val date = weekStart.plusDays(offset)
+            DayCell(
+                date = date,
+                selected = date == selected,
+                isToday = date == today,
+                mark = marks[date.toString()],
+                accent = accent,
+                onClick = { onSelect(date) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+private fun weekLabel(weekStart: LocalDate): String {
+    val locale = Locale.getDefault()
+    val end = weekStart.plusDays(6)
+    val sameMonth = weekStart.month == end.month
+    val startFmt = DateTimeFormatter.ofPattern(if (sameMonth) "d" else "d MMM", locale)
+    val endFmt = DateTimeFormatter.ofPattern("d MMM yyyy", locale)
+    return "${weekStart.format(startFmt)} – ${end.format(endFmt)}"
+}
+
+@Composable
+private fun MonthGrid(
+    month: YearMonth,
+    selected: LocalDate,
+    today: LocalDate,
+    marks: Map<String, JournalDayMark>,
+    accent: Color,
+    firstDay: DayOfWeek,
+    onSelect: (LocalDate) -> Unit,
+) {
+    val leading = WeekStart.leadingDays(month.atDay(1), firstDay)
     val days = month.lengthOfMonth()
     val rows = (leading + days + 6) / 7
 
@@ -496,6 +824,61 @@ private fun DayHeading(date: LocalDate, count: Int, accent: Color) {
                 else -> "$count ENTRIES"
             },
             accent,
+        )
+    }
+}
+
+/**
+ * Under the day's title: the way to turn one of the day's programmed workouts
+ * into an entry when the calendar has not named it yet.
+ */
+@Composable
+private fun ScheduleSessionButton(enabled: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Teal.copy(alpha = if (enabled) 0.10f else 0.04f))
+            .border(1.dp, Teal.copy(alpha = if (enabled) 0.28f else 0.10f), shape)
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(Teal.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = null,
+                tint = if (enabled) Teal else Slate,
+                modifier = Modifier.size(19.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                "Schedule session",
+                style = MaterialTheme.typography.titleSmall,
+                color = if (enabled) Snow else Slate,
+            )
+            Text(
+                "Add one of this day's workouts to the journal.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Slate,
+            modifier = Modifier.size(20.dp),
         )
     }
 }

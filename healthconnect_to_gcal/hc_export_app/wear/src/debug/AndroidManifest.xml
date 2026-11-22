@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- The debug build sits beside the release HC Sync on the same watch.
+         The package differs; give the launcher a label that says so. -->
+    <application
+        android:label="HC Sync dev"
+        tools:replace="android:label" />
+</manifest>

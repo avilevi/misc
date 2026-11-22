@@ -80,6 +80,7 @@ import com.hcexport.ui.theme.Abyss
 import com.hcexport.ui.theme.Amber
 import com.hcexport.ui.theme.Card
 import com.hcexport.ui.theme.CardHigh
+import com.hcexport.ui.theme.Coral
 import com.hcexport.ui.theme.Hairline
 import com.hcexport.ui.theme.HairlineSoft
 import com.hcexport.ui.theme.Mist
@@ -99,6 +100,7 @@ enum class SettingsPage(
     SYNC("sync", "Sync & reliability", "Schedules, ranges and background work", Periwinkle),
     WORKOUTS("workouts", "Workouts & watch", "Calendar default and watch snapshot", Periwinkle),
     AI("ai", "AI workout", "Provider, key, model and interactive plans", Teal),
+    LIVE("live", "Live workout", "Countdown, set windows and cues", Coral),
     DIAGNOSTICS("diagnostics", "Diagnostics", "Sync log, updates and data", Amber),
     ABOUT("about", "About", "Version, privacy and credits", Mist);
 
@@ -146,6 +148,7 @@ fun SettingsApp(startPage: String?) {
                     SettingsPage.SYNC -> SyncSettingsPage()
                     SettingsPage.WORKOUTS -> WorkoutSettingsPage()
                     SettingsPage.AI -> AiSettingsPage()
+                    SettingsPage.LIVE -> LiveWorkoutSettingsPage()
                     SettingsPage.DIAGNOSTICS -> DiagnosticsSettingsPage()
                     SettingsPage.ABOUT -> AboutSettingsPage()
                 }
@@ -291,6 +294,7 @@ fun SettingsPageIcon(page: SettingsPage, tint: Color, size: androidx.compose.ui.
         SettingsPage.SYNC -> Icon(Icons.Outlined.Refresh, null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.WORKOUTS -> Icon(painterResource(R.drawable.ic_dumbbell), null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.AI -> Icon(painterResource(R.drawable.ic_ai), null, tint = tint, modifier = Modifier.size(size))
+        SettingsPage.LIVE -> Icon(painterResource(R.drawable.ic_stopwatch), null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.DIAGNOSTICS -> Icon(Icons.Outlined.Build, null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.ABOUT -> Icon(Icons.Outlined.Info, null, tint = tint, modifier = Modifier.size(size))
     }

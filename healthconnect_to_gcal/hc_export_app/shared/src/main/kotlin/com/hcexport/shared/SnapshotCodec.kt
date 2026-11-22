@@ -54,8 +54,9 @@ object SnapshotCodec {
     fun toJson(snapshot: Snapshot): JSONObject = JSONObject().apply {
         put("schema", snapshot.schema)
         put("updatedAt", snapshot.updatedAt)
-        put("workouts", JSONArray(snapshot.workouts.map { it.toJson() }))
-        put("journal", JSONArray(snapshot.journal.map { it.toJson() }))
+        put("settings", snapshot.settings.toJson())
+        put("days", JSONArray(snapshot.days.map { it.toJson() }))
+        put("plans", JSONArray(snapshot.plans.map { it.toJson() }))
     }
 
     fun fromJson(obj: JSONObject): Snapshot {
@@ -63,84 +64,114 @@ object SnapshotCodec {
         return Snapshot(
             schema = schema,
             updatedAt = obj.optLong("updatedAt", 0L),
-            workouts = obj.optJSONArray("workouts")?.let { arr ->
-                (0 until arr.length()).mapNotNull { runCatching { workoutFromJson(arr.getJSONObject(it)) }.getOrNull() }
+            days = obj.optJSONArray("days")?.let { arr ->
+                (0 until arr.length()).mapNotNull { runCatching { dayFromJson(arr.getJSONObject(it)) }.getOrNull() }
             } ?: emptyList(),
-            journal = obj.optJSONArray("journal")?.let { arr ->
-                (0 until arr.length()).mapNotNull { runCatching { journalFromJson(arr.getJSONObject(it)) }.getOrNull() }
+            plans = obj.optJSONArray("plans")?.let { arr ->
+                (0 until arr.length()).mapNotNull { runCatching { planFromJson(arr.getJSONObject(it)) }.getOrNull() }
             } ?: emptyList(),
+            settings = obj.optJSONObject("settings")?.let { LiveSettingsDto(
+                leadInSeconds = it.optInt("leadIn", 10).coerceIn(0, 60),
+                intervalSeconds = it.optInt("interval", 90).coerceIn(10, 900),
+                sound = it.optBoolean("sound", true),
+                vibration = it.optBoolean("vibration", true),
+            ) } ?: LiveSettingsDto(),
         )
     }
 
-    private fun WorkoutDto.toJson(): JSONObject = JSONObject().apply {
-        put("date", date)
-        put("typeKey", typeKey)
-        put("typeLabel", typeLabel)
-        put("content", content)
-        put("sortOrder", sortOrder)
+    private fun LiveSettingsDto.toJson(): JSONObject = JSONObject().apply {
+        put("leadIn", leadInSeconds)
+        put("interval", intervalSeconds)
+        put("sound", sound)
+        put("vibration", vibration)
     }
 
-    private fun JournalDto.toJson(): JSONObject = JSONObject().apply {
-        put("id", id)
+    private fun JournalDayDto.toJson(): JSONObject = JSONObject().apply {
         put("date", date)
-        put("entryType", entryType)
+        put("items", JSONArray(items.map { it.toJson() }))
+    }
+
+    private fun JournalItemDto.toJson(): JSONObject = JSONObject().apply {
+        put("key", key)
+        put("date", date)
+        put("kind", kind)
         put("title", title)
-        put("narrative", narrative)
+        put("summary", summary)
+        if (body.isNotBlank()) put("body", body)
+        if (typeKey.isNotBlank()) put("typeKey", typeKey)
+        if (typeLabel.isNotBlank()) put("typeLabel", typeLabel)
         put("startMs", startMs)
         put("endMs", endMs)
-        put("typeCode", typeCode)
-        if (distanceM != null) put("distanceM", distanceM)
-        if (caloriesKcal != null) put("caloriesKcal", caloriesKcal)
-        if (avgHrBpm != null) put("avgHrBpm", avgHrBpm)
-        if (maxHrBpm != null) put("maxHrBpm", maxHrBpm)
-        if (steps != null) put("steps", steps)
-        put("source", source)
-        put("mergedWods", JSONArray(mergedWods.map { it.toJson() }))
-        if (wodContent != null) put("wodContent", wodContent)
+        if (stats.isNotEmpty()) put("stats", JSONArray(stats.map { it.toJson() }))
+        if (note.isNotBlank()) put("note", note)
+        if (scheduled) put("scheduled", true)
+        if (planned) put("planned", true)
+        if (hasPlan) put("hasPlan", true)
+        if (planSummary.isNotBlank()) put("planSummary", planSummary)
+        if (planTotalSets > 0) put("planTotalSets", planTotalSets)
+        if (planLoggedSets > 0) put("planLoggedSets", planLoggedSets)
+        if (hasWatchData) put("hasWatchData", true)
+        if (content.isNotBlank()) put("content", content)
     }
 
-    private fun MergedWodDto.toJson(): JSONObject = JSONObject().apply {
+    private fun StatDto.toJson(): JSONObject = JSONObject().apply {
+        put("label", label)
+        put("value", value)
+    }
+
+    private fun PlanDto.toJson(): JSONObject = JSONObject().apply {
         put("date", date)
-        put("title", title)
-        put("content", content)
+        put("typeKey", typeKey)
+        put("plan", planJson)
+        put("results", resultsJson)
+        put("model", model)
+        put("updatedAt", updatedAt)
     }
 
-    private fun workoutFromJson(obj: JSONObject): WorkoutDto = WorkoutDto(
+    private fun dayFromJson(obj: JSONObject): JournalDayDto = JournalDayDto(
         date = obj.getString("date"),
-        typeKey = obj.getString("typeKey"),
-        typeLabel = obj.optString("typeLabel", obj.getString("typeKey")),
-        content = obj.optString("content", ""),
-        sortOrder = obj.optInt("sortOrder", 0),
+        items = obj.optJSONArray("items")?.let { arr ->
+            (0 until arr.length()).mapNotNull { runCatching { itemFromJson(arr.getJSONObject(it)) }.getOrNull() }
+        } ?: emptyList(),
     )
 
-    private fun journalFromJson(obj: JSONObject): JournalDto = JournalDto(
-        id = obj.getString("id"),
-        date = obj.getString("date"),
-        entryType = obj.optString("entryType", "exercise"),
+    private fun itemFromJson(obj: JSONObject): JournalItemDto = JournalItemDto(
+        key = obj.getString("key"),
+        date = obj.optString("date", ""),
+        kind = obj.optString("kind", "workout"),
         title = obj.optString("title", ""),
-        narrative = obj.optString("narrative", ""),
+        summary = obj.optString("summary", ""),
+        body = obj.optString("body", ""),
+        typeKey = obj.optString("typeKey", ""),
+        typeLabel = obj.optString("typeLabel", ""),
         startMs = obj.optLong("startMs", 0L),
         endMs = obj.optLong("endMs", 0L),
-        typeCode = obj.optInt("typeCode", -1),
-        distanceM = if (obj.has("distanceM")) obj.getDouble("distanceM") else null,
-        caloriesKcal = if (obj.has("caloriesKcal")) obj.getDouble("caloriesKcal") else null,
-        avgHrBpm = if (obj.has("avgHrBpm")) obj.getDouble("avgHrBpm") else null,
-        maxHrBpm = if (obj.has("maxHrBpm")) obj.getDouble("maxHrBpm") else null,
-        steps = if (obj.has("steps")) obj.getLong("steps") else null,
-        source = obj.optString("source", ""),
-        mergedWods = obj.optJSONArray("mergedWods")?.let { arr ->
+        stats = obj.optJSONArray("stats")?.let { arr ->
             (0 until arr.length()).mapNotNull {
                 runCatching {
-                    val m = arr.getJSONObject(it)
-                    MergedWodDto(
-                        date = m.optString("date", ""),
-                        title = m.optString("title", ""),
-                        content = m.optString("content", ""),
-                    )
+                    val stat = arr.getJSONObject(it)
+                    StatDto(stat.optString("label", ""), stat.optString("value", ""))
                 }.getOrNull()
             }
         } ?: emptyList(),
-        wodContent = if (obj.has("wodContent")) obj.getString("wodContent") else null,
+        note = obj.optString("note", ""),
+        scheduled = obj.optBoolean("scheduled", false),
+        planned = obj.optBoolean("planned", false),
+        hasPlan = obj.optBoolean("hasPlan", false),
+        planSummary = obj.optString("planSummary", ""),
+        planTotalSets = obj.optInt("planTotalSets", 0),
+        planLoggedSets = obj.optInt("planLoggedSets", 0),
+        hasWatchData = obj.optBoolean("hasWatchData", false),
+        content = obj.optString("content", ""),
+    )
+
+    private fun planFromJson(obj: JSONObject): PlanDto = PlanDto(
+        date = obj.getString("date"),
+        typeKey = obj.getString("typeKey"),
+        planJson = obj.optString("plan", ""),
+        resultsJson = obj.optString("results", "{}"),
+        model = obj.optString("model", ""),
+        updatedAt = obj.optLong("updatedAt", 0L),
     )
 
     private fun gzip(data: ByteArray): ByteArray {

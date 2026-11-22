@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug builds only: lets a development session ask for a watch push
+             from adb without touching the phone's UI. Not in release builds. -->
+        <receiver
+            android:name="com.hcexport.DebugSyncReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.hcexport.DEBUG_SYNC" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

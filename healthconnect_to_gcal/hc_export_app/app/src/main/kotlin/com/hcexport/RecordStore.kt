@@ -15,7 +15,7 @@ import android.database.sqlite.SQLiteOpenHelper
 object RecordStore {
 
     private const val DB_NAME = "records.db"
-    private const val DB_VERSION = 1
+    private const val DB_VERSION = 2
     private const val WEIGHTS = "weight_records"
     private const val BENCHMARKS = "benchmark_records"
 
@@ -46,6 +46,7 @@ object RecordStore {
             put("workout_date", record.workoutDate)
             put("workout_type_key", record.workoutTypeKey)
             put("note", record.note)
+            put("origin", record.origin)
             put("created_at", if (record.createdAtMs > 0) record.createdAtMs else System.currentTimeMillis())
         }
         return db(ctx).insertOrThrow(WEIGHTS, null, values)
@@ -61,6 +62,7 @@ object RecordStore {
             put("workout_date", record.workoutDate)
             put("workout_type_key", record.workoutTypeKey)
             put("note", record.note)
+            put("origin", record.origin)
         }
         db(ctx).update(WEIGHTS, values, "_id = ?", arrayOf(record.id.toString()))
     }
@@ -77,6 +79,80 @@ object RecordStore {
 
     fun getWeight(ctx: Context, id: Long): WeightRecord? =
         queryWeights(ctx, "_id = ?", arrayOf(id.toString())).firstOrNull()
+
+    /**
+     * Make this workout's auto records match [candidates] — the best set at each
+     * rep max of its strength work.
+     *
+     * Auto records belong to the journal's values: they are revised when a set
+     * changes and removed when it is cleared. Manual records, and auto records
+     * from other workouts, are only ever read. A candidate is stored only when
+     * it beats the standing record for the same lift and rep max, or is the
+     * first one.
+     */
+    fun syncAutoWeights(
+        ctx: Context,
+        date: String,
+        typeKey: String,
+        candidates: List<AutoRecords.Candidate>,
+    ) {
+        // A planned workout has no result to record.
+        if (date > RecordLogic.todayIso()) return
+        val database = db(ctx)
+        database.beginTransaction()
+        try {
+            val all = mutableListOf<WeightRecord>()
+            database.query(WEIGHTS, null, null, null, null, null, null)
+                .use { c -> while (c.moveToNext()) all += readWeight(c) }
+            val ownAuto = all.filter {
+                it.origin == WeightRecord.ORIGIN_AUTO &&
+                    it.workoutDate == date && it.workoutTypeKey == typeKey
+            }
+            val ownIds = ownAuto.map { it.id }.toHashSet()
+            val desired = AutoRecords.beating(candidates, all.filterNot { it.id in ownIds })
+            val desiredByKey = desired.associateBy { it.exerciseKey to it.reps }
+
+            ownAuto.forEach { row ->
+                val want = desiredByKey[row.exerciseKey to row.reps]
+                if (want == null) {
+                    database.delete(WEIGHTS, "_id = ?", arrayOf(row.id.toString()))
+                } else if (want.weightKg != row.weightKg) {
+                    database.update(
+                        WEIGHTS,
+                        ContentValues().apply {
+                            put("weight_kg", want.weightKg)
+                            put("exercise_name", want.exerciseName)
+                        },
+                        "_id = ?",
+                        arrayOf(row.id.toString()),
+                    )
+                }
+            }
+
+            val kept = ownAuto
+                .map { it.exerciseKey to it.reps }
+                .filter { it in desiredByKey }
+                .toSet()
+            desired.filter { (it.exerciseKey to it.reps) !in kept }.forEach { candidate ->
+                addWeight(
+                    ctx,
+                    WeightRecord(
+                        exerciseKey = candidate.exerciseKey,
+                        exerciseName = candidate.exerciseName,
+                        reps = candidate.reps,
+                        weightKg = candidate.weightKg,
+                        achievedDate = date,
+                        workoutDate = date,
+                        workoutTypeKey = typeKey,
+                        origin = WeightRecord.ORIGIN_AUTO,
+                    ),
+                )
+            }
+            database.setTransactionSuccessful()
+        } finally {
+            database.endTransaction()
+        }
+    }
 
     private fun queryWeights(ctx: Context, where: String?, args: Array<String>?): List<WeightRecord> {
         val out = mutableListOf<WeightRecord>()
@@ -191,6 +267,7 @@ object RecordStore {
         workoutTypeKey = c.getString(c.getColumnIndexOrThrow("workout_type_key")),
         note = c.getString(c.getColumnIndexOrThrow("note")),
         createdAtMs = c.getLong(c.getColumnIndexOrThrow("created_at")),
+        origin = c.getString(c.getColumnIndexOrThrow("origin")),
     )
 
     private fun readBenchmark(c: Cursor) = BenchmarkRecord(
@@ -222,6 +299,7 @@ object RecordStore {
                   workout_date TEXT,
                   workout_type_key TEXT,
                   note TEXT,
+                  origin TEXT NOT NULL DEFAULT 'manual',
                   created_at INTEGER NOT NULL
                 )
                 """.trimIndent()
@@ -252,7 +330,13 @@ object RecordStore {
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            // Version 1 is the first schema; future migrations go here.
+            if (oldVersion < 2) {
+                // Records written from the journal's strength sets are marked
+                // "auto" so later saves can revise or remove exactly those.
+                db.execSQL(
+                    "ALTER TABLE $WEIGHTS ADD COLUMN origin TEXT NOT NULL DEFAULT 'manual'"
+                )
+            }
         }
     }
 }

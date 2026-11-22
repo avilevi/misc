@@ -129,7 +129,16 @@ class AiConfigTest {
                 """{"choices":[{"message":{"content":"x"},"finish_reason":"length"}]}"""
             )
         }
-        assertTrue(truncated.message!!.contains("too long"))
+        assertTrue(truncated.message!!.contains("ran out of output tokens"))
+    }
+
+    @Test
+    fun `plan budgets leave room for reasoning on the openai protocol`() {
+        // DeepSeek V4 counts thinking tokens against max_tokens and thinks by
+        // default; the plan budget has to cover both.
+        assertEquals(32_768, AiClient.planTokenBudget(AiProtocol.OPENAI))
+        assertEquals(8_192, AiClient.planTokenBudget(AiProtocol.ANTHROPIC))
+        assertEquals(8_192, AiClient.planTokenBudget(AiProtocol.GEMINI))
     }
 
     @Test

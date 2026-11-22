@@ -30,18 +30,27 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.HcApp
+import com.hcexport.ui.LiveJoinRequest
 import com.hcexport.ui.theme.Danger
 import com.hcexport.ui.theme.HcTheme
 import com.hcexport.ui.theme.Success
 import com.hcexport.ui.theme.Teal
 import com.hcexport.ui.theme.Warning
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val EXTRA_LIVE_DATE = "live_date"
+        const val EXTRA_LIVE_TYPE = "live_type"
+    }
+
+    private var liveJoin by mutableStateOf<LiveJoinRequest?>(null)
     private var statusTitle by mutableStateOf("Checking…")
     private var statusSubtitle by mutableStateOf("")
     private var statusAccent by mutableStateOf(Teal)
@@ -96,6 +105,7 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
+        LiveSessionHub.init(this)
         setContent {
             HcTheme {
                 HcApp(
@@ -110,14 +120,47 @@ class MainActivity : ComponentActivity() {
                     onOpenAiSettings = {
                         startActivity(SettingsActivity.intent(this, SettingsActivity.PAGE_AI))
                     },
+                    joinRequest = liveJoin,
+                    onJoinHandled = { liveJoin = null },
                 )
             }
         }
+        handleLiveIntent(intent)
         checkAndSetup()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLiveIntent(intent)
+    }
+
+    private fun handleLiveIntent(intent: Intent?) {
+        val date = intent?.getStringExtra(EXTRA_LIVE_DATE) ?: return
+        val type = intent.getStringExtra(EXTRA_LIVE_TYPE) ?: return
+        if (date.length != 10 || type.isBlank()) return
+        liveJoin = LiveJoinRequest(date = date, typeKey = type, nonce = System.nanoTime())
+        intent.removeExtra(EXTRA_LIVE_DATE)
+        intent.removeExtra(EXTRA_LIVE_TYPE)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AppVisibility.onStart()
+    }
+
+    override fun onStop() {
+        AppVisibility.onStop()
+        super.onStop()
     }
 
     override fun onResume() {
         super.onResume()
+        // A watch workout started while the phone was closed is still in the
+        // Data Layer; pick it up so the live screen can join at its stage.
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { LiveSessionHub.loadLatest(this@MainActivity) }
+        }
         if (!hcPermissionsLaunched) checkAndSetup()
     }
 

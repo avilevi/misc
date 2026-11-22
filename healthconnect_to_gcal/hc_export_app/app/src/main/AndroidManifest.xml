@@ -21,6 +21,19 @@
     <!-- Notifications (Android 13+ requires runtime request) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Live workout countdown cues -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- The workout's clock and its band controls must keep running with the
+         screen off. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- A running workout stays reachable from a band while the phone is
+         pocketed; the foreground service hosts the media session that the
+         band's Music Controller drives. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
     <!-- Required to re-apply schedules after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -86,6 +99,19 @@
             android:name=".AlarmReceiver"
             android:exported="false" />
 
+        <!-- Live workout notification buttons. The control is an action id;
+             the running session decides what it means. -->
+        <receiver
+            android:name=".LiveActionReceiver"
+            android:exported="false" />
+
+        <!-- Keeps a live workout controllable from a media controller (the
+             Galaxy Fit3 and Fitbit bands) while the phone is in a pocket. -->
+        <service
+            android:name=".LiveWorkoutService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <receiver
             android:name=".BootReceiver"
             android:exported="false">
@@ -112,6 +138,21 @@
             android:name=".WodWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="true" />
+
+        <!-- Watch -> phone: live values and the live session record, even when
+             the app is not open. -->
+        <service
+            android:name=".WearSyncListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/hcexport/" />
+            </intent-filter>
+        </service>
 
     </application>
 

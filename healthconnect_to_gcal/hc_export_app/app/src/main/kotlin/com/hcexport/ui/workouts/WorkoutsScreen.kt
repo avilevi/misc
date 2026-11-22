@@ -28,10 +28,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -56,6 +60,7 @@ import com.hcexport.R
 import com.hcexport.InteractiveStore
 import com.hcexport.RecordStore
 import com.hcexport.RecordLogic
+import com.hcexport.WeekStart
 import com.hcexport.Workout
 import com.hcexport.WorkoutBlock
 import com.hcexport.WorkoutStore
@@ -69,9 +74,9 @@ import com.hcexport.ui.IconAction
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
-import com.hcexport.ui.SecondaryButton
 import com.hcexport.ui.SectionLabel
 import com.hcexport.ui.SegmentedControl
+import com.hcexport.ui.SwipeCarousel
 import com.hcexport.ui.Tag
 import com.hcexport.ui.theme.Amber
 import com.hcexport.ui.theme.CardHigh
@@ -82,13 +87,15 @@ import com.hcexport.ui.theme.Slate
 import com.hcexport.ui.theme.Snow
 import com.hcexport.ui.theme.Teal
 import com.hcexport.ui.theme.workoutAccent
+import com.hcexport.ui.journal.ScheduleSessionDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
+import java.time.format.TextStyle
+import java.time.ZoneId
 import java.util.Locale
 
 private data class WorkoutsLoad(
@@ -97,12 +104,25 @@ private data class WorkoutsLoad(
     val total: Int = 0,
 )
 
-private fun visibleRange(date: LocalDate, view: CalendarView): Pair<LocalDate, LocalDate> = when (view) {
-    CalendarView.MONTH -> date.withDayOfMonth(1) to date.withDayOfMonth(date.lengthOfMonth())
-    CalendarView.WEEK, CalendarView.DAY -> {
-        val start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        start to start.plusDays(6)
+/**
+ * The window kept in memory: the displayed period plus one on each side, so a
+ * swipe's incoming period — and the day either side of the selection — is
+ * already loaded when the gesture starts.
+ */
+private fun loadRange(
+    date: LocalDate,
+    view: CalendarView,
+    firstDay: DayOfWeek,
+): Pair<LocalDate, LocalDate> = when (view) {
+    CalendarView.MONTH -> {
+        val month = YearMonth.from(date)
+        month.minusMonths(1).atDay(1) to month.plusMonths(1).atEndOfMonth()
     }
+    CalendarView.WEEK -> {
+        val start = WeekStart.startOfWeek(date, firstDay)
+        start.minusWeeks(1) to start.plusWeeks(1).plusDays(6)
+    }
+    CalendarView.DAY -> date.minusDays(1) to date.plusDays(1)
 }
 
 enum class CalendarView(val key: String, val label: String) {
@@ -150,23 +170,37 @@ fun WorkoutsScreen(
     var focusIso by rememberSaveable { mutableStateOf(startFocus.toString()) }
     val focusDate = LocalDate.parse(focusIso)
     val today = LocalDate.now()
+    // Re-read on resume so a change in Settings lands without a restart.
+    val firstDay = remember(resumeTick) { Prefs.getFirstDayOfWeek(context) }
 
-    val range = visibleRange(focusDate, view)
+    val range = loadRange(focusDate, view, firstDay)
     val rangeStart = range.first.iso()
     val rangeEnd = range.second.iso()
-    val load by produceState(WorkoutsLoad(), refresh, resumeTick, rangeStart, rangeEnd) {
-        value = WorkoutsLoad(loaded = false, workouts = emptyList(), total = value.total)
+    // The previous window's workouts stay on screen while a new window loads.
+    var load by remember { mutableStateOf(WorkoutsLoad()) }
+    LaunchedEffect(rangeStart, rangeEnd, refresh, resumeTick) {
         val total = withContext(Dispatchers.IO) { WorkoutStore.count(context) }
         val workouts = withContext(Dispatchers.IO) {
             WorkoutStore.getBetween(context, rangeStart, rangeEnd)
         }
-        value = WorkoutsLoad(loaded = true, workouts = workouts, total = total)
+        load = WorkoutsLoad(loaded = true, workouts = workouts, total = total)
     }
     val workouts = load.workouts
     val byDate = remember(workouts) { workouts.groupBy { it.date } }
     val accent = Periwinkle
 
-    val dayWorkouts = byDate[focusDate.iso()].orEmpty().sortedBy { it.sortOrder }
+    var menuKey by remember { mutableStateOf<String?>(null) }
+    var scheduleWorkout by remember { mutableStateOf<Workout?>(null) }
+
+    fun workoutsFor(date: LocalDate): List<Workout> =
+        byDate[date.iso()].orEmpty().sortedBy { it.sortOrder }
+
+    fun setFocus(date: LocalDate) {
+        focusIso = date.toString()
+    }
+
+    fun shiftPeriod(direction: Long) = setFocus(shift(focusDate, view, direction))
+    fun shiftDay(direction: Long) = setFocus(focusDate.plusDays(direction))
 
     HcBackground(accent = accent) {
         Column(
@@ -232,71 +266,156 @@ fun WorkoutsScreen(
                 )
                 Spacer(Modifier.height(18.dp))
 
-                if (view == CalendarView.DAY) {
-                    DayHero(
-                        date = focusDate,
-                        count = dayWorkouts.size,
-                        accent = accent,
-                        onPrevious = { focusIso = shift(focusDate, view, -1).toString() },
-                        onNext = { focusIso = shift(focusDate, view, 1).toString() },
-                    )
-                    Spacer(Modifier.height(22.dp))
-                } else {
-                    PeriodNavigator(
-                        label = periodLabel(focusDate, view),
-                        onPrevious = { focusIso = shift(focusDate, view, -1).toString() },
-                        onNext = { focusIso = shift(focusDate, view, 1).toString() },
-                    )
-                    Spacer(Modifier.height(14.dp))
-
+                SwipeCarousel(
+                    modifier = Modifier.fillMaxWidth(),
+                    onSwitch = { direction ->
+                        menuKey = null
+                        shiftPeriod(direction.toLong())
+                    },
+                ) { step ->
+                    val pageDate = shift(focusDate, view, step.toLong())
                     when (view) {
-                        CalendarView.WEEK -> WeekStrip(
-                            focusDate = focusDate,
-                            today = today,
-                            byDate = byDate,
+                        CalendarView.DAY -> DayHero(
+                            date = pageDate,
+                            count = workoutsFor(pageDate).size,
                             accent = accent,
-                            onSelect = { focusIso = it.toString() },
+                            onPrevious = { shiftPeriod(-1) },
+                            onNext = { shiftPeriod(1) },
                         )
-                        CalendarView.MONTH -> MonthGrid(
-                            month = YearMonth.from(focusDate),
-                            focusDate = focusDate,
-                            today = today,
-                            byDate = byDate,
-                            accent = accent,
-                            onSelect = { focusIso = it.toString() },
-                        )
-                        CalendarView.DAY -> Unit
-                    }
 
-                    Spacer(Modifier.height(24.dp))
-                    DayHeading(date = focusDate, count = dayWorkouts.size, accent = accent)
-                    Spacer(Modifier.height(12.dp))
+                        else -> Column {
+                            PeriodNavigator(
+                                label = periodLabel(pageDate, view, firstDay),
+                                onPrevious = { shiftPeriod(-1) },
+                                onNext = { shiftPeriod(1) },
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            when (view) {
+                                CalendarView.WEEK -> WeekStrip(
+                                    focusDate = pageDate,
+                                    firstDay = firstDay,
+                                    today = today,
+                                    byDate = byDate,
+                                    accent = accent,
+                                    onSelect = { setFocus(it) },
+                                )
+
+                                CalendarView.MONTH -> MonthGrid(
+                                    month = YearMonth.from(pageDate),
+                                    focusDate = pageDate,
+                                    firstDay = firstDay,
+                                    today = today,
+                                    byDate = byDate,
+                                    accent = accent,
+                                    onSelect = { setFocus(it) },
+                                )
+
+                                else -> Unit
+                            }
+                        }
+                    }
                 }
 
-                if (!load.loaded) {
-                    com.hcexport.ui.LoadingLine("Loading your calendar…", accent)
-                } else if (dayWorkouts.isEmpty()) {
-                    EmptyState(
-                        iconRes = R.drawable.ic_flame,
-                        title = if (load.total == 0) "No workouts yet" else "Rest day",
-                        message = if (load.total == 0)
-                            "Sync to pull the latest programming into the calendar."
-                        else
-                            "Nothing programmed for ${RecordLogic.formatDate(focusDate.iso())}.",
+                Spacer(Modifier.height(24.dp))
+
+                SwipeCarousel(
+                    modifier = Modifier.fillMaxWidth(),
+                    onSwitch = { direction ->
+                        menuKey = null
+                        shiftDay(direction.toLong())
+                    },
+                ) { step ->
+                    val pageDate = focusDate.plusDays(step.toLong())
+                    WorkoutsDayPage(
+                        date = pageDate,
+                        workouts = workoutsFor(pageDate),
+                        showHeading = view != CalendarView.DAY,
+                        loaded = load.loaded,
+                        total = load.total,
                         accent = accent,
-                        actionText = if (load.total == 0) "Sync now" else null,
-                        onAction = if (load.total == 0) onSync else null,
+                        menuKey = menuKey,
+                        onMenuClick = { key ->
+                            menuKey = if (menuKey == key) null else key
+                        },
+                        onDismissMenu = { menuKey = null },
+                        onSchedule = { scheduleWorkout = it },
+                        onOpen = onOpenWorkout,
+                        onSync = onSync,
                     )
-                } else {
-                    dayWorkouts.forEach { workout ->
-                        WorkoutCard(
-                            workout = workout,
-                            onClick = { onOpenWorkout(workout.date, workout.typeKey) },
-                        )
-                        Spacer(Modifier.height(CardGap))
-                    }
                 }
                 Spacer(Modifier.height(28.dp))
+            }
+        }
+
+        scheduleWorkout?.let { workout ->
+            val local = runCatching { LocalDate.parse(workout.date) }.getOrNull()
+            val startMs = local
+                ?.atTime(7, 0)
+                ?.atZone(ZoneId.systemDefault())
+                ?.toInstant()
+                ?.toEpochMilli()
+                ?: System.currentTimeMillis()
+            ScheduleSessionDialog(
+                date = workout.date,
+                workouts = listOf(workout),
+                existingTypeKeys = emptySet(),
+                suggestedStartMs = startMs,
+                preselectedTypeKey = workout.typeKey,
+                loading = false,
+                onDismiss = { scheduleWorkout = null },
+                onScheduled = { DataRefresh.bump() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutsDayPage(
+    date: LocalDate,
+    workouts: List<Workout>,
+    showHeading: Boolean,
+    loaded: Boolean,
+    total: Int,
+    accent: Color,
+    menuKey: String?,
+    onMenuClick: (String) -> Unit,
+    onDismissMenu: () -> Unit,
+    onSchedule: (Workout) -> Unit,
+    onOpen: (String, String) -> Unit,
+    onSync: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        if (showHeading) {
+            DayHeading(date = date, count = workouts.size, accent = accent)
+            Spacer(Modifier.height(12.dp))
+        }
+
+        when {
+            !loaded -> com.hcexport.ui.LoadingLine("Loading your calendar…", accent)
+
+            workouts.isEmpty() -> EmptyState(
+                iconRes = R.drawable.ic_flame,
+                title = if (total == 0) "No workouts yet" else "Rest day",
+                message = if (total == 0)
+                    "Sync to pull the latest programming into the calendar."
+                else
+                    "Nothing programmed for ${RecordLogic.formatDate(date.iso())}.",
+                accent = accent,
+                actionText = if (total == 0) "Sync now" else null,
+                onAction = if (total == 0) onSync else null,
+            )
+
+            else -> workouts.forEach { workout ->
+                val key = "${workout.date}/${workout.typeKey}"
+                WorkoutCard(
+                    workout = workout,
+                    menuOpen = menuKey == key,
+                    onMenuClick = { onMenuClick(key) },
+                    onDismissMenu = onDismissMenu,
+                    onSchedule = { onSchedule(workout) },
+                    onClick = { onOpen(workout.date, workout.typeKey) },
+                )
+                Spacer(Modifier.height(CardGap))
             }
         }
     }
@@ -308,11 +427,11 @@ private fun shift(date: LocalDate, view: CalendarView, direction: Long): LocalDa
     CalendarView.DAY -> date.plusDays(direction)
 }
 
-private fun periodLabel(date: LocalDate, view: CalendarView): String {
+private fun periodLabel(date: LocalDate, view: CalendarView, firstDay: DayOfWeek): String {
     val locale = Locale.getDefault()
     return when (view) {
         CalendarView.WEEK -> {
-            val start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val start = WeekStart.startOfWeek(date, firstDay)
             val end = start.plusDays(6)
             val sameMonth = start.month == end.month
             val startFmt = DateTimeFormatter.ofPattern(if (sameMonth) "d" else "d MMM", locale)
@@ -365,12 +484,13 @@ private fun PeriodNavigator(
 @Composable
 private fun WeekStrip(
     focusDate: LocalDate,
+    firstDay: DayOfWeek,
     today: LocalDate,
     byDate: Map<String, List<Workout>>,
     accent: Color,
     onSelect: (LocalDate) -> Unit,
 ) {
-    val start = focusDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val start = WeekStart.startOfWeek(focusDate, firstDay)
     val dates = (0L..6L).map { start.plusDays(it) }
     Row(
         Modifier.fillMaxWidth(),
@@ -456,16 +576,19 @@ private fun DayCell(
 private fun MonthGrid(
     month: YearMonth,
     focusDate: LocalDate,
+    firstDay: DayOfWeek,
     today: LocalDate,
     byDate: Map<String, List<Workout>>,
     accent: Color,
     onSelect: (LocalDate) -> Unit,
 ) {
     val first = month.atDay(1)
-    val leading = first.dayOfWeek.value - DayOfWeek.MONDAY.value
+    val leading = WeekStart.leadingDays(first, firstDay)
     val days = month.lengthOfMonth()
     val rows = ((leading + days + 6) / 7)
-    val dayHeaders = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+    val dayHeaders = WeekStart.daysFrom(firstDay).map {
+        it.getDisplayName(TextStyle.SHORT, Locale.getDefault()).uppercase(Locale.getDefault())
+    }
 
     Column {
         Row(Modifier.fillMaxWidth()) {
@@ -641,12 +764,20 @@ private fun DayHeading(date: LocalDate, count: Int, accent: Color) {
 }
 
 @Composable
-private fun WorkoutCard(workout: Workout, onClick: () -> Unit) {
+private fun WorkoutCard(
+    workout: Workout,
+    menuOpen: Boolean,
+    onMenuClick: () -> Unit,
+    onDismissMenu: () -> Unit,
+    onSchedule: () -> Unit,
+    onClick: () -> Unit,
+) {
     val accent = workoutAccent(workout.typeKey)
     HcCard(
         accent = accent,
         contentPadding = PaddingValues(15.dp),
         onClick = onClick,
+        onLongClick = onMenuClick,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -674,7 +805,41 @@ private fun WorkoutCard(workout: Workout, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.width(10.dp))
+            Box {
+                Box(
+                    Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .clickable(onClickLabel = "Workout actions", onClick = onMenuClick),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.MoreVert,
+                        contentDescription = "Workout actions",
+                        tint = Slate,
+                        modifier = Modifier.size(19.dp),
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuOpen,
+                    onDismissRequest = onDismissMenu,
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Schedule journal entry",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Snow,
+                            )
+                        },
+                        onClick = {
+                            onDismissMenu()
+                            onSchedule()
+                        },
+                    )
+                }
+            }
+            Spacer(Modifier.width(2.dp))
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,
@@ -697,10 +862,12 @@ fun WorkoutDetailScreen(
     date: String,
     typeKey: String,
     onBack: () -> Unit,
-    onAddWeight: (date: String, typeKey: String) -> Unit,
-    onAddBenchmark: (date: String, typeKey: String) -> Unit,
     onOpenInteractive: (date: String, typeKey: String) -> Unit,
+    onOpenWeightRecord: (exerciseKey: String, recordId: Long) -> Unit,
+    onOpenBenchmarkRecord: (benchmarkKey: String, recordId: Long) -> Unit,
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    var showSchedule by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val refresh by DataRefresh.tick.collectAsState()
     var resumeTick by remember { mutableIntStateOf(0) }
@@ -738,6 +905,42 @@ fun WorkoutDetailScreen(
             PageHeader(
                 title = "Workout",
                 onBack = onBack,
+                trailing = {
+                    if (display != null) {
+                        Box {
+                            IconAction(
+                                icon = {
+                                    Icon(
+                                        Icons.Filled.MoreVert,
+                                        contentDescription = "Workout actions",
+                                        tint = Mist,
+                                    )
+                                },
+                                onClick = { showMenu = true },
+                                border = false,
+                                background = CardHigh.copy(alpha = 0.55f),
+                            )
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "Schedule journal entry",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Snow,
+                                        )
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        showSchedule = true
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
             )
             LazyColumn(
                 Modifier.fillMaxSize(),
@@ -802,6 +1005,9 @@ fun WorkoutDetailScreen(
                                         title = "${record.reps}RM · ${record.exerciseName}",
                                         value = "${RecordLogic.formatWeight(record.weightKg)} kg",
                                         accent = Amber,
+                                        onClick = {
+                                            onOpenWeightRecord(record.exerciseKey, record.id)
+                                        },
                                     )
                                 }
                                 linked.benchmarks.forEach { record ->
@@ -809,6 +1015,9 @@ fun WorkoutDetailScreen(
                                         title = record.benchmarkName,
                                         value = RecordLogic.formatScore(record),
                                         accent = Teal,
+                                        onClick = {
+                                            onOpenBenchmarkRecord(record.benchmarkKey, record.id)
+                                        },
                                     )
                                 }
                             }
@@ -816,21 +1025,27 @@ fun WorkoutDetailScreen(
                         }
                     }
 
-                    item {
-                        SecondaryButton(
-                            text = "Add a weight record",
-                            onClick = { onAddWeight(date, typeKey) },
-                            accent = Amber,
-                        )
-                        Spacer(Modifier.height(9.dp))
-                        SecondaryButton(
-                            text = "Add a benchmark result",
-                            onClick = { onAddBenchmark(date, typeKey) },
-                            accent = Teal,
-                        )
-                    }
                 }
             }
+        }
+        if (showSchedule && display != null) {
+            val local = runCatching { LocalDate.parse(display.date) }.getOrNull()
+            val startMs = local
+                ?.atTime(7, 0)
+                ?.atZone(ZoneId.systemDefault())
+                ?.toInstant()
+                ?.toEpochMilli()
+                ?: System.currentTimeMillis()
+            ScheduleSessionDialog(
+                date = display.date,
+                workouts = listOf(display),
+                existingTypeKeys = emptySet(),
+                suggestedStartMs = startMs,
+                preselectedTypeKey = display.typeKey,
+                loading = false,
+                onDismiss = { showSchedule = false },
+                onScheduled = { DataRefresh.bump() },
+            )
         }
     }
 }
@@ -890,8 +1105,8 @@ private fun AiWorkoutCard(hasPlan: Boolean, onClick: () -> Unit) {
                 }
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    if (hasPlan) "Open your interactive session"
-                    else "Turn this session into tracked sets",
+                    if (hasPlan) "See the structured plan"
+                    else "Preview the sets the AI reads from it",
                     style = MaterialTheme.typography.bodySmall,
                     color = Mist,
                 )
@@ -991,9 +1206,22 @@ private fun WorkoutBlockView(block: WorkoutBlock, accent: Color) {
 }
 
 @Composable
-private fun RecordLine(title: String, value: String, accent: Color) {
+private fun RecordLine(
+    title: String,
+    value: String,
+    accent: Color,
+    onClick: (() -> Unit)? = null,
+) {
     Row(
-        Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable(onClick = onClick)
+                else Modifier
+            )
+            .padding(vertical = 5.dp, horizontal = if (onClick != null) 6.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(accent))

@@ -1,8 +1,12 @@
 package com.hcexport.ui.journal
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,8 +15,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,34 +33,50 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.hcexport.AutoRecords
 import com.hcexport.CalendarHelper
 import com.hcexport.CalendarWorkoutEvent
 import com.hcexport.InteractiveStore
 import com.hcexport.JournalAiPlan
+import com.hcexport.JournalDeleter
 import com.hcexport.JournalFeed
+import com.hcexport.JournalHiddenStore
 import com.hcexport.JournalItem
 import com.hcexport.JournalNotesStore
 import com.hcexport.JournalStorage
+import com.hcexport.Prefs
 import com.hcexport.R
 import com.hcexport.RecordLogic
+import com.hcexport.RecordStore
+import com.hcexport.ScheduledSessionStore
 import com.hcexport.Workout
 import com.hcexport.WorkoutStore
 import com.hcexport.ui.AiWorkoutPanel
+import com.hcexport.ui.ConfirmDialog
 import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.EmptyState
 import com.hcexport.ui.HcBackground
+import com.hcexport.ui.HcCard
+import com.hcexport.ui.HighlightOnArrival
 import com.hcexport.ui.LoadingLine
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
+import com.hcexport.ui.SecondaryButton
 import com.hcexport.ui.rememberAiWorkoutState
 import com.hcexport.ui.theme.Amber
+import com.hcexport.ui.theme.Danger
+import com.hcexport.ui.theme.Mist
 import com.hcexport.ui.theme.Periwinkle
 import com.hcexport.ui.theme.Slate
+import com.hcexport.ui.theme.Snow
 import com.hcexport.ui.theme.Teal
 import com.hcexport.ui.theme.workoutAccent
 import kotlinx.coroutines.Dispatchers
@@ -70,8 +94,14 @@ private data class JournalEntryLoad(
 fun JournalEntryScreen(
     date: String,
     entryKey: String,
+    focus: String = "",
     onBack: () -> Unit,
     onOpenAiSettings: () -> Unit,
+    onAddWeight: (date: String, typeKey: String) -> Unit,
+    onAddBenchmark: (date: String, typeKey: String) -> Unit,
+    onStartLive: (date: String, typeKey: String) -> Unit,
+    onOpenWeightRecord: (exerciseKey: String, recordId: Long) -> Unit,
+    onOpenBenchmarkRecord: (benchmarkKey: String, recordId: Long) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -89,6 +119,9 @@ fun JournalEntryScreen(
             val sessions = runCatching {
                 InteractiveStore.getBetween(context, date, date)
             }.getOrDefault(emptyList()).associateBy { it.typeKey }
+            val scheduled = runCatching {
+                ScheduledSessionStore.getForDay(context, date)
+            }.getOrDefault(emptyList())
             val events = runCatching {
                 val localDate = java.time.LocalDate.parse(date)
                 val zone = java.time.ZoneId.systemDefault()
@@ -105,6 +138,9 @@ fun JournalEntryScreen(
                     entries = entries,
                     sessions = sessions,
                     notes = JournalNotesStore.getAll(context),
+                    sleepSourcePriority = Prefs.getSleepSourcePriority(context),
+                    scheduledSessions = scheduled,
+                    hiddenKeys = JournalHiddenStore.getAll(context),
                 ).items.firstOrNull { it.key == entryKey },
                 workouts = workouts,
             )
@@ -132,11 +168,59 @@ fun JournalEntryScreen(
     val livePlan: JournalAiPlan? = workoutItem?.let { item ->
         aiState?.plan?.let { JournalFeed.aiPlan(it, aiState.results) } ?: item.plan
     }
+    // Records are set from the session they were achieved in, so this entry owns
+    // both the list and the two add actions.
+    val workoutRecords by produceState(
+        RecordStore.WorkoutRecords(emptyList(), emptyList()),
+        workoutItem?.typeKey, refresh, resumeTick, aiState?.recordsRevision,
+    ) {
+        val typeKey = workoutItem?.typeKey
+        value = if (typeKey == null) {
+            RecordStore.WorkoutRecords(emptyList(), emptyList())
+        } else {
+            withContext(Dispatchers.IO) { RecordStore.recordsForWorkout(context, date, typeKey) }
+        }
+    }
     var note by remember(entryKey, journalItem?.note) {
         mutableStateOf(journalItem?.note.orEmpty())
     }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+
+    // A record link arrives as "w:<id>" or "b:<id>". A weight record that still
+    // matches a strength set lands on that set's fields; anything else lands on
+    // its row in this entry's records card.
+    val focusRecord = remember(focus, workoutRecords) {
+        if (focus.startsWith("w:")) {
+            val id = focus.removePrefix("w:").toLongOrNull()
+            workoutRecords.weights.firstOrNull { it.id == id }
+        } else {
+            null
+        }
+    }
+    val focusBenchmark = remember(focus, workoutRecords) {
+        if (focus.startsWith("b:")) {
+            val id = focus.removePrefix("b:").toLongOrNull()
+            workoutRecords.benchmarks.firstOrNull { it.id == id }
+        } else {
+            null
+        }
+    }
+    val focusScope = remember(focusRecord, aiState?.plan, aiState?.results) {
+        val plan = aiState?.plan
+        val record = focusRecord
+        if (plan != null && record != null) {
+            AutoRecords.scopeFor(plan, aiState.results, record)
+        } else {
+            null
+        }
+    }
 
     fun saveAndBack() {
+        if (deleting) {
+            onBack()
+            return
+        }
         scope.launch {
             runCatching {
                 withContext(Dispatchers.IO) { JournalNotesStore.set(context, entryKey, note) }
@@ -148,7 +232,8 @@ fun JournalEntryScreen(
 
     BackHandler { saveAndBack() }
 
-    LaunchedEffect(note, journalItem?.note) {
+    LaunchedEffect(note, journalItem?.note, deleting) {
+        if (deleting) return@LaunchedEffect
         if (journalItem == null || note == journalItem.note) return@LaunchedEffect
         delay(700)
         runCatching {
@@ -200,6 +285,10 @@ fun JournalEntryScreen(
                                     AiWorkoutPanel(
                                         state = panel,
                                         onOpenAiSettings = onOpenAiSettings,
+                                        onStartLive = {
+                                            onStartLive(date, journalItem.typeKey)
+                                        },
+                                        focusScope = focusScope,
                                         original = {
                                             JournalWorkoutText(
                                                 journalItem.content,
@@ -214,6 +303,84 @@ fun JournalEntryScreen(
                                     )
                                 }
                                 Spacer(Modifier.height(26.dp))
+                            }
+                            // A record can only be set in a workout that was done, so a
+                            // planned entry offers neither the list nor the add actions.
+                            if (!planned) {
+                                item {
+                                    JournalSectionHeader(
+                                        title = "Records",
+                                        accent = Amber,
+                                        subtitle = "Lift PRs and benchmark results set in this session.",
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    HcCard(
+                                        contentPadding = PaddingValues(
+                                            horizontal = 16.dp,
+                                            vertical = 8.dp,
+                                        ),
+                                    ) {
+                                        if (workoutRecords.isEmpty) {
+                                            Text(
+                                                "No records set in this workout yet.",
+                                                modifier = Modifier.padding(vertical = 6.dp),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Slate,
+                                            )
+                                        }
+                                        workoutRecords.weights.forEach { record ->
+                                            HighlightOnArrival(
+                                                active = focusRecord?.id == record.id &&
+                                                    focusScope == null &&
+                                                    aiState?.loading != true,
+                                                color = Amber,
+                                            ) {
+                                                JournalRecordLine(
+                                                    title = "${record.reps}RM · ${record.exerciseName}",
+                                                    value = "${RecordLogic.formatWeight(record.weightKg)} kg",
+                                                    accent = Amber,
+                                                    onClick = {
+                                                        onOpenWeightRecord(
+                                                            record.exerciseKey,
+                                                            record.id,
+                                                        )
+                                                    },
+                                                )
+                                            }
+                                        }
+                                        workoutRecords.benchmarks.forEach { record ->
+                                            HighlightOnArrival(
+                                                active = focusBenchmark?.id == record.id,
+                                                color = Teal,
+                                            ) {
+                                                JournalRecordLine(
+                                                    title = record.benchmarkName,
+                                                    value = RecordLogic.formatScore(record),
+                                                    accent = Teal,
+                                                    onClick = {
+                                                        onOpenBenchmarkRecord(
+                                                            record.benchmarkKey,
+                                                            record.id,
+                                                        )
+                                                    },
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(12.dp))
+                                    SecondaryButton(
+                                        text = "Add a weight record",
+                                        onClick = { onAddWeight(date, journalItem.typeKey) },
+                                        accent = Amber,
+                                    )
+                                    Spacer(Modifier.height(9.dp))
+                                    SecondaryButton(
+                                        text = "Add a benchmark result",
+                                        onClick = { onAddBenchmark(date, journalItem.typeKey) },
+                                        accent = Teal,
+                                    )
+                                    Spacer(Modifier.height(26.dp))
+                                }
                             }
                             item {
                                 JournalSectionHeader(
@@ -285,10 +452,40 @@ fun JournalEntryScreen(
                             color = Slate,
                             textAlign = TextAlign.Center,
                         )
+                        Spacer(Modifier.height(18.dp))
+                        SecondaryButton(
+                            text = "Delete this entry",
+                            onClick = { showDeleteConfirm = true },
+                            accent = Danger,
+                        )
+                        Spacer(Modifier.height(6.dp))
                     }
                 }
             }
         }
+    }
+
+    if (showDeleteConfirm && journalItem != null) {
+        ConfirmDialog(
+            title = "Delete this entry?",
+            message = JournalDeleter.confirmMessage(journalItem),
+            confirmText = "Delete",
+            destructive = true,
+            onConfirm = {
+                showDeleteConfirm = false
+                deleting = true
+                scope.launch {
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            JournalDeleter.delete(context, journalItem)
+                        }
+                    }
+                    DataRefresh.bump()
+                    onBack()
+                }
+            },
+            onDismiss = { showDeleteConfirm = false },
+        )
     }
 }
 
@@ -328,6 +525,7 @@ private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPl
                 iconRes = R.drawable.ic_flame,
                 tags = buildList {
                     add("WORKOUT" to accent)
+                    if (item.scheduled) add("SCHEDULED" to Periwinkle)
                     if (planned) add("PLANNED" to Amber)
                     if (plan != null) add("AI PLAN" to Teal)
                     if (item.biometrics.isNotEmpty()) add("WATCH DATA" to Teal)
@@ -390,4 +588,39 @@ private fun commentPlaceholder(item: JournalItem): String = when (item) {
         "Anything worth remembering about this session?"
     is JournalItem.Sleep ->
         "How did you sleep?"
+}
+
+@Composable
+private fun JournalRecordLine(
+    title: String,
+    value: String,
+    accent: Color,
+    onClick: (() -> Unit)? = null,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable(onClick = onClick)
+                else Modifier
+            )
+            .padding(vertical = 6.dp, horizontal = if (onClick != null) 6.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
+        Spacer(Modifier.width(10.dp))
+        Text(
+            title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Mist,
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+            color = Snow,
+        )
+    }
 }
