@@ -44,6 +44,12 @@ object WorkoutStore {
             h.writableDatabase
         }
 
+    /** Release the connection so a restore can replace the file underneath it. */
+    fun close() = synchronized(this) {
+        helper?.close()
+        helper = null
+    }
+
     data class UpsertResult(val created: Int, val updated: Int, val unchanged: Int)
 
     fun upsertAll(ctx: Context, workouts: List<Workout>, nowMs: Long = System.currentTimeMillis()): UpsertResult {

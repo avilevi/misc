@@ -104,7 +104,8 @@ enum class SettingsPage(
     WORKOUTS("workouts", "Workouts & watch", "Calendar default and watch snapshot", Periwinkle),
     AI("ai", "AI workout", "Provider, key, model and interactive plans", Teal),
     LIVE("live", "Live workout", "Countdown, set windows and cues", Coral),
-    DIAGNOSTICS("diagnostics", "Diagnostics", "Sync log, updates and data", Amber),
+    DIAGNOSTICS("diagnostics", "Diagnostics", "Sync log and updates", Amber),
+    BACKUP("backup", "Backup & restore", "Move the app to a new phone", Amber),
     ABOUT("about", "About", "Version, privacy and credits", Mist);
 
     companion object {
@@ -154,6 +155,7 @@ fun SettingsApp(startPage: String?) {
                     SettingsPage.AI -> AiSettingsPage()
                     SettingsPage.LIVE -> LiveWorkoutSettingsPage()
                     SettingsPage.DIAGNOSTICS -> DiagnosticsSettingsPage()
+                    SettingsPage.BACKUP -> BackupSettingsPage()
                     SettingsPage.ABOUT -> AboutSettingsPage()
                 }
             }
@@ -301,6 +303,7 @@ fun SettingsPageIcon(page: SettingsPage, tint: Color, size: androidx.compose.ui.
         SettingsPage.AI -> Icon(painterResource(R.drawable.ic_ai), null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.LIVE -> Icon(painterResource(R.drawable.ic_stopwatch), null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.DIAGNOSTICS -> Icon(Icons.Outlined.Build, null, tint = tint, modifier = Modifier.size(size))
+        SettingsPage.BACKUP -> Icon(painterResource(R.drawable.ic_archive), null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.ABOUT -> Icon(Icons.Outlined.Info, null, tint = tint, modifier = Modifier.size(size))
     }
 }

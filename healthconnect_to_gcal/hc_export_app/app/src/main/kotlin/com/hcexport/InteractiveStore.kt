@@ -33,6 +33,12 @@ object InteractiveStore {
         h.writableDatabase
     }
 
+    /** Release the connection so a restore can replace the file underneath it. */
+    fun close() = synchronized(this) {
+        helper?.close()
+        helper = null
+    }
+
     fun get(ctx: Context, date: String, typeKey: String): InteractiveSessionRecord? {
         db(ctx).query(
             TABLE, null, "date = ? AND type_key = ?", arrayOf(date, typeKey),

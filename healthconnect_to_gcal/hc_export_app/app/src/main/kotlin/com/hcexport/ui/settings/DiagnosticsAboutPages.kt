@@ -49,6 +49,7 @@ import com.hcexport.SyncLogger
 import com.hcexport.SyncStatus
 import com.hcexport.UpdateChecker
 import com.hcexport.ui.theme.Abyss
+import com.hcexport.ui.theme.Amber
 import com.hcexport.ui.theme.CardHigh
 import com.hcexport.ui.theme.Danger
 import com.hcexport.ui.theme.Mist
@@ -140,12 +141,16 @@ fun DiagnosticsSettingsPage() {
             SettingsCard(contentPadding = PaddingValues(16.dp)) {
                 SettingsRow(
                     title = "Installed version",
-                    value = "v${BuildConfig.VERSION_NAME}",
+                    value = "v${BuildConfig.VERSION_NAME}" + if (BuildConfig.DEBUG) " · debug" else "",
                 )
                 SettingsDivider()
                 SettingsRow(
                     title = "Check for updates",
-                    subtitle = "Downloads and installs from the project release",
+                    subtitle = if (BuildConfig.DEBUG) {
+                        "Debug build — the release APK is a separate app"
+                    } else {
+                        "Downloads and installs from the project release"
+                    },
                     onClick = {
                         if (checking || downloading) return@SettingsRow
                         checking = true
@@ -173,23 +178,6 @@ fun DiagnosticsSettingsPage() {
             }
         }
 
-        item { SettingsSectionHeader("Data & backup") }
-        item {
-            SettingsCard(contentPadding = PaddingValues(16.dp)) {
-                Text(
-                    "Workouts, records and AI plans are included in Android backup. Journal entries and health data stay local. " +
-                        "For a copy you control, open Workouts → History → Export.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Mist,
-                )
-                Spacer(Modifier.height(10.dp))
-                SettingsRow(
-                    title = "Backup",
-                    subtitle = "Android cloud backup / device transfer",
-                    value = "On",
-                )
-            }
-        }
     }
 
     if (showLog) {
@@ -239,6 +227,16 @@ fun DiagnosticsSettingsPage() {
                         style = MaterialTheme.typography.bodyMedium,
                         color = Mist,
                     )
+                    if (BuildConfig.DEBUG) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            "This is the debug build. The release APK installs as a separate " +
+                                "app with its own data: back up from Settings → Backup & restore " +
+                                "first, then restore that file in the release app.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Amber,
+                        )
+                    }
                     if (info.buildDate.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
                         Text(
@@ -274,7 +272,10 @@ fun DiagnosticsSettingsPage() {
                         updateError = null
                         scope.launch {
                             runCatching {
-                                UpdateChecker.downloadAndInstall(context) { pct ->
+                                UpdateChecker.downloadAndInstall(
+                                    context,
+                                    info.remoteVersionCode,
+                                ) { pct ->
                                     scope.launch { downloadPct = pct }
                                 }
                             }.onFailure {
@@ -323,7 +324,7 @@ fun AboutSettingsPage() {
                 Spacer(Modifier.height(12.dp))
                 Text("HC Sync", style = MaterialTheme.typography.displaySmall, color = Snow)
                 Text(
-                    "v${BuildConfig.VERSION_NAME}",
+                    "v${BuildConfig.VERSION_NAME}" + if (BuildConfig.DEBUG) " · debug build" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = Slate,
                 )

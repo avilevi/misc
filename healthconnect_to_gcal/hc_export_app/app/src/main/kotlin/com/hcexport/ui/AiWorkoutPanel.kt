@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -39,6 +40,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,13 +63,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -74,6 +83,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.hcexport.AiClient
 import com.hcexport.AiConfigStore
@@ -107,6 +117,7 @@ import com.hcexport.WorkoutText
 import com.hcexport.metricHint
 import com.hcexport.ui.theme.Abyss
 import com.hcexport.ui.theme.Amber
+import com.hcexport.ui.theme.AmberDeep
 import com.hcexport.ui.theme.CardHigh
 import com.hcexport.ui.theme.Danger
 import com.hcexport.ui.theme.Hairline
@@ -139,6 +150,12 @@ internal val LocalAiPlanReadOnly = compositionLocalOf { false }
 
 /** The plan row a record link asked to land on, if it is still in the plan. */
 internal val LocalAiFocusScope = compositionLocalOf<String?> { null }
+
+/** Plan rows that earned a record in this workout, keyed by their scope. */
+internal val LocalPrScopes = compositionLocalOf<Map<String, WeightRecord>> { emptyMap() }
+
+/** Replays the new-record celebration for a set's record, when the host allows it. */
+internal val LocalReplayPr = compositionLocalOf<((WeightRecord) -> Unit)?> { null }
 
 class AiWorkoutState internal constructor(
     private val context: Context,
@@ -377,11 +394,17 @@ fun AiWorkoutPanel(
     minimal: Boolean = false,
     /** A plan row to scroll to and flash (a record's source set). */
     focusScope: String? = null,
+    /** Sets that earned a record in this workout; each gets a gold mark. */
+    prScopes: Map<String, WeightRecord> = emptyMap(),
+    /** Replays the celebration for a set's record; null hides the replay button. */
+    onReplayPr: ((WeightRecord) -> Unit)? = null,
     original: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalAiPlanReadOnly provides readOnly,
         LocalAiFocusScope provides focusScope,
+        LocalPrScopes provides prScopes,
+        LocalReplayPr provides onReplayPr,
     ) {
         AiWorkoutPanelBody(state, onOpenAiSettings, accent, onStartLive, minimal, original)
     }
@@ -831,14 +854,14 @@ private fun SectionBlock(
         val readOnly = LocalAiPlanReadOnly.current
         if (!readOnly && markedRow == null && rowScopes.size > 1 && section.kind == "metcon") {
             Text(
-                "Tap the circle on the last set you reached.",
+                "Long-press the last set you reached.",
                 modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = Slate,
             )
         } else if (!readOnly && markedRow != null && markedRow < 0 && rowScopes.isNotEmpty()) {
             Text(
-                "Not reached — tap the circle on any set to bring it back in.",
+                "Not reached — long-press a set to bring it back in.",
                 modifier = Modifier.padding(start = 12.dp, bottom = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = Slate,
@@ -1048,7 +1071,86 @@ private fun AiErrorState(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * The aura a record set wears: a thick gold gradient frame drawn just outside
+ * the row, with soft rings of glow bleeding past it. The row's own background
+ * is left exactly as every other set's.
+ */
+private fun Modifier.prAura(record: WeightRecord?): Modifier = if (record == null) {
+    this
+} else {
+    drawBehind {
+        fun ring(outer: Dp, thickness: Dp, brush: Brush) {
+            val half = thickness.toPx() / 2
+            val pad = outer.toPx() + half
+            drawRoundRect(
+                brush = brush,
+                topLeft = Offset(-pad, -pad),
+                size = Size(size.width + pad * 2, size.height + pad * 2),
+                cornerRadius = CornerRadius(14.dp.toPx() + pad),
+                style = Stroke(thickness.toPx()),
+            )
+        }
+        val frameOuter = 5.dp
+        // The glow: the farther out, the fainter.
+        ring(frameOuter, 8.dp, SolidColor(Amber.copy(alpha = 0.05f)))
+        ring(frameOuter, 5.dp, SolidColor(Amber.copy(alpha = 0.10f)))
+        ring(frameOuter, 2.5.dp, SolidColor(Amber.copy(alpha = 0.18f)))
+        // The frame itself: a thick gold gradient, not a thin line.
+        ring(
+            2.dp,
+            3.dp,
+            Brush.linearGradient(listOf(Amber, Color(0xFFFFE39B), AmberDeep, Amber)),
+        )
+    }
+}
+
+/**
+ * The width the "NEW PR!" tag occupies. Every row reserves it — the sets
+ * without a record keep an empty slot — so the fields share the width
+ * identically from one set to the next.
+ */
+private val PrLabelSlot = 72.dp
+
+/** The gold tag beside a record's set; tapping it replays the celebration. */
+@Composable
+private fun PrReplayLabel(record: WeightRecord) {
+    val onReplay = LocalReplayPr.current
+    val shape = RoundedCornerShape(50)
+    Row(
+        Modifier
+            .width(PrLabelSlot)
+            .clip(shape)
+            .background(Brush.horizontalGradient(listOf(Amber, Color(0xFFFFD54F))))
+            .then(
+                if (onReplay != null) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClickLabel = "Replay the fanfare",
+                        onClick = { onReplay(record) },
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .padding(vertical = 3.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "NEW PR!",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Black,
+                fontStyle = FontStyle.Italic,
+                letterSpacing = 0.5.sp,
+            ),
+            color = Abyss,
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ExerciseCard(
     exercise: InteractiveExercise,
@@ -1107,18 +1209,31 @@ private fun ExerciseCard(
             val rowIndex = firstRow + setIndex
             val isMarked = markedRow == rowIndex
             val notReached = markedRow != null && rowIndex > markedRow
+            val prRecord = LocalPrScopes.current[scopeKey]
+            // Reserve the tag's slot even when this set earned nothing, so the
+            // fields line up from one row to the next.
+            val prSlot = LocalReplayPr.current != null || prRecord != null
+            var reachMenu by remember { mutableStateOf(false) }
             Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                 HighlightOnArrival(
                     active = LocalAiFocusScope.current == scopeKey,
                     color = accent,
                 ) {
+                Box {
                 Row(
-                    Modifier.fillMaxWidth(),
+                    Modifier
+                        .fillMaxWidth()
+                        .prAura(prRecord)
+                        .combinedClickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            enabled = !readOnly,
+                            onLongClickLabel = "Reached up to this set",
+                            onLongClick = { reachMenu = true },
+                            onClick = {},
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (!readOnly) {
-                        ReachedCheck(marked = isMarked, accent = accent) { onReach(scopeKey) }
-                    }
                     Column(Modifier.weight(1f).alpha(if (notReached) PlacedAlpha else 1f)) {
                         Row(
                             Modifier.fillMaxWidth(),
@@ -1151,6 +1266,14 @@ private fun ExerciseCard(
                                 modifier = Modifier.weight(1f),
                                 enabled = !notReached,
                             )
+                            if (prSlot) {
+                                Spacer(Modifier.width(6.dp))
+                                if (prRecord != null) {
+                                    PrReplayLabel(prRecord)
+                                } else {
+                                    Spacer(Modifier.width(PrLabelSlot))
+                                }
+                            }
                         }
                         if (showTarget) {
                             Text(
@@ -1163,6 +1286,19 @@ private fun ExerciseCard(
                             )
                         }
                     }
+                }
+                DropdownMenu(
+                    expanded = reachMenu,
+                    onDismissRequest = { reachMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Reached up to this set") },
+                        onClick = {
+                            reachMenu = false
+                            if (!isMarked) onReach(scopeKey)
+                        },
+                    )
+                }
                 }
                 }
                 if (isMarked) ReachedCaption(accent)
@@ -1189,6 +1325,7 @@ private data class RoundView(
     val movements: List<RoundMovementView>,
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RoundsCard(
     rounds: List<RoundView>,
@@ -1265,20 +1402,30 @@ private fun RoundsCard(
                     movement.metrics.none { defaultFor(it) != null }
                 val isMarked = markedRow == movement.rowIndex
                 val notReached = markedRow != null && movement.rowIndex > markedRow
+                val prRecord = LocalPrScopes.current[movement.scopeKey]
+                // The same reserved tag slot as the strength set rows.
+                val prSlot = LocalReplayPr.current != null || prRecord != null
+                var reachMenu by remember { mutableStateOf(false) }
                 Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                     HighlightOnArrival(
                         active = LocalAiFocusScope.current == movement.scopeKey,
                         color = accent,
                     ) {
+                    Box {
                     Row(
-                        Modifier.fillMaxWidth(),
+                        Modifier
+                            .fillMaxWidth()
+                            .prAura(prRecord)
+                            .combinedClickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                enabled = !readOnly,
+                                onLongClickLabel = "Reached up to this set",
+                                onLongClick = { reachMenu = true },
+                                onClick = {},
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        if (!readOnly) {
-                            ReachedCheck(marked = isMarked, accent = accent) {
-                                onReach(movement.scopeKey)
-                            }
-                        }
                         Column(Modifier.weight(1f).alpha(if (notReached) PlacedAlpha else 1f)) {
                             Row(
                                 Modifier.fillMaxWidth(),
@@ -1318,9 +1465,17 @@ private fun RoundsCard(
                                     accent = accent,
                                     onValue = onValue,
                                     defaultFor = defaultFor,
-                                    modifier = Modifier.width(compactWidth(movement.metrics)),
+                                    modifier = Modifier.weight(1f),
                                     enabled = !notReached,
                                 )
+                                if (prSlot) {
+                                    Spacer(Modifier.width(6.dp))
+                                    if (prRecord != null) {
+                                        PrReplayLabel(prRecord)
+                                    } else {
+                                        Spacer(Modifier.width(PrLabelSlot))
+                                    }
+                                }
                             }
                             if (showTarget) {
                                 Text(
@@ -1333,6 +1488,19 @@ private fun RoundsCard(
                                 )
                             }
                         }
+                    }
+                    DropdownMenu(
+                        expanded = reachMenu,
+                        onDismissRequest = { reachMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Reached up to this set") },
+                            onClick = {
+                                reachMenu = false
+                                if (!isMarked) onReach(movement.scopeKey)
+                            },
+                        )
+                    }
                     }
                     }
                     if (isMarked) ReachedCaption(accent)
@@ -1503,8 +1671,11 @@ private fun MetricInput(
     }
 }
 
-/** One row of inputs for a set or a round movement, sized to stay on one line. */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * One row of inputs for a set or a round movement. The fields share the width
+ * the row gives them — they are never allowed to wrap onto a second line, so a
+ * narrow screen narrows the fields rather than pushing one below the other.
+ */
 @Composable
 private fun CompactMetrics(
     metrics: List<MetricDef>,
@@ -1516,10 +1687,10 @@ private fun CompactMetrics(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    FlowRow(
+    Row(
         modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         metrics.forEach { metric ->
             MetricInput(
@@ -1527,7 +1698,7 @@ private fun CompactMetrics(
                 value = resolvedMetricValue(results, scopeKey, metric, defaultFor),
                 accent = accent,
                 onValue = { entered -> onValue(scopeKey, metric.key, entered) },
-                modifier = Modifier.width(compactWidth(metric)),
+                modifier = Modifier.weight(1f),
                 compact = true,
                 enabled = enabled,
             )
@@ -1535,79 +1706,15 @@ private fun CompactMetrics(
     }
 }
 
-private fun compactWidth(metric: MetricDef): Dp = when (metric.kind) {
-    MetricKind.WEIGHT -> if (metric.hint.isNotBlank()) 100.dp else 88.dp
-    MetricKind.REPS, MetricKind.CALORIES, MetricKind.ROUNDS -> 74.dp
-    MetricKind.DISTANCE -> 80.dp
-    MetricKind.TIME -> 84.dp
-    MetricKind.CHECK -> 86.dp
-    MetricKind.TEXT -> 120.dp
-}
-
-private fun compactWidth(metrics: List<MetricDef>): Dp {
-    if (metrics.isEmpty()) return 0.dp
-    return metrics.fold(0.dp) { total, metric -> total + compactWidth(metric) } +
-        6.dp * (metrics.size - 1).coerceAtLeast(0)
-}
-
 /** How far a row past the reached marker is dimmed. */
 private const val PlacedAlpha = 0.35f
-
-/** Width of the reached circle's tap area; the caption aligns to its far edge. */
-private val ReachCheckSize = 34.dp
-
-/**
- * The "reached here" control: a small circle at the head of every set row.
- * Tapping it marks that row as the last one reached — everything before it
- * counts as done, everything after is greyed and not counted. Tapping the
- * marked circle again clears the marker.
- */
-@Composable
-private fun ReachedCheck(
-    marked: Boolean,
-    accent: Color,
-    onToggle: () -> Unit,
-) {
-    Box(
-        Modifier
-            .size(ReachCheckSize)
-            .clip(CircleShape)
-            .clickable(
-                onClickLabel = if (marked) "Clear reached marker" else "Reached up to here",
-                onClick = onToggle,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            Modifier
-                .size(17.dp)
-                .clip(CircleShape)
-                .background(if (marked) accent else Color.Transparent)
-                .border(
-                    1.5.dp,
-                    if (marked) accent else Slate.copy(alpha = 0.55f),
-                    CircleShape,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (marked) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Abyss,
-                    modifier = Modifier.size(11.dp),
-                )
-            }
-        }
-    }
-}
 
 /** Under the marked row: a quiet line naming where the workout was stopped. */
 @Composable
 private fun ReachedCaption(accent: Color) {
     Text(
         "reached here",
-        modifier = Modifier.padding(start = ReachCheckSize + 2.dp, top = 1.dp),
+        modifier = Modifier.padding(start = 2.dp, top = 1.dp),
         style = MaterialTheme.typography.labelSmall,
         color = accent,
         maxLines = 1,

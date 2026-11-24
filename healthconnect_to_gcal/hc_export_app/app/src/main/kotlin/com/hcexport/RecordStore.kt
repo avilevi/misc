@@ -31,6 +31,12 @@ object RecordStore {
         h.writableDatabase
     }
 
+    /** Release the connection so a restore can replace the file underneath it. */
+    fun close() = synchronized(this) {
+        helper?.close()
+        helper = null
+    }
+
     data class WorkoutRecords(
         val weights: List<WeightRecord>,
         val benchmarks: List<BenchmarkRecord>,

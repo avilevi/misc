@@ -120,6 +120,7 @@ import com.hcexport.ui.IconAction
 import com.hcexport.ui.LoadingLine
 import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.NewPrCelebration
+import com.hcexport.ui.PrLine
 import com.hcexport.ui.PrimaryButton
 import com.hcexport.ui.SecondaryButton
 import com.hcexport.ui.SectionLabel
@@ -1996,12 +1997,15 @@ private fun LiveWorkoutBody(
     }
 
     var leaving by remember { mutableStateOf(false) }
-    var prCelebration by remember { mutableStateOf<List<String>>(emptyList()) }
+    var prCelebration by remember { mutableStateOf<List<PrLine>>(emptyList()) }
     LaunchedEffect(ai.newRecordRevision) {
         if (ai.newRecordRevision > 0) {
             prCelebration = ai.newRecords.map { record ->
-                "${record.reps}RM ${record.exerciseName} · " +
-                    "${RecordLogic.formatWeight(record.weightKg)} kg"
+                PrLine(
+                    exercise = record.exerciseName,
+                    detail = "${record.reps}RM · " +
+                        "${RecordLogic.formatWeight(record.weightKg)} kg",
+                )
             }
         }
     }
@@ -2276,9 +2280,6 @@ private fun LiveWorkoutBody(
         if (prCelebration.isNotEmpty()) {
             NewPrCelebration(
                 records = prCelebration,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 68.dp, start = 20.dp, end = 20.dp),
                 onFinished = { prCelebration = emptyList() },
             )
         }

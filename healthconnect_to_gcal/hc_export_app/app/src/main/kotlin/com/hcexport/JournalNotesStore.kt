@@ -26,6 +26,12 @@ object JournalNotesStore {
         h.writableDatabase
     }
 
+    /** Release the connection so a restore can replace the file underneath it. */
+    fun close() = synchronized(this) {
+        helper?.close()
+        helper = null
+    }
+
     fun get(ctx: Context, key: String): String =
         db(ctx).query(
             TABLE, arrayOf("note"), "entry_key = ?", arrayOf(key),

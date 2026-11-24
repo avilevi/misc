@@ -11,8 +11,14 @@ import java.net.URL
 
 object UpdateChecker {
 
-    private const val VERSION_URL = "https://github.com/avilevi/misc/releases/download/latest/version.json"
-    private const val APK_URL     = "https://github.com/avilevi/misc/releases/download/latest/app-release.apk"
+    private const val BASE_URL    = "https://downloads.nvlf.uk/hc-sync"
+    private const val VERSION_URL = "$BASE_URL/version.json"
+
+    /**
+     * The APK URL carries the version code, so every build is a distinct URL
+     * and a CDN cannot hand back the previous APK after a publish.
+     */
+    internal fun apkUrl(versionCode: Int): String = "$BASE_URL/app-release.apk?v=$versionCode"
 
     data class UpdateInfo(
         val remoteVersionCode: Int,
@@ -34,11 +40,15 @@ object UpdateChecker {
         } catch (_: Exception) { null }
     }
 
-    suspend fun downloadAndInstall(ctx: Context, onProgress: (Int) -> Unit) = withContext(Dispatchers.IO) {
+    suspend fun downloadAndInstall(
+        ctx: Context,
+        versionCode: Int,
+        onProgress: (Int) -> Unit,
+    ) = withContext(Dispatchers.IO) {
         val outDir  = File(ctx.cacheDir, "apk_download").apply { mkdirs() }
-        val outFile = File(outDir, "hcsync-update.apk")
+        val outFile = File(outDir, "hcsync-update.apk").apply { delete() }
 
-        withConnection(APK_URL) { conn ->
+        withConnection(apkUrl(versionCode)) { conn ->
             val total = conn.contentLengthLong
             var downloaded = 0L
             var lastReported = -1

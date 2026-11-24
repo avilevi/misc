@@ -2,7 +2,6 @@ package com.hcexport.ui.journal
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,6 +64,7 @@ import com.hcexport.RecordLogic
 import com.hcexport.RecordStore
 import com.hcexport.ScheduledSessionStore
 import com.hcexport.Workout
+import com.hcexport.WeightRecord
 import com.hcexport.WorkoutStore
 import com.hcexport.WorkoutVideo
 import com.hcexport.ui.AiWorkoutPanel
@@ -74,9 +75,9 @@ import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.HighlightOnArrival
 import com.hcexport.ui.LoadingLine
-import com.hcexport.ui.NewPrBadge
 import com.hcexport.ui.NewPrCelebration
 import com.hcexport.ui.PageHeader
+import com.hcexport.ui.PrLine
 import com.hcexport.ui.ScreenPadding
 import com.hcexport.ui.SecondaryButton
 import com.hcexport.ui.rememberAiWorkoutState
@@ -125,6 +126,8 @@ fun JournalEntryScreen(
     val minimal = remember(resumeTick) {
         Prefs.getDesignStyle(context) == DesignStyle.MINIMAL
     }
+    // Drives the centring scroll when a record link lands on its row here.
+    val listState = rememberLazyListState()
 
     val load by produceState(JournalEntryLoad(), date, entryKey, refresh, resumeTick) {
         value = withContext(Dispatchers.IO) {
@@ -203,13 +206,12 @@ fun JournalEntryScreen(
         workoutItem?.typeKey, refresh, resumeTick, aiState?.recordsRevision,
     ) {
         val typeKey = workoutItem?.typeKey
-        value = if (typeKey == null) {
-            RecordStore.WorkoutRecords(emptyList(), emptyList()) to true
-        } else {
-            withContext(Dispatchers.IO) {
-                RecordStore.recordsForWorkout(context, date, typeKey)
-            } to true
-        }
+        // Before the entry is known there is nothing to load; reporting an
+        // empty list as loaded would make every stored record look new.
+        if (typeKey == null) return@produceState
+        value = withContext(Dispatchers.IO) {
+            RecordStore.recordsForWorkout(context, date, typeKey)
+        } to true
     }
     val workoutRecords = recordsState.first
     val recordsLoaded = recordsState.second
@@ -217,9 +219,11 @@ fun JournalEntryScreen(
         mutableStateOf(journalItem?.note.orEmpty())
     }
     var seenRecordIds by remember { mutableStateOf<Set<String>?>(null) }
-    var prCelebration by remember { mutableStateOf<List<String>>(emptyList()) }
-    LaunchedEffect(workoutRecords, recordsLoaded) {
-        if (!recordsLoaded) return@LaunchedEffect
+    var prCelebration by remember { mutableStateOf<List<PrLine>>(emptyList()) }
+    // Only a record that appears while this entry is open is celebrated: the
+    // ones already stored when it opens are history, not news.
+    LaunchedEffect(workoutRecords, recordsLoaded, workoutItem?.typeKey) {
+        if (!recordsLoaded || workoutItem == null) return@LaunchedEffect
         val ids = workoutRecords.weights.map { "w:${it.id}" }.toSet() +
             workoutRecords.benchmarks.map { "b:${it.id}" }.toSet()
         val previous = seenRecordIds
@@ -227,20 +231,32 @@ fun JournalEntryScreen(
         if (previous == null) return@LaunchedEffect
         val added = buildList {
             workoutRecords.weights.forEach { record ->
-                if ("w:${record.id}" !in previous) {
-                    add(
-                        "${record.reps}RM ${record.exerciseName} · " +
-                            "${RecordLogic.formatWeight(record.weightKg)} kg"
-                    )
-                }
+                if ("w:${record.id}" !in previous) add(weightPrLine(record))
             }
             workoutRecords.benchmarks.forEach { record ->
                 if ("b:${record.id}" !in previous) {
-                    add("${record.benchmarkName} · ${RecordLogic.formatScore(record)}")
+                    add(PrLine(record.benchmarkName, RecordLogic.formatScore(record)))
                 }
             }
         }
         if (added.isNotEmpty()) prCelebration = added
+    }
+    // The sets that earned a record in this workout. The emphasis belongs on
+    // the set itself, in the flow of the plan, not on the records card.
+    val prScopes = remember(workoutRecords, aiState?.plan, aiState?.results) {
+        val panel = aiState
+        val plan = panel?.plan
+        if (panel == null || plan == null) {
+            emptyMap<String, WeightRecord>()
+        } else {
+            workoutRecords.weights
+                .filter { it.origin == WeightRecord.ORIGIN_AUTO }
+                .mapNotNull { record ->
+                    AutoRecords.scopeFor(plan, panel.results, record)
+                        ?.let { scope -> scope to record }
+                }
+                .toMap()
+        }
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -324,6 +340,7 @@ fun JournalEntryScreen(
                 else -> Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     Modifier.fillMaxSize().imePadding(),
+                    state = listState,
                     contentPadding = PaddingValues(
                         start = ScreenPadding,
                         end = ScreenPadding,
@@ -357,6 +374,10 @@ fun JournalEntryScreen(
                                             { onStartLive(date, journalItem.typeKey) }
                                         },
                                         focusScope = focusScope,
+                                        prScopes = prScopes,
+                                        onReplayPr = { record ->
+                                            prCelebration = listOf(weightPrLine(record))
+                                        },
                                         original = {
                                             JournalWorkoutText(
                                                 journalItem.content,
@@ -411,12 +432,13 @@ fun JournalEntryScreen(
                                                     focusScope == null &&
                                                     aiState?.loading != true,
                                                 color = Amber,
+                                                center = true,
+                                                scrollState = listState,
                                             ) {
                                                 JournalRecordLine(
                                                     title = "${record.reps}RM · ${record.exerciseName}",
                                                     value = "${RecordLogic.formatWeight(record.weightKg)} kg",
                                                     accent = Amber,
-                                                    pr = true,
                                                     onClick = {
                                                         onOpenWeightRecord(
                                                             record.exerciseKey,
@@ -430,12 +452,13 @@ fun JournalEntryScreen(
                                             HighlightOnArrival(
                                                 active = focusBenchmark?.id == record.id,
                                                 color = Teal,
+                                                center = true,
+                                                scrollState = listState,
                                             ) {
                                                 JournalRecordLine(
                                                     title = record.benchmarkName,
                                                     value = RecordLogic.formatScore(record),
                                                     accent = Teal,
-                                                    pr = true,
                                                     onClick = {
                                                         onOpenBenchmarkRecord(
                                                             record.benchmarkKey,
@@ -556,17 +579,14 @@ fun JournalEntryScreen(
                         Spacer(Modifier.height(6.dp))
                     }
                 }
-                if (prCelebration.isNotEmpty()) {
-                    NewPrCelebration(
-                        records = prCelebration,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(horizontal = ScreenPadding, vertical = 8.dp),
-                        onFinished = { prCelebration = emptyList() },
-                    )
-                }
                 }
             }
+        }
+        if (prCelebration.isNotEmpty()) {
+            NewPrCelebration(
+                records = prCelebration,
+                onFinished = { prCelebration = emptyList() },
+            )
         }
     }
 
@@ -768,27 +788,12 @@ private fun JournalRecordLine(
     title: String,
     value: String,
     accent: Color,
-    pr: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(10.dp)
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(shape)
-            .then(
-                if (pr) {
-                    Modifier
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Amber.copy(alpha = 0.15f), Color.Transparent),
-                            )
-                        )
-                        .border(1.dp, Amber.copy(alpha = 0.32f), shape)
-                } else {
-                    Modifier
-                }
-            )
             .then(
                 if (onClick != null) Modifier
                     .clip(shape)
@@ -798,23 +803,14 @@ private fun JournalRecordLine(
             .padding(vertical = 6.dp, horizontal = if (onClick != null) 6.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(6.dp).clip(CircleShape).background(if (pr) Amber else accent))
+        Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
         Spacer(Modifier.width(10.dp))
-        Row(
-            Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Mist,
-            )
-            if (pr) {
-                Spacer(Modifier.width(6.dp))
-                NewPrBadge()
-            }
-        }
+        Text(
+            title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Mist,
+        )
         Text(
             value,
             style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
@@ -822,3 +818,8 @@ private fun JournalRecordLine(
         )
     }
 }
+
+private fun weightPrLine(record: WeightRecord) = PrLine(
+    exercise = record.exerciseName,
+    detail = "${record.reps}RM · ${RecordLogic.formatWeight(record.weightKg)} kg",
+)
