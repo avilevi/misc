@@ -78,6 +78,7 @@ import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.IconAction
 import com.hcexport.ui.LoadingLine
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.SegmentedControl
 import com.hcexport.ui.SwipeCarousel
 import com.hcexport.ui.NumberText
@@ -576,14 +577,16 @@ private fun JournalDayPage(
         }
 
         Spacer(Modifier.height(24.dp))
-        Text(
-            "Workouts, watch data and notes merge into one entry on every sync.",
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodySmall,
-            color = Slate,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(28.dp))
+        if (!LocalMinimalDesign.current) {
+            Text(
+                "Workouts, watch data and notes merge into one entry on every sync.",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(28.dp))
+        }
     }
 }
 
@@ -817,14 +820,16 @@ private fun DayHeading(date: LocalDate, count: Int, accent: Color) {
                 color = Mist,
             )
         }
-        Tag(
-            when (count) {
-                0 -> "NO ENTRIES"
-                1 -> "1 ENTRY"
-                else -> "$count ENTRIES"
-            },
-            accent,
-        )
+        if (!LocalMinimalDesign.current) {
+            Tag(
+                when (count) {
+                    0 -> "NO ENTRIES"
+                    1 -> "1 ENTRY"
+                    else -> "$count ENTRIES"
+                },
+                accent,
+            )
+        }
     }
 }
 
@@ -866,13 +871,15 @@ private fun ScheduleSessionButton(enabled: Boolean, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleSmall,
                 color = if (enabled) Snow else Slate,
             )
-            Text(
-                "Add one of this day's workouts to the journal.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Slate,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (!LocalMinimalDesign.current) {
+                Text(
+                    "Add one of this day's workouts to the journal.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Icon(
             Icons.AutoMirrored.Outlined.KeyboardArrowRight,

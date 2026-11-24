@@ -63,6 +63,7 @@ import com.hcexport.ui.EmptyState
 import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.LoadingLine
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
@@ -296,11 +297,13 @@ private fun ArchiveSummaryCard(summary: ArchiveSummary) {
             color = Mist,
         )
         Spacer(Modifier.height(3.dp))
-        Text(
-            "Every pulled workout is kept here. HYPR dropping a date never deletes it.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Slate,
-        )
+        if (!LocalMinimalDesign.current) {
+            Text(
+                "Every pulled workout is kept here. HYPR dropping a date never deletes it.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+            )
+        }
     }
 }
 

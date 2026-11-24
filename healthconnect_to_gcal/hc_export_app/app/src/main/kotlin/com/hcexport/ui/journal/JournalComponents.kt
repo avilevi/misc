@@ -64,6 +64,7 @@ import com.hcexport.SourceBrands
 import com.hcexport.WorkoutBlock
 import com.hcexport.WorkoutText
 import com.hcexport.ui.HcCard
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.SectionLabel
 import com.hcexport.ui.Tag
@@ -116,6 +117,7 @@ internal fun JournalSectionHeader(
     subtitle: String? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
+    val effectiveSubtitle = subtitle.takeUnless { LocalMinimalDesign.current }
     Column(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -134,10 +136,10 @@ internal fun JournalSectionHeader(
             )
             trailing()
         }
-        if (!subtitle.isNullOrBlank()) {
+        if (!effectiveSubtitle.isNullOrBlank()) {
             Spacer(Modifier.height(5.dp))
             Text(
-                subtitle,
+                effectiveSubtitle,
                 modifier = Modifier.padding(start = 12.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = Slate,
@@ -158,12 +160,13 @@ internal fun JournalHero(
     iconRes: Int,
     tags: List<Pair<String, Color>>,
     stats: List<HeroStat>,
+    compact: Boolean = false,
 ) {
     val shape = RoundedCornerShape(26.dp)
     Box(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 196.dp)
+            .heightIn(min = if (compact) 124.dp else 196.dp)
             .clip(shape)
             .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.26f), CardHigh, Card)))
             .border(1.dp, accent.copy(alpha = 0.30f), shape)
@@ -174,19 +177,20 @@ internal fun JournalHero(
             tint = accent.copy(alpha = 0.08f),
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .offset(x = 18.dp)
-                .size(168.dp),
+                .offset(x = if (compact) 26.dp else 18.dp)
+                .size(if (compact) 118.dp else 168.dp),
         )
-        Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
+        Column(Modifier.align(Alignment.BottomStart).padding(if (compact) 18.dp else 20.dp)) {
             if (tags.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     tags.forEach { (label, color) -> Tag(label, color) }
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(if (compact) 9.dp else 12.dp))
             }
             Text(
                 title,
-                style = MaterialTheme.typography.displaySmall,
+                style = if (compact) MaterialTheme.typography.headlineMedium
+                else MaterialTheme.typography.displaySmall,
                 color = Snow,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -194,8 +198,8 @@ internal fun JournalHero(
             Spacer(Modifier.height(4.dp))
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Mist)
             if (stats.isNotEmpty()) {
-                Spacer(Modifier.height(16.dp))
-                FlowRowAtLeastTwo(stats)
+                Spacer(Modifier.height(if (compact) 12.dp else 16.dp))
+                FlowRowAtLeastTwo(stats, compact)
             }
         }
     }
@@ -203,14 +207,19 @@ internal fun JournalHero(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowRowAtLeastTwo(stats: List<HeroStat>) {
+private fun FlowRowAtLeastTwo(stats: List<HeroStat>, compact: Boolean = false) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(22.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         stats.forEach { stat ->
             Column {
-                NumberText(stat.value, color = Snow, size = 26, weight = FontWeight.Light)
+                NumberText(
+                    stat.value,
+                    color = Snow,
+                    size = if (compact) 22 else 26,
+                    weight = FontWeight.Light,
+                )
                 Text(stat.label, style = MaterialTheme.typography.labelSmall, color = Slate)
             }
         }
@@ -379,20 +388,24 @@ private fun WorkoutJournalCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(8.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (item.scheduled) Tag("SCHEDULED", Periwinkle)
-                    if (planned) Tag("PLANNED", Amber)
-                    if (item.plan != null) Tag("AI", Periwinkle)
-                    if (item.biometrics.isNotEmpty()) Tag("WATCH DATA", Teal)
-                    if (item.plan != null && item.plan.loggedSets > 0) {
-                        Tag(
-                            if (item.plan.loggedSets == 1) "1 SET"
-                            else "${item.plan.loggedSets} SETS",
-                            Success,
-                        )
+                if (LocalMinimalDesign.current) {
+                    if (planned) Tag("FUTURE", Amber)
+                } else {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        if (item.scheduled) Tag("SCHEDULED", Periwinkle)
+                        if (planned) Tag("PLANNED", Amber)
+                        if (item.plan != null) Tag("AI", Periwinkle)
+                        if (item.biometrics.isNotEmpty()) Tag("WATCH DATA", Teal)
+                        if (item.plan != null && item.plan.loggedSets > 0) {
+                            Tag(
+                                if (item.plan.loggedSets == 1) "1 SET"
+                                else "${item.plan.loggedSets} SETS",
+                                Success,
+                            )
+                        }
                     }
                 }
                 val bio = item.biometrics.firstOrNull()
@@ -749,7 +762,30 @@ private fun MetricTileFlow(tiles: List<BioTile>, accent: Color) {
 }
 
 @Composable
-internal fun EmptyWatchDataCard(planned: Boolean = false) {
+internal fun EmptyWatchDataCard(planned: Boolean = false, minimal: Boolean = false) {
+    if (minimal) {
+        HcCard(contentPadding = PaddingValues(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painterResource(R.drawable.ic_watch),
+                    contentDescription = null,
+                    tint = Teal,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    if (planned) {
+                        "Future session. Data will become available when the watch records activity of this session."
+                    } else {
+                        "No watch data recorded for this session."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Mist,
+                )
+            }
+        }
+        return
+    }
     HcCard(contentPadding = PaddingValues(18.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -1094,6 +1130,7 @@ internal fun JournalCommentCard(
     onValueChange: (String) -> Unit,
     placeholder: String,
     accent: Color = Amber,
+    minimal: Boolean = false,
 ) {
     HcCard(accent = accent, contentPadding = PaddingValues(18.dp)) {
         SectionLabel("Free comments", color = accent)
@@ -1128,12 +1165,14 @@ internal fun JournalCommentCard(
                 }
             },
         )
-        Spacer(Modifier.height(9.dp))
-        Text(
-            "Saved automatically on this device.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Slate,
-        )
+        if (!minimal) {
+            Spacer(Modifier.height(9.dp))
+            Text(
+                "Saved automatically on this device.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+            )
+        }
     }
 }
 

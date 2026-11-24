@@ -32,8 +32,9 @@ data class ArchiveSummary(
 object WorkoutStore {
 
     private const val DB_NAME = "workouts.db"
-    private const val DB_VERSION = 1
+    private const val DB_VERSION = 2
     private const val TABLE = "workouts"
+    private const val VIDEO_TABLE = "workout_videos"
 
     @Volatile private var helper: Helper? = null
 
@@ -98,8 +99,53 @@ object WorkoutStore {
         return UpsertResult(created, updated, unchanged)
     }
 
-    fun getAll(ctx: Context): List<Workout> {
-        val out = mutableListOf<Workout>()
+    // ── Movement demo videos (Fitr section attachments) ───────────────────
+
+    /** Replace one workout's demo videos with what the latest pull returned. */
+    fun replaceVideos(ctx: Context, date: String, typeKey: String, videos: List<WorkoutVideo>) {
+        val db = db(ctx)
+        db.beginTransaction()
+        try {
+            db.delete(VIDEO_TABLE, "date = ? AND type_key = ?", arrayOf(date, typeKey))
+            videos.forEachIndexed { index, video ->
+                db.insertOrThrow(VIDEO_TABLE, null, ContentValues().apply {
+                    put("date", date)
+                    put("type_key", typeKey)
+                    put("position", index)
+                    put("title", video.title)
+                    put("video_id", video.videoId)
+                    put("url", video.url)
+                    put("thumb", video.thumbUrl)
+                    put("kind", video.kind)
+                })
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun getVideos(ctx: Context, date: String, typeKey: String): List<WorkoutVideo> {
+        val out = mutableListOf<WorkoutVideo>()
+        db(ctx).query(
+            VIDEO_TABLE, null, "date = ? AND type_key = ?", arrayOf(date, typeKey),
+            null, null, "position ASC",
+        ).use { c ->
+            while (c.moveToNext()) {
+                out += WorkoutVideo(
+                    title = c.getString(c.getColumnIndexOrThrow("title")),
+                    videoId = c.getString(c.getColumnIndexOrThrow("video_id")),
+                    url = c.getString(c.getColumnIndexOrThrow("url")),
+                    thumbUrl = c.getString(c.getColumnIndexOrThrow("thumb")),
+                    kind = c.getString(c.getColumnIndexOrThrow("kind")),
+                    position = c.getInt(c.getColumnIndexOrThrow("position")),
+                )
+            }
+        }
+        return out
+    }
+
+    fun getAll(ctx: Context): List<Workout> {        val out = mutableListOf<Workout>()
         db(ctx).query(
             TABLE, null, null, null, null, null,
             "date DESC, sort_order ASC, type_label ASC",
@@ -234,10 +280,32 @@ object WorkoutStore {
                 """.trimIndent()
             )
             db.execSQL("CREATE INDEX idx_workouts_date ON $TABLE(date)")
+            createVideos(db)
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-            // Version 1 is the first schema; future migrations go here.
+            if (oldVersion < 2) createVideos(db)
+        }
+
+        private fun createVideos(db: SQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS $VIDEO_TABLE(
+                  _id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  date TEXT NOT NULL,
+                  type_key TEXT NOT NULL,
+                  position INTEGER NOT NULL DEFAULT 0,
+                  title TEXT NOT NULL,
+                  video_id TEXT,
+                  url TEXT,
+                  thumb TEXT,
+                  kind TEXT NOT NULL DEFAULT ''
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS idx_workout_videos_key ON $VIDEO_TABLE(date, type_key)"
+            )
         }
     }
 }

@@ -59,6 +59,7 @@ class LiveWorkoutService : Service() {
     private var lastStageKey: String? = null
     private var lastTitle: String? = null
     private var lastText: String? = null
+    private var lastSubText: String? = null
     private var lastActionsJson: String? = null
     private var missingHostPolls = 0
     private var publishedOnce = false
@@ -66,6 +67,8 @@ class LiveWorkoutService : Service() {
     private var typeKey = ""
     private var stopped = false
     private var lastPrimaryAt = 0L
+    /** When the step notification last alerted; renewal measures from here. */
+    private var lastAlertAt = 0L
 
     /** The action-button notification currently on screen, if any. */
     private var currentStepId = 0
@@ -167,20 +170,41 @@ class LiveWorkoutService : Service() {
         val stageChanged = snapshot.stageKey != lastStageKey
         val contentChanged = snapshot.title != lastTitle ||
             snapshot.text != lastText ||
+            snapshot.subText != lastSubText ||
             actionsJson != lastActionsJson ||
             stageChanged
+        val now = SystemClock.elapsedRealtime()
+        // A dismissed step starts its minute over; a new stage is a new
+        // notification with a fresh minute of its own (set below). Forget the
+        // dismissed id so a silent content update cannot bring it back.
+        if (LiveRemoteHub.dismissedAtMs > lastAlertAt) {
+            lastAlertAt = LiveRemoteHub.dismissedAtMs
+            currentStepId = 0
+        }
+        val renewMinutes = Prefs.getLiveRemoteRenewMinutes(this)
+        val renewDue = renewMinutes > 0 &&
+            lastAlertAt > 0L &&
+            now - lastAlertAt >= renewMinutes * 60_000L &&
+            snapshot.actions.isNotEmpty()
 
         lastStageKey = snapshot.stageKey
         lastTitle = snapshot.title
         lastText = snapshot.text
+        lastSubText = snapshot.subText
         lastActionsJson = actionsJson
         publishedOnce = true
 
-        if (stageChanged) {
-            // A new set or round: a new action notification (and a band
-            // alert). The media card is the same one, updated quietly.
-            goForeground(mediaNotification(snapshot))
+        if (stageChanged || renewDue) {
+            // A new set or round — or a quiet spell — earns a new notification
+            // (and a band alert). The media card is updated in place.
+            if (stageChanged) {
+                goForeground(mediaNotification(snapshot))
+            } else {
+                getSystemService(NotificationManager::class.java)
+                    .notify(FOREGROUND_ID, mediaNotification(snapshot))
+            }
             postStepNotification(snapshot, alert = true)
+            lastAlertAt = now
         } else if (contentChanged) {
             val manager = getSystemService(NotificationManager::class.java)
             manager.notify(FOREGROUND_ID, mediaNotification(snapshot))
@@ -259,9 +283,9 @@ class LiveWorkoutService : Service() {
     private fun initialSnapshot() = LiveRemoteSnapshot(
         date = date,
         typeKey = typeKey,
-        workoutTitle = "HC Sync",
         title = "Live workout",
         text = "Starting…",
+        subText = "",
         bigText = "The live workout is starting.",
         result = null,
         stageKey = "starting",
@@ -277,8 +301,8 @@ class LiveWorkoutService : Service() {
     /** The silent foreground notification; on Android 13+ it is the media card. */
     private fun mediaNotification(snapshot: LiveRemoteSnapshot): Notification {
         val builder = baseBuilder(MEDIA_CHANNEL_ID, snapshot.title, snapshot.text)
-            .setSubText(snapshot.result ?: snapshot.workoutTitle)
-            .setContentIntent(contentIntent(snapshot))
+            .setSubText(snapshot.subText)
+            .setContentIntent(contentIntent())
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -295,13 +319,26 @@ class LiveWorkoutService : Service() {
     /** The action-button notification; this is the one that pops on each set. */
     private fun stepNotification(snapshot: LiveRemoteSnapshot, alert: Boolean): Notification {
         val builder = baseBuilder(STEP_CHANNEL_ID, snapshot.title, snapshot.text)
-            .setSubText(snapshot.result ?: snapshot.workoutTitle)
+            .setSubText(snapshot.subText)
             .setStyle(Notification.BigTextStyle().bigText(snapshot.bigText))
-            .setContentIntent(contentIntent(snapshot))
+            .setContentIntent(contentIntent())
+            .setDeleteIntent(dismissIntent())
             .setOngoing(false)
             .setAutoCancel(snapshot.done)
             .setOnlyAlertOnce(!alert)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
+        val chronometerBase = snapshot.chronometerBaseMs
+        if (chronometerBase != null) {
+            // Android ticks this itself: no per-second re-post of the
+            // notification, and the number is always current.
+            builder
+                .setWhen(chronometerBase)
+                .setShowWhen(true)
+                .setUsesChronometer(true)
+                .setChronometerCountDown(snapshot.chronometerCountDown)
+        } else {
+            builder.setShowWhen(false).setUsesChronometer(false)
+        }
         addActions(builder, snapshot, this::actionIntent)
         return builder.build()
     }
@@ -362,13 +399,12 @@ class LiveWorkoutService : Service() {
         else -> R.drawable.ic_live_check
     }
 
-    private fun contentIntent(snapshot: LiveRemoteSnapshot): PendingIntent {
-        val openDate = snapshot.date.ifBlank { date }
-        val openType = snapshot.typeKey.ifBlank { typeKey }
+    private fun contentIntent(): PendingIntent {
+        // Bring the running app forward; do not ask for a fresh live route.
+        // The notification only exists while the live screen holds the
+        // session, so tapping it must not construct a second one.
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(MainActivity.EXTRA_LIVE_DATE, openDate)
-            putExtra(MainActivity.EXTRA_LIVE_TYPE, openType)
         }
         return PendingIntent.getActivity(
             this,
@@ -386,6 +422,18 @@ class LiveWorkoutService : Service() {
         return PendingIntent.getBroadcast(
             this,
             actionId.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun dismissIntent(): PendingIntent {
+        val intent = Intent(this, LiveActionReceiver::class.java).apply {
+            action = LiveActionReceiver.ACTION_LIVE_DISMISSED
+        }
+        return PendingIntent.getBroadcast(
+            this,
+            2,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

@@ -16,7 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.hcexport.DesignStyle
+import com.hcexport.Prefs
 import com.hcexport.R
 import com.hcexport.Workout
 import com.hcexport.ui.AiWorkoutPanel
@@ -45,6 +48,8 @@ fun InteractiveWorkoutScreen(
     onOpenAiSettings: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val minimal = Prefs.getDesignStyle(context) == DesignStyle.MINIMAL
     val state = rememberAiWorkoutState(
         date = date,
         typeKey = typeKey,
@@ -93,6 +98,7 @@ fun InteractiveWorkoutScreen(
                             state = state,
                             onOpenAiSettings = onOpenAiSettings,
                             readOnly = true,
+                            minimal = minimal,
                             original = { OriginalWorkoutCard(state.workout) },
                         )
                     }

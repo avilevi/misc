@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -64,8 +65,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,6 +100,7 @@ import com.hcexport.R
 import com.hcexport.RecordStore
 import com.hcexport.TimeValue
 import com.hcexport.WearPushWorker
+import com.hcexport.WeightRecord
 import com.hcexport.Workout
 import com.hcexport.WorkoutStore
 import com.hcexport.WorkoutText
@@ -171,6 +175,12 @@ class AiWorkoutState internal constructor(
     var recordsRevision by mutableStateOf(0)
         private set
 
+    /** Weight records added by the last save; drives the NEW PR celebration. */
+    var newRecords by mutableStateOf<List<WeightRecord>>(emptyList())
+        private set
+    var newRecordRevision by mutableStateOf(0)
+        private set
+
     /** True when the archive has this workout — generating a plan needs it. */
     val canGenerate: Boolean get() = workout != null
 
@@ -237,8 +247,8 @@ class AiWorkoutState internal constructor(
                 InteractiveStore.savePlan(
                     context, date, typeKey, generated.plan.toJson().toString(), usedModel,
                 )
-                // The previous values are gone, so their auto records go with them.
-                runCatching { RecordStore.syncAutoWeights(context, date, typeKey, emptyList()) }
+                // Past records are historical facts; regenerating the plan does
+                // not remove the records the previous values earned.
             }
             plan = generated.plan
             results = emptyMap()
@@ -265,16 +275,20 @@ class AiWorkoutState internal constructor(
         val currentResults = results
         val payload = InteractiveResults.toJson(currentResults)
         saveState = SaveState.Saving
-        withContext(Dispatchers.IO) {
+        val added = withContext(Dispatchers.IO) {
             InteractiveStore.saveResults(context, date, typeKey, payload)
-            // Strength work is a rep-max attempt: keep this workout's records
-            // in step with the values just saved.
+            // Strength work is a rep-max attempt: a set that beats the
+            // standing record is added once; past records are never touched.
             runCatching {
                 RecordStore.syncAutoWeights(
                     context, date, typeKey,
                     AutoRecords.candidates(currentPlan, currentResults),
                 )
-            }
+            }.getOrDefault(emptyList())
+        }
+        if (added.isNotEmpty()) {
+            newRecords = added
+            newRecordRevision += 1
         }
         recordsRevision += 1
         saveState = SaveState.Saved
@@ -359,6 +373,8 @@ fun AiWorkoutPanel(
     onStartLive: (() -> Unit)? = null,
     /** A preview: the plan is shown but its values cannot be edited. */
     readOnly: Boolean = false,
+    /** Drop the plan's own header and footer; the caller supplies the summary. */
+    minimal: Boolean = false,
     /** A plan row to scroll to and flash (a record's source set). */
     focusScope: String? = null,
     original: @Composable () -> Unit,
@@ -367,7 +383,7 @@ fun AiWorkoutPanel(
         LocalAiPlanReadOnly provides readOnly,
         LocalAiFocusScope provides focusScope,
     ) {
-        AiWorkoutPanelBody(state, onOpenAiSettings, accent, onStartLive, original)
+        AiWorkoutPanelBody(state, onOpenAiSettings, accent, onStartLive, minimal, original)
     }
 }
 
@@ -377,6 +393,7 @@ private fun AiWorkoutPanelBody(
     onOpenAiSettings: () -> Unit,
     accent: Color,
     onStartLive: (() -> Unit)?,
+    minimal: Boolean,
     original: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -429,6 +446,7 @@ private fun AiWorkoutPanelBody(
             state = state,
             onRegenerate = { showRegenerate = true },
             onStartLive = onStartLive,
+            minimal = minimal,
             original = original,
         )
     }
@@ -439,45 +457,54 @@ private fun AiPlanContent(
     state: AiWorkoutState,
     onRegenerate: () -> Unit,
     onStartLive: (() -> Unit)?,
+    minimal: Boolean,
     original: @Composable () -> Unit,
 ) {
     val plan = state.plan ?: return
-    var confirmLive by remember { mutableStateOf(false) }
-    if (confirmLive) {
-        ConfirmDialog(
-            title = "Start a live session?",
-            message = "This workout already has values entered. The live session updates the " +
-                "sets it runs and replaces a section's time or rounds when the section ends.",
-            confirmText = "Start live",
-            destructive = false,
-            onConfirm = {
-                confirmLive = false
-                onStartLive?.invoke()
-            },
-            onDismiss = { confirmLive = false },
-        )
-    }
     Column(Modifier.fillMaxWidth()) {
-        AiPlanHeader(state, onRegenerate = onRegenerate)
+        if (minimal) {
+            // The journal's one card already names the workout; keep only the
+            // controls the plan needs and get out of the way.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (state.showOriginal) "Hide original" else "Show original",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable(onClick = state::toggleOriginal)
+                        .padding(vertical = 4.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Periwinkle,
+                )
+                Spacer(Modifier.weight(1f))
+                IconAction(
+                    icon = {
+                        Icon(
+                            painterResource(R.drawable.ic_ai),
+                            contentDescription = "Regenerate with AI",
+                            tint = Periwinkle,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                    onClick = onRegenerate,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        } else {
+            AiPlanHeader(state, onRegenerate = onRegenerate)
+        }
         state.error?.let { message ->
             Spacer(Modifier.height(12.dp))
             HcCard(accent = Danger, contentPadding = PaddingValues(16.dp)) {
                 Text(message, style = MaterialTheme.typography.bodyMedium, color = Mist)
             }
         }
-        if (onStartLive != null && plan.sections.any {
+        if (!minimal && onStartLive != null && plan.sections.any {
                 it.exercises.isNotEmpty() || it.rounds.isNotEmpty() || it.metrics.isNotEmpty()
             }
         ) {
             Spacer(Modifier.height(14.dp))
             LiveWorkoutCard(
-                onClick = {
-                    if (InteractiveResults.hasAnyValue(state.results)) {
-                        confirmLive = true
-                    } else {
-                        onStartLive()
-                    }
-                },
+                onClick = { onStartLive() },
             )
         }
         Spacer(Modifier.height(14.dp))
@@ -494,13 +521,15 @@ private fun AiPlanContent(
             )
             Spacer(Modifier.height(18.dp))
         }
-        Text(
-            "Generated by ${AiDisplay.pretty(state.modelId)}. Values are saved on this device.",
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = Slate,
-            textAlign = TextAlign.Center,
-        )
+        if (!minimal) {
+            Text(
+                "Generated by ${AiDisplay.pretty(state.modelId)}. Values are saved on this device.",
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -1384,6 +1413,7 @@ private fun MetricInput(
     }
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val focus = LocalFocusManager.current
     // Compact rows put the label inside the field so a set stays one line.
     val hint = if (compact) metric.hint.ifBlank { metric.label } else metricHint(metric)
     Column(modifier) {
@@ -1440,7 +1470,11 @@ private fun MetricInput(
                             MetricKind.WEIGHT, MetricKind.DISTANCE -> KeyboardType.Decimal
                             MetricKind.REPS, MetricKind.CALORIES, MetricKind.ROUNDS -> KeyboardType.Number
                             else -> KeyboardType.Text
-                        }
+                        },
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focus.clearFocus() },
                     ),
                     interactionSource = interaction,
                 )
@@ -1452,6 +1486,17 @@ private fun MetricInput(
                     style = MaterialTheme.typography.labelSmall,
                     color = Slate,
                     maxLines = 1,
+                )
+            }
+            if (focused && editable) {
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = "Submit",
+                    tint = accent,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clickable { focus.clearFocus() },
                 )
             }
         }

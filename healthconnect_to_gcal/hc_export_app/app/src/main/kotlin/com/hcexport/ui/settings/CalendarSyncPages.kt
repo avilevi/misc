@@ -55,6 +55,7 @@ import com.hcexport.SettingsBackend
 import com.hcexport.SyncSchedule
 import com.hcexport.SyncStatus
 import com.hcexport.SyncWorker
+import com.hcexport.WearPushWorker
 import com.hcexport.ui.LoadingLine
 import com.hcexport.ui.SegmentedControl
 import com.hcexport.ui.theme.CardHigh
@@ -218,7 +219,7 @@ fun SyncSettingsPage() {
     }
 
     SettingsPageList {
-        item { SettingsNote("How far back HC Sync reads, writes to the calendar, and keeps in the journal.") }
+        item { SettingsNote("How far back HC Sync reads, writes to the calendar, and keeps in the journal and on the watch.") }
         item { SettingsSectionHeader("Sync ranges") }
         item {
             SettingsCard {
@@ -230,8 +231,8 @@ fun SyncSettingsPage() {
                 )
                 SettingsDivider()
                 SettingsRow(
-                    title = "Journal history",
-                    subtitle = "How far back exercise and sleep entries are merged",
+                    title = "Journal & watch history",
+                    subtitle = "How far back entries are merged and kept on the watch",
                     value = "$journalDays days",
                     onClick = { showJournalRange = true },
                 )
@@ -438,7 +439,7 @@ fun SyncSettingsPage() {
     }
     if (showJournalRange) {
         SettingsChoiceDialog(
-            title = "Journal history",
+            title = "Journal & watch history",
             options = CAL_RANGE_DAYS.zip(RANGE_LABELS).map { (days, label) ->
                 SettingsChoice(days, label)
             },
@@ -447,6 +448,7 @@ fun SyncSettingsPage() {
             onSelect = {
                 journalDays = it
                 Prefs.setJournalSyncDaysBack(context, it)
+                WearPushWorker.enqueue(context)
             },
             onDismiss = { showJournalRange = false },
         )

@@ -53,6 +53,7 @@ import com.hcexport.SettingsBackend
 import com.hcexport.Workout
 import com.hcexport.WorkoutText
 import com.hcexport.ui.LoadingLine
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.PrimaryButton
 import com.hcexport.ui.settings.SettingsChoice
 import com.hcexport.ui.settings.SettingsChoiceDialog
@@ -219,15 +220,17 @@ fun ScheduleSessionDialog(
                 style = MaterialTheme.typography.headlineSmall,
                 color = Snow,
             )
-            Text(
-                if (selected == null) {
-                    "Choose one of the day's workouts."
-                } else {
-                    "Set how it reaches your journal."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = Slate,
-            )
+            if (!LocalMinimalDesign.current) {
+                Text(
+                    if (selected == null) {
+                        "Choose one of the day's workouts."
+                    } else {
+                        "Set how it reaches your journal."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+            }
             Spacer(Modifier.height(14.dp))
 
             Column(
@@ -486,11 +489,13 @@ private fun ScheduleOptions(
             )
         }
 
-        Text(
-            "The journal entry is added even without a calendar event.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Slate,
-        )
+        if (!LocalMinimalDesign.current) {
+            Text(
+                "The journal entry is added even without a calendar event.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+            )
+        }
     }
 }
 

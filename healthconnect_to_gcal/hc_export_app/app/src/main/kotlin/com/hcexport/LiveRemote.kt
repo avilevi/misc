@@ -16,9 +16,9 @@ data class LiveRemoteAction(val id: String, val label: String)
 data class LiveRemoteSnapshot(
     val date: String,
     val typeKey: String,
-    val workoutTitle: String,
     val title: String,
     val text: String,
+    val subText: String,
     val bigText: String,
     val result: String?,
     val stageKey: String,
@@ -29,6 +29,13 @@ data class LiveRemoteSnapshot(
     val mediaAlbum: String,
     val mediaDurationMs: Long,
     val mediaPositionMs: Long,
+    /**
+     * When set, the step notification draws an Android chronometer at this
+     * wall-clock instant instead of a frozen timer string. The chronometer
+     * ticks by itself, so the notification is not re-posted every second.
+     */
+    val chronometerBaseMs: Long? = null,
+    val chronometerCountDown: Boolean = false,
 )
 
 /** The live screen's side of the remote. Always called on the main thread. */
@@ -48,13 +55,27 @@ interface LiveRemoteHost {
  */
 object LiveRemoteHub {
     const val ACTION_START = "start"
-    const val ACTION_COMPLETE = "complete"
+    const val ACTION_ROUND_DONE = "round_done"
+    const val ACTION_SET_DONE = "set_done"
     const val ACTION_SKIP = "skip"
     const val ACTION_SKIP_REST = "skip_rest"
 
     @Volatile
     var host: LiveRemoteHost? = null
         private set
+
+    /**
+     * When the athlete swipes the step notification away. The service restarts
+     * its one-minute renewal count from here, so a dismissed reminder is not
+     * immediately replaced by a nearly-due one.
+     */
+    @Volatile
+    var dismissedAtMs: Long = 0L
+        private set
+
+    fun noteStepDismissed() {
+        dismissedAtMs = android.os.SystemClock.elapsedRealtime()
+    }
 
     fun attach(newHost: LiveRemoteHost) {
         host = newHost

@@ -46,6 +46,7 @@ import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.HubCard
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
 import com.hcexport.ui.SectionLabel
@@ -156,13 +157,17 @@ fun RecordsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenPadding)
             ) {
-                Text(
-                    "Every number has the session behind it.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Slate,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
-                Spacer(Modifier.height(20.dp))
+                if (!LocalMinimalDesign.current) {
+                    Text(
+                        "Every number has the session behind it.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Slate,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                    Spacer(Modifier.height(20.dp))
+                } else {
+                    Spacer(Modifier.height(6.dp))
+                }
 
                 HubCard(
                     iconRes = R.drawable.ic_dumbbell,

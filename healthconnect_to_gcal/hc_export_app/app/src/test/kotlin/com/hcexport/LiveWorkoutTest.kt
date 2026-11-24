@@ -347,12 +347,66 @@ class LiveWorkoutTest {
         assertEquals(300, LiveTiming.roundSeconds("4 rounds x 5 minutes"))
         assertEquals(300, LiveTiming.roundSeconds("5:00 rounds"))
         assertEquals(300, LiveTiming.roundSeconds("5 min rounds"))
+        assertEquals(240, LiveTiming.roundSeconds("Every 4:00 x 6 (24:00)"))
+        assertEquals(240, LiveTiming.roundSeconds("Every 4:00 x 6, alternating A & B"))
+        assertEquals(240, LiveTiming.roundSeconds("every 4 min x 6 rounds"))
         assertNull(LiveTiming.roundSeconds("Every 2:00 x 4 sets"))
 
         assertEquals(60, LiveTiming.restSeconds("1:00 rest between rounds"))
         assertEquals(60, LiveTiming.restSeconds("rest 1 min"))
         assertEquals(45, LiveTiming.restSeconds("rest 45 seconds"))
         assertNull(LiveTiming.restSeconds("4 x 5:00 rounds"))
+    }
+
+    @Test
+    fun `every 4 00 x 6 is six four-minute windows`() {
+        val every = InteractivePlan.fromJson(
+            """
+            {"title":"Every 4:00 x 6 (A/B)","sections":[
+              {"title":"Metcon","kind":"metcon",
+               "notes":"Every 4:00 x 6 (24:00), alternating A & B. Split reps as desired on B.",
+               "rounds":[
+                 {"label":"Interval 1 - A","movements":[
+                   {"name":"800m Row / 1600m Bike","target":"800m Row / 1600m Bike",
+                    "metrics":[{"key":"time","label":"Time","kind":"time"}]}]},
+                 {"label":"Interval 2 - B","movements":[
+                   {"name":"Dual DB Push Press","target":"30 reps",
+                    "metrics":[{"key":"reps","label":"Reps","kind":"reps"}]},
+                   {"name":"Sit-Ups","target":"30 reps",
+                    "metrics":[{"key":"reps","label":"Reps","kind":"reps"}]}]},
+                 {"label":"Interval 3 - A","movements":[
+                   {"name":"800m Row / 1600m Bike","target":"800m Row / 1600m Bike",
+                    "metrics":[{"key":"time","label":"Time","kind":"time"}]}]},
+                 {"label":"Interval 4 - B","movements":[
+                   {"name":"Dual DB Push Press","target":"30 reps",
+                    "metrics":[{"key":"reps","label":"Reps","kind":"reps"}]},
+                   {"name":"Sit-Ups","target":"30 reps",
+                    "metrics":[{"key":"reps","label":"Reps","kind":"reps"}]}]},
+                 {"label":"Interval 5 - A","movements":[
+                   {"name":"800m Row / 1600m Bike","target":"800m Row / 1600m Bike",
+                    "metrics":[{"key":"time","label":"Time","kind":"time"}]}]},
+                 {"label":"Interval 6 - B","movements":[
+                   {"name":"Dual DB Push Press","target":"30 reps",
+                    "metrics":[{"key":"reps","label":"Reps","kind":"reps"}]},
+                   {"name":"Sit-Ups","target":"30 reps",
+                    "metrics":[{"key":"reps","label":"Reps","kind":"reps"}]}]}
+               ]}
+            ]}
+            """.trimIndent()
+        )!!
+        val metcon = LiveWorkout.build(every).sections.single()
+
+        // Six 4:00 windows, not one 24:00 cap and not a per-set interval.
+        assertTrue(metcon.roundTimed)
+        assertEquals(6, metcon.roundCount)
+        assertEquals(240, metcon.roundSeconds)
+        assertNull(metcon.restSeconds)
+        assertNull(metcon.timeCapSeconds)
+        assertEquals(9, metcon.items.size)
+        assertEquals("Round 1 of 6", metcon.items.first().position)
+        assertEquals("800m Row / 1600m Bike", metcon.items.first().name)
+        assertEquals("Round 2 of 6", metcon.items[1].position)
+        assertEquals("Dual DB Push Press", metcon.items[1].name)
     }
 
     @Test

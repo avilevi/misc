@@ -9,10 +9,19 @@ account already on the device.
 - **One sync action**: workouts → local database → Health Connect → calendar →
   calendar WOD descriptions → journal → watch snapshot. The order matters: the journal
   merges the calendar events, so the WOD descriptions must be filled first.
-- **Workout database**: every date/type on https://hypr-workouts.pages.dev/ is pulled
-  into SQLite (`workouts.db`), not just dates with a calendar event. Rows are never
-  deleted when the site drops a date. A 02:00 alarm pulls the whole page every day;
-  the unified sync also pulls first.
+- **Workout database**: every date/type comes from **Fitr** (`app.fitr.training/mobile/api/v15/`)
+  when it is connected — the coaches' own source — and is pulled into SQLite
+  (`workouts.db`), not just dates with a calendar event. Installs that have not
+  connected Fitr still pull https://hypr-workouts.pages.dev/. Rows are never
+  deleted when a source drops a date. A 02:00 alarm pulls a rolling window
+  (−14…+28 days) every day; the unified sync also pulls first. See
+  `fitr_client/` for a standalone CLI over the same API.
+- **Section videos**: Fitr attaches movement demos to each section (YouTube
+  videos with a CDN thumbnail). They are stored per date/type in `workout_videos`
+  (part of `workouts.db`) and shown as a compact **Videos** strip at the bottom of
+  the workout section in the journal entry; tapping a thumbnail plays the video
+  in an in-app player. Today's programming has none — the demos appear on the
+  days the coaches attach them.
 - **Reliable schedules**: AlarmManager `setAndAllowWhileIdle` drives an expedited
   WorkManager job; alarms are re-armed on boot, app open, package replace and
   time/timezone changes, with a catch-up run if a scheduled sync was missed. Battery

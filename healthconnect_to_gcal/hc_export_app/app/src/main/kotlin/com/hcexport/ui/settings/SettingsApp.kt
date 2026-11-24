@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -73,6 +74,7 @@ import com.hcexport.R
 import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.IconAction
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.PrimaryButton
 import com.hcexport.ui.ScreenPadding
 import com.hcexport.ui.SecondaryButton
@@ -97,6 +99,7 @@ enum class SettingsPage(
     val accent: Color,
 ) {
     CALENDAR("calendar", "Calendar", "Target and calendar actions", Teal),
+    APPEARANCE("appearance", "Appearance", "Minimal or verbose journal", Periwinkle),
     SYNC("sync", "Sync & reliability", "Schedules, ranges and background work", Periwinkle),
     WORKOUTS("workouts", "Workouts & watch", "Calendar default and watch snapshot", Periwinkle),
     AI("ai", "AI workout", "Provider, key, model and interactive plans", Teal),
@@ -145,6 +148,7 @@ fun SettingsApp(startPage: String?) {
                 }
                 when (page) {
                     SettingsPage.CALENDAR -> CalendarSettingsPage()
+                    SettingsPage.APPEARANCE -> AppearanceSettingsPage()
                     SettingsPage.SYNC -> SyncSettingsPage()
                     SettingsPage.WORKOUTS -> WorkoutSettingsPage()
                     SettingsPage.AI -> AiSettingsPage()
@@ -291,6 +295,7 @@ private fun SettingsDrawer(current: SettingsPage, onSelect: (SettingsPage) -> Un
 fun SettingsPageIcon(page: SettingsPage, tint: Color, size: androidx.compose.ui.unit.Dp) {
     when (page) {
         SettingsPage.CALENDAR -> Icon(painterResource(R.drawable.ic_calendar), null, tint = tint, modifier = Modifier.size(size))
+        SettingsPage.APPEARANCE -> Icon(Icons.Outlined.Settings, null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.SYNC -> Icon(Icons.Outlined.Refresh, null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.WORKOUTS -> Icon(painterResource(R.drawable.ic_dumbbell), null, tint = tint, modifier = Modifier.size(size))
         SettingsPage.AI -> Icon(painterResource(R.drawable.ic_ai), null, tint = tint, modifier = Modifier.size(size))
@@ -316,15 +321,16 @@ fun SettingsPageList(content: LazyListScope.() -> Unit) {
 
 @Composable
 fun SettingsSectionHeader(title: String, subtitle: String? = null) {
+    val effectiveSubtitle = subtitle.takeUnless { LocalMinimalDesign.current }
     Column(Modifier.padding(start = 4.dp, top = 18.dp, bottom = 8.dp)) {
         Text(
             title.uppercase(),
             style = MaterialTheme.typography.labelMedium,
             color = Slate,
         )
-        if (subtitle != null) {
+        if (effectiveSubtitle != null) {
             Text(
-                subtitle,
+                effectiveSubtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = Slate,
                 modifier = Modifier.padding(top = 2.dp),
@@ -431,6 +437,7 @@ fun SettingsPillButton(
 
 @Composable
 fun SettingsNote(text: String, modifier: Modifier = Modifier, color: Color = Slate) {
+    if (LocalMinimalDesign.current) return
     Text(
         text,
         modifier = modifier.padding(horizontal = 4.dp, vertical = 8.dp),

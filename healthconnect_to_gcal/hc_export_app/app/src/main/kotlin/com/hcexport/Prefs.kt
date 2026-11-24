@@ -92,7 +92,7 @@ object Prefs {
     // ── Journal last sync ───────────────────────────────────────────────────
 
     fun getJournalSyncDaysBack(ctx: Context): Long =
-        prefs(ctx).getLong("journal_sync_days_back", 90L)
+        prefs(ctx).getLong("journal_sync_days_back", 14L)
 
     fun setJournalSyncDaysBack(ctx: Context, days: Long) =
         prefs(ctx).edit().putLong("journal_sync_days_back", days).apply()
@@ -156,6 +156,15 @@ object Prefs {
 
     private fun localeFirstDayOfWeek(): DayOfWeek =
         WeekFields.of(Locale.getDefault()).firstDayOfWeek
+
+    // ── Design ─────────────────────────────────────────────────────────────
+
+    /** Minimal by default; verbose keeps every explanatory line. */
+    fun getDesignStyle(ctx: Context): DesignStyle =
+        DesignStyle.fromKey(prefs(ctx).getString("design_style", null))
+
+    fun setDesignStyle(ctx: Context, style: DesignStyle) =
+        prefs(ctx).edit().putString("design_style", style.key).apply()
 
     fun getWorkoutEtag(ctx: Context): String? =
         prefs(ctx).getString("workout_etag", null)
@@ -267,6 +276,16 @@ object Prefs {
     fun setLiveKeepScreenOn(ctx: Context, enabled: Boolean) =
         prefs(ctx).edit().putBoolean("live_keep_screen_on", enabled).apply()
 
+    /**
+     * How long the live step notification stays quiet before it re-alerts
+     * itself, in minutes. 0 turns the renewal off.
+     */
+    fun getLiveRemoteRenewMinutes(ctx: Context): Int =
+        prefs(ctx).getInt("live_remote_renew_minutes", 1).coerceIn(0, 60)
+
+    fun setLiveRemoteRenewMinutes(ctx: Context, minutes: Int) =
+        prefs(ctx).edit().putInt("live_remote_renew_minutes", minutes.coerceIn(0, 60)).apply()
+
     // ── BridgeAthletic ─────────────────────────────────────────────────────
 
     fun getLastBridgePullMs(ctx: Context): Long? {
@@ -294,6 +313,34 @@ object Prefs {
 
     fun setBridgeProfileName(ctx: Context, name: String) =
         prefs(ctx).edit().putString("bridge_profile_name", name).apply()
+
+    // ── Fitr ───────────────────────────────────────────────────────────────
+
+    fun getLastFitrPullMs(ctx: Context): Long? {
+        val v = prefs(ctx).getLong("fitr_last_pull_ms", -1L)
+        return if (v == -1L) null else v
+    }
+
+    fun setLastFitrPullMs(ctx: Context, ms: Long) =
+        prefs(ctx).edit().putLong("fitr_last_pull_ms", ms).apply()
+
+    fun getFitrLastSummary(ctx: Context): String? =
+        prefs(ctx).getString("fitr_last_summary", null)
+
+    fun setFitrLastSummary(ctx: Context, summary: String?) =
+        prefs(ctx).edit().putString("fitr_last_summary", summary).apply()
+
+    fun getFitrLastError(ctx: Context): String? =
+        prefs(ctx).getString("fitr_last_error", null)?.takeIf { it.isNotBlank() }
+
+    fun setFitrLastError(ctx: Context, error: String?) =
+        prefs(ctx).edit().putString("fitr_last_error", error).apply()
+
+    fun getFitrProfileName(ctx: Context): String? =
+        prefs(ctx).getString("fitr_profile_name", null)?.takeIf { it.isNotBlank() }
+
+    fun setFitrProfileName(ctx: Context, name: String) =
+        prefs(ctx).edit().putString("fitr_profile_name", name).apply()
 
     // ── Sync schedules ─────────────────────────────────────────────────────
 

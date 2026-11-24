@@ -15,9 +15,14 @@ import android.database.sqlite.SQLiteOpenHelper
 object RecordStore {
 
     private const val DB_NAME = "records.db"
-    private const val DB_VERSION = 2
+    private const val DB_VERSION = 3
     private const val WEIGHTS = "weight_records"
     private const val BENCHMARKS = "benchmark_records"
+    /**
+     * A manually deleted record is final: the journal may not recreate it on a
+     * later save just because its set is still in the plan.
+     */
+    private const val TOMBSTONES = "weight_record_tombstones"
 
     @Volatile private var helper: Helper? = null
 
@@ -68,7 +73,23 @@ object RecordStore {
     }
 
     fun deleteWeight(ctx: Context, id: Long) {
+        val record = getWeight(ctx, id)
         db(ctx).delete(WEIGHTS, "_id = ?", arrayOf(id.toString()))
+        if (record != null &&
+            record.workoutDate != null && record.workoutTypeKey != null
+        ) {
+            db(ctx).insertWithOnConflict(
+                TOMBSTONES,
+                null,
+                ContentValues().apply {
+                    put("workout_date", record.workoutDate)
+                    put("workout_type_key", record.workoutTypeKey)
+                    put("exercise_key", record.exerciseKey)
+                    put("reps", record.reps)
+                },
+                SQLiteDatabase.CONFLICT_REPLACE,
+            )
+        }
     }
 
     fun getWeights(ctx: Context): List<WeightRecord> =
@@ -81,62 +102,54 @@ object RecordStore {
         queryWeights(ctx, "_id = ?", arrayOf(id.toString())).firstOrNull()
 
     /**
-     * Make this workout's auto records match [candidates] — the best set at each
-     * rep max of its strength work.
+     * Store the records this workout's strength work earns, **only ever adding**.
      *
-     * Auto records belong to the journal's values: they are revised when a set
-     * changes and removed when it is cleared. Manual records, and auto records
-     * from other workouts, are only ever read. A candidate is stored only when
-     * it beats the standing record for the same lift and rep max, or is the
-     * first one.
+     * A record is a fact from the past: once it is written, later journal edits,
+     * a cleared plan, a regenerated workout or a deleted journal entry must not
+     * revise or remove it. The records screen is the only place a record is
+     * removed. This also keeps one auto record per workout, lift and rep max —
+     * re-running the same workout does not rewrite history.
      */
     fun syncAutoWeights(
         ctx: Context,
         date: String,
         typeKey: String,
         candidates: List<AutoRecords.Candidate>,
-    ) {
+    ): List<WeightRecord> {
         // A planned workout has no result to record.
-        if (date > RecordLogic.todayIso()) return
+        if (date > RecordLogic.todayIso()) return emptyList()
+        val added = mutableListOf<WeightRecord>()
         val database = db(ctx)
         database.beginTransaction()
         try {
             val all = mutableListOf<WeightRecord>()
             database.query(WEIGHTS, null, null, null, null, null, null)
                 .use { c -> while (c.moveToNext()) all += readWeight(c) }
-            val ownAuto = all.filter {
-                it.origin == WeightRecord.ORIGIN_AUTO &&
-                    it.workoutDate == date && it.workoutTypeKey == typeKey
-            }
-            val ownIds = ownAuto.map { it.id }.toHashSet()
-            val desired = AutoRecords.beating(candidates, all.filterNot { it.id in ownIds })
-            val desiredByKey = desired.associateBy { it.exerciseKey to it.reps }
-
-            ownAuto.forEach { row ->
-                val want = desiredByKey[row.exerciseKey to row.reps]
-                if (want == null) {
-                    database.delete(WEIGHTS, "_id = ?", arrayOf(row.id.toString()))
-                } else if (want.weightKg != row.weightKg) {
-                    database.update(
-                        WEIGHTS,
-                        ContentValues().apply {
-                            put("weight_kg", want.weightKg)
-                            put("exercise_name", want.exerciseName)
-                        },
-                        "_id = ?",
-                        arrayOf(row.id.toString()),
-                    )
+            val ownKeys = all
+                .filter {
+                    it.origin == WeightRecord.ORIGIN_AUTO &&
+                        it.workoutDate == date && it.workoutTypeKey == typeKey
+                }
+                .map { it.exerciseKey to it.reps }
+                .toMutableSet()
+            // A record deleted by hand from the records screen is not revived
+            // by a later save of the same journal values.
+            database.query(
+                TOMBSTONES,
+                arrayOf("exercise_key", "reps"),
+                "workout_date = ? AND workout_type_key = ?",
+                arrayOf(date, typeKey),
+                null,
+                null,
+                null,
+            ).use { c ->
+                while (c.moveToNext()) {
+                    ownKeys += c.getString(0) to c.getInt(1)
                 }
             }
-
-            val kept = ownAuto
-                .map { it.exerciseKey to it.reps }
-                .filter { it in desiredByKey }
-                .toSet()
-            desired.filter { (it.exerciseKey to it.reps) !in kept }.forEach { candidate ->
-                addWeight(
-                    ctx,
-                    WeightRecord(
+            AutoRecords.newRows(candidates, all, ownKeys)
+                .forEach { candidate ->
+                    val record = WeightRecord(
                         exerciseKey = candidate.exerciseKey,
                         exerciseName = candidate.exerciseName,
                         reps = candidate.reps,
@@ -145,13 +158,15 @@ object RecordStore {
                         workoutDate = date,
                         workoutTypeKey = typeKey,
                         origin = WeightRecord.ORIGIN_AUTO,
-                    ),
-                )
-            }
+                    )
+                    addWeight(ctx, record)
+                    added += record
+                }
             database.setTransactionSuccessful()
         } finally {
             database.endTransaction()
         }
+        return added
     }
 
     private fun queryWeights(ctx: Context, where: String?, args: Array<String>?): List<WeightRecord> {
@@ -327,14 +342,40 @@ object RecordStore {
             )
             db.execSQL("CREATE INDEX idx_benchmark_key ON $BENCHMARKS(benchmark_key)")
             db.execSQL("CREATE INDEX idx_benchmark_workout ON $BENCHMARKS(workout_date, workout_type_key)")
+
+            db.execSQL(
+                """
+                CREATE TABLE $TOMBSTONES(
+                  workout_date TEXT NOT NULL,
+                  workout_type_key TEXT NOT NULL,
+                  exercise_key TEXT NOT NULL,
+                  reps INTEGER NOT NULL,
+                  PRIMARY KEY(workout_date, workout_type_key, exercise_key, reps)
+                )
+                """.trimIndent()
+            )
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             if (oldVersion < 2) {
-                // Records written from the journal's strength sets are marked
-                // "auto" so later saves can revise or remove exactly those.
+                // Records written from the journal's strength sets carry
+                // "auto". The marker is historical: existing auto rows are
+                // never revised or removed by later journal edits.
                 db.execSQL(
                     "ALTER TABLE $WEIGHTS ADD COLUMN origin TEXT NOT NULL DEFAULT 'manual'"
+                )
+            }
+            if (oldVersion < 3) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS $TOMBSTONES(
+                      workout_date TEXT NOT NULL,
+                      workout_type_key TEXT NOT NULL,
+                      exercise_key TEXT NOT NULL,
+                      reps INTEGER NOT NULL,
+                      PRIMARY KEY(workout_date, workout_type_key, exercise_key, reps)
+                    )
+                    """.trimIndent()
                 )
             }
         }

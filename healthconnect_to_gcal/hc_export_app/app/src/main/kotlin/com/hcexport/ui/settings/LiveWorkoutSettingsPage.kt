@@ -48,6 +48,7 @@ fun LiveWorkoutSettingsPage() {
     var sound by remember { mutableStateOf(Prefs.getLiveSound(context)) }
     var vibration by remember { mutableStateOf(Prefs.getLiveVibration(context)) }
     var keepOn by remember { mutableStateOf(Prefs.getLiveKeepScreenOn(context)) }
+    var renew by remember { mutableIntStateOf(Prefs.getLiveRemoteRenewMinutes(context)) }
 
     SettingsPageList {
         item {
@@ -140,6 +141,28 @@ fun LiveWorkoutSettingsPage() {
                         keepOn = it
                         Prefs.setLiveKeepScreenOn(context, it)
                     },
+                )
+            }
+        }
+
+        item { SettingsSectionHeader("Notifications") }
+        item {
+            SettingsCard(contentPadding = PaddingValues(16.dp)) {
+                Text(
+                    "The step notification renews itself after this long without a button press.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+                Spacer(Modifier.height(10.dp))
+                SegmentedControl(
+                    options = listOf(0, 1, 2, 5, 10),
+                    selected = renew,
+                    label = { if (it == 0) "Off" else "$it min" },
+                    onSelect = {
+                        renew = it
+                        Prefs.setLiveRemoteRenewMinutes(context, it)
+                    },
+                    accent = Coral,
                 )
             }
         }

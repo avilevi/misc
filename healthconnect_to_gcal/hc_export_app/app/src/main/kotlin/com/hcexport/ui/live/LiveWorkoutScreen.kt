@@ -106,6 +106,7 @@ import com.hcexport.MetricDef
 import com.hcexport.MetricKind
 import com.hcexport.Prefs
 import com.hcexport.R
+import com.hcexport.RecordLogic
 import com.hcexport.TimeValue
 import com.hcexport.formatLiveClock
 import com.hcexport.formatLiveElapsed
@@ -114,10 +115,14 @@ import com.hcexport.ui.ConfirmDialog
 import com.hcexport.ui.DataRefresh
 import com.hcexport.ui.EmptyState
 import com.hcexport.ui.HcBackground
+import com.hcexport.ui.HcCard
 import com.hcexport.ui.IconAction
 import com.hcexport.ui.LoadingLine
+import com.hcexport.ui.LocalMinimalDesign
+import com.hcexport.ui.NewPrCelebration
 import com.hcexport.ui.PrimaryButton
 import com.hcexport.ui.SecondaryButton
+import com.hcexport.ui.SectionLabel
 import com.hcexport.ui.SwipeCarousel
 import com.hcexport.ui.Tag
 import com.hcexport.ui.sanitiseMetricInput
@@ -166,8 +171,13 @@ fun LiveWorkoutScreen(
     onBack: () -> Unit,
     /** Opened from a "workout started on the watch" notification or link. */
     join: Boolean = false,
+    /** Opened from the Start live workout action: choose where to begin. */
+    setup: Boolean = false,
 ) {
     val ai = rememberAiWorkoutState(date = date, typeKey = typeKey)
+    var started by rememberSaveable { mutableStateOf(false) }
+    var startKey by rememberSaveable { mutableStateOf("") }
+    val chosenStart = remember(startKey) { decodeLiveStart(startKey) }
 
     HcBackground(accent = Teal) {
         Column(
@@ -178,7 +188,15 @@ fun LiveWorkoutScreen(
             when {
                 ai.loading -> LoadingLine("Reading the plan…", Teal)
                 ai.plan == null -> NoLivePlan(onBack)
-                else -> LiveWorkoutBody(ai, onBack, join)
+                setup && !join && !started -> LiveStartSetup(
+                    ai = ai,
+                    onBack = onBack,
+                    onStart = { start ->
+                        startKey = start?.encode() ?: ""
+                        started = true
+                    },
+                )
+                else -> LiveWorkoutBody(ai, onBack, join, chosenStart)
             }
         }
     }
@@ -208,12 +226,427 @@ private fun NoLivePlan(onBack: () -> Unit) {
     }
 }
 
+// ── Where to start ──────────────────────────────────────────────────────────
+
+/**
+ * The screen behind "Start live workout": start at the beginning, at a whole
+ * section, or resume at a round/set with the clocks set. It never starts
+ * anything by itself; [onStart] carries the chosen point (null = the normal
+ * first-section start).
+ */
+@Composable
+private fun LiveStartSetup(
+    ai: AiWorkoutState,
+    onBack: () -> Unit,
+    onStart: (LiveStart?) -> Unit,
+) {
+    val context = LocalContext.current
+    val plan = ai.plan ?: return
+    val defaultInterval = remember { Prefs.getLiveSetIntervalSeconds(context) }
+    val live = remember(plan, defaultInterval) { LiveWorkout.build(plan, defaultInterval) }
+    val choices = remember(live) { live.sections.filter { it.items.isNotEmpty() } }
+    var selected by remember { mutableIntStateOf(0) }
+    val section = choices.getOrNull(selected) ?: choices.firstOrNull()
+    if (section == null) {
+        NoLivePlan(onBack)
+        return
+    }
+    var roundsDone by remember(selected) { mutableIntStateOf(0) }
+    var movement by remember(selected) { mutableIntStateOf(0) }
+    var timeText by remember(selected) { mutableStateOf(defaultStartTime(section)) }
+    var showTime by remember { mutableStateOf(false) }
+
+    val roundItems = remember(section, roundsDone) {
+        when {
+            section.isAmrap -> section.items
+            section.roundCount > 0 ->
+                section.items.filter { it.roundIndex == roundsDone }
+                    .ifEmpty { section.items }
+            else -> section.items
+        }
+    }
+    LaunchedEffect(roundItems) {
+        if (movement > roundItems.lastIndex) movement = 0
+    }
+    val maxRounds = if (section.isAmrap) 99 else (section.roundCount - 1).coerceAtLeast(0)
+    val hasTime = section.roundTimed || section.clocked
+
+    fun sectionFirstItem(): Int = if (section.roundCount > 0 && !section.isAmrap) {
+        section.items.indexOfFirst { it.roundIndex == 0 }.coerceAtLeast(0)
+    } else {
+        0
+    }
+
+    fun startHere(): LiveStart {
+        val chosen = roundItems.getOrNull(movement) ?: roundItems.firstOrNull()
+        val itemIndex = if (chosen != null && !section.isAmrap) {
+            section.items.indexOf(chosen).coerceAtLeast(0)
+        } else {
+            movement.coerceAtLeast(0)
+        }
+        val seconds = startClockSeconds(timeText)
+        val cap = section.timeCapSeconds
+        val elapsedMs = when {
+            section.roundTimed -> 0L
+            section.clocked && cap != null -> (cap - seconds).coerceAtLeast(0) * 1000L
+            section.clocked -> seconds.coerceAtLeast(0) * 1000L
+            else -> 0L
+        }
+        return LiveStart(
+            sectionIndex = live.sections.indexOf(section).coerceAtLeast(0),
+            itemIndex = itemIndex,
+            roundsDone = if (section.isAmrap) roundsDone else 0,
+            currentRound = if (section.roundCount > 0 && !section.isAmrap) roundsDone else 0,
+            elapsedMs = elapsedMs,
+            intervalRemainingMs = if (section.roundTimed) {
+                seconds.coerceAtLeast(0) * 1000L
+            } else {
+                null
+            },
+        )
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconAction(
+                icon = {
+                    Icon(Icons.Filled.Close, contentDescription = "Close", tint = Snow)
+                },
+                onClick = onBack,
+                border = false,
+            )
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(
+                    "Start live workout",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Snow,
+                )
+                Text(
+                    live.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Mist,
+                )
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        PrimaryButton("Start from scratch", onClick = { onStart(null) }, accent = Teal)
+        Spacer(Modifier.height(8.dp))
+        if (!LocalMinimalDesign.current) {
+            Text(
+                "Or begin at a section, or resume from a round and set you already reached.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+
+        choices.forEachIndexed { index, option ->
+            val isSelected = index == selected
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isSelected) Teal.copy(alpha = 0.12f) else CardHigh)
+                    .border(
+                        1.dp,
+                        if (isSelected) Teal.copy(alpha = 0.55f) else Hairline,
+                        RoundedCornerShape(16.dp),
+                    )
+                    .clickable {
+                        selected = index
+                        roundsDone = 0
+                        movement = 0
+                        timeText = defaultStartTime(option)
+                    }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        option.title,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Snow,
+                    )
+                    Tag(sectionSummary(option), Teal)
+                }
+                if (option.notes.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        option.notes,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                        maxLines = 2,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+        HcCard(contentPadding = PaddingValues(16.dp)) {
+            SectionLabel(section.title, color = Teal)
+            if (section.roundCount > 0) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    if (section.isAmrap) "Rounds already done" else "Rounds already done",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StartStepButton("−") {
+                        roundsDone = (roundsDone - 1).coerceAtLeast(0)
+                    }
+                    Text(
+                        "$roundsDone",
+                        modifier = Modifier.width(42.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Snow,
+                        textAlign = TextAlign.Center,
+                    )
+                    StartStepButton("+") {
+                        roundsDone = (roundsDone + 1).coerceAtMost(maxRounds)
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        if (section.isAmrap) {
+                            "Full rounds"
+                        } else {
+                            "of ${section.roundCount}"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                    )
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(
+                if (section.roundCount > 0) "Start at" else "Start at set",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+            )
+            Spacer(Modifier.height(6.dp))
+            roundItems.forEachIndexed { index, item ->
+                val isSelected = index == movement
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) Teal.copy(alpha = 0.12f) else Color.Transparent)
+                        .clickable { movement = index }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .border(
+                                2.dp,
+                                if (isSelected) Teal else Hairline,
+                                CircleShape,
+                            )
+                            .background(if (isSelected) Teal else Color.Transparent)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        startItemLabel(item),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isSelected) Snow else Mist,
+                    )
+                }
+            }
+            if (hasTime) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    when {
+                        section.roundTimed -> "Time left in the round"
+                        section.clocked && section.timeCapSeconds != null -> "Time left"
+                        else -> "Time already done"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardHigh)
+                        .border(1.dp, Hairline, RoundedCornerShape(12.dp))
+                        .clickable { showTime = true }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        timeText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Snow,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "PICK",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Teal,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            SecondaryButton(
+                text = "Start this section",
+                onClick = {
+                    onStart(
+                        LiveStart(
+                            sectionIndex = live.sections.indexOf(section),
+                            itemIndex = sectionFirstItem(),
+                        ),
+                    )
+                },
+                accent = Teal,
+            )
+            Spacer(Modifier.height(8.dp))
+            PrimaryButton(
+                "Start here",
+                onClick = { onStart(startHere()) },
+                accent = Teal,
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        if (!LocalMinimalDesign.current) {
+            Text(
+                "Existing values are kept; the session overwrites the sets it runs.",
+                style = MaterialTheme.typography.labelSmall,
+                color = Slate,
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+
+    if (showTime) {
+        com.hcexport.ui.TimeSpinnerDialog(
+            title = "Time",
+            value = timeText,
+            accent = Teal,
+            onConfirm = {
+                timeText = it
+                showTime = false
+            },
+            onClear = {
+                timeText = defaultStartTime(section)
+                showTime = false
+            },
+            onDismiss = { showTime = false },
+        )
+    }
+}
+
+@Composable
+private fun StartStepButton(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(Teal.copy(alpha = 0.12f))
+            .border(1.dp, Teal.copy(alpha = 0.3f), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.titleLarge,
+            color = Teal,
+        )
+    }
+}
+
+private fun startItemLabel(item: LiveItem): String {
+    val target = item.target.trim()
+    return if (target.isBlank() || item.name.contains(target, ignoreCase = true)) {
+        item.name
+    } else {
+        "${item.name} · $target"
+    }
+}
+
+private fun sectionSummary(section: LiveSection): String = when {
+    section.isAmrap -> "AMRAP"
+    section.roundTimed -> "${section.roundCount} × ${formatLiveClock((section.roundSeconds ?: 0) * 1000L)}"
+    section.roundCount > 0 -> "${section.roundCount} rounds"
+    else -> "${section.items.size} sets"
+}
+
+private fun defaultStartTime(section: LiveSection): String {
+    val cap = section.timeCapSeconds
+    return when {
+        section.roundTimed -> formatLiveClock((section.roundSeconds ?: 0) * 1000L)
+        section.clocked && cap != null -> formatLiveClock(cap * 1000L)
+        else -> "0:00"
+    }
+}
+
+private fun startClockSeconds(text: String): Int {
+    val parts = text.trim().split(":")
+    return if (parts.size == 2) {
+        ((parts[0].toIntOrNull() ?: 0) * 60 + (parts[1].toIntOrNull() ?: 0))
+            .coerceAtLeast(0)
+    } else {
+        (text.trim().toIntOrNull() ?: 0).coerceAtLeast(0)
+    }
+}
+
 // ── Session state ───────────────────────────────────────────────────────────
 
 private enum class LivePhase { OVERVIEW, GET_READY, ACTIVE, DONE }
 
 /** What the section that just ended earned: a For Time clock or an AMRAP score. */
 private data class LiveResultNote(val label: String, val value: String)
+
+/**
+ * Where a live session begins when it is not the normal first-section start.
+ * A null start on [LiveSessionState] means the usual get-ready at section 1;
+ * anything here begins active at that point, with the clocks set.
+ */
+private data class LiveStart(
+    val sectionIndex: Int,
+    val itemIndex: Int,
+    val roundsDone: Int = 0,
+    val currentRound: Int = 0,
+    val elapsedMs: Long = 0L,
+    val intervalRemainingMs: Long? = null,
+)
+
+private fun LiveStart.encode(): String = listOf(
+    sectionIndex,
+    itemIndex,
+    roundsDone,
+    currentRound,
+    elapsedMs,
+    intervalRemainingMs ?: -1L,
+).joinToString("|")
+
+private fun decodeLiveStart(raw: String): LiveStart? {
+    if (raw.isBlank()) return null
+    val parts = raw.split('|')
+    if (parts.size < 6) return null
+    return runCatching {
+        LiveStart(
+            sectionIndex = parts[0].toInt(),
+            itemIndex = parts[1].toInt(),
+            roundsDone = parts[2].toInt(),
+            currentRound = parts[3].toInt(),
+            elapsedMs = parts[4].toLong(),
+            intervalRemainingMs = parts[5].toLong().takeIf { it >= 0L },
+        )
+    }.getOrNull()
+}
 
 /**
  * The running session: where in the plan we are, the two clocks the screens
@@ -229,6 +662,7 @@ private class LiveSessionState(
     private val ai: AiWorkoutState,
     private val cues: LiveCues,
     private val leadInSeconds: Int,
+    private val start: LiveStart? = null,
 ) {
     var sectionIndex by mutableIntStateOf(0)
     var itemIndex by mutableIntStateOf(0)
@@ -369,16 +803,40 @@ private class LiveSessionState(
     }
 
     init {
-        // Pressing "Start live workout" is the start: the first section opens
-        // on its get-ready countdown, not on another start button. The screens
-        // between later sections are the "next session" preview.
-        val first = live.sections.firstOrNull()
-        if (first != null && first.items.isNotEmpty()) {
-            if (leadInSeconds <= 0) {
-                beginActive()
-            } else {
-                leadInRemainingMs = leadInSeconds * 1000L
-                phase = LivePhase.GET_READY
+        if (start != null) {
+            // A chosen point (a section, a round, a set) starts active: the
+            // athlete has already done the work before it.
+            sectionIndex = start.sectionIndex.coerceIn(0, live.sections.lastIndex)
+            val chosen = live.sections[sectionIndex]
+            val chosenInterval = chosen.intervalSeconds
+            roundsDone = start.roundsDone.coerceAtLeast(0)
+            currentRound = start.currentRound.coerceAtLeast(0)
+            sectionElapsedMs = start.elapsedMs.coerceAtLeast(0L)
+            intervalRemainingMs = start.intervalRemainingMs ?: when {
+                chosen.roundTimed -> (chosen.roundSeconds ?: 0) * 1000L
+                chosenInterval != null -> chosenInterval * 1000L
+                else -> 0L
+            }
+            started = true
+            paused = false
+            phase = LivePhase.ACTIVE
+            itemIndex = start.itemIndex.coerceIn(
+                0, chosen.items.lastIndex.coerceAtLeast(0),
+            )
+            liveItemIndex = itemIndex
+            lastCueSecond = -1
+            enterItem()
+        } else {
+            // Pressing "Start live workout" is the start: the first section
+            // opens on its get-ready countdown, not on another start button.
+            val first = live.sections.firstOrNull()
+            if (first != null && first.items.isNotEmpty()) {
+                if (leadInSeconds <= 0) {
+                    beginActive()
+                } else {
+                    leadInRemainingMs = leadInSeconds * 1000L
+                    phase = LivePhase.GET_READY
+                }
             }
         }
     }
@@ -1079,12 +1537,19 @@ private class LiveSessionState(
     private val intervalSet: Boolean
         get() = !section.roundTimed && section.intervalSeconds != null
 
+    private val hasRounds: Boolean
+        get() = section.isAmrap || section.roundCount > 0
+
     private fun liveItemNow(): LiveItem? = section.items.getOrNull(liveItemIndex)
 
     /**
      * The controls the live step offers, in the screen's order. This list is
      * the single source for both the notification buttons and the band's
      * transport controls — a new action here reaches both.
+     *
+     * Round work has three buttons; a plain set has two. The colours are
+     * carried by the labels because Android notification actions are
+     * monochrome.
      */
     fun remoteActions(): List<LiveRemoteAction> = when (phase) {
         LivePhase.OVERVIEW -> listOf(LiveRemoteAction(LiveRemoteHub.ACTION_START, "Start"))
@@ -1094,16 +1559,14 @@ private class LiveSessionState(
             // The rest screen has one control; the work controls are gone.
             resting -> listOf(LiveRemoteAction(LiveRemoteHub.ACTION_SKIP_REST, "Skip rest"))
             roundWorkDone -> emptyList()
-            intervalSet -> listOf(
-                LiveRemoteAction(
-                    LiveRemoteHub.ACTION_COMPLETE,
-                    if (itemDone) "Not completed" else "Mark as complete",
-                ),
-                LiveRemoteAction(LiveRemoteHub.ACTION_SKIP, "Skip timer"),
+            hasRounds -> listOf(
+                LiveRemoteAction(LiveRemoteHub.ACTION_ROUND_DONE, "🟢 Round done"),
+                LiveRemoteAction(LiveRemoteHub.ACTION_SET_DONE, "🟠 Set done"),
+                LiveRemoteAction(LiveRemoteHub.ACTION_SKIP, "🔴 Skip"),
             )
             else -> listOf(
-                LiveRemoteAction(LiveRemoteHub.ACTION_COMPLETE, "Mark as complete"),
-                LiveRemoteAction(LiveRemoteHub.ACTION_SKIP, "Skip"),
+                LiveRemoteAction(LiveRemoteHub.ACTION_SET_DONE, "🟠 Set done"),
+                LiveRemoteAction(LiveRemoteHub.ACTION_SKIP, "🔴 Skip"),
             )
         }
     }
@@ -1121,12 +1584,9 @@ private class LiveSessionState(
                 else -> Unit
             }
 
-            LiveRemoteHub.ACTION_COMPLETE -> {
-                if (phase != LivePhase.ACTIVE || resting || roundWorkDone) return
-                paused = false
-                if (!onLiveItem) resumeLive()
-                if (intervalSet) toggleItemDone() else completeAndAdvance()
-            }
+            LiveRemoteHub.ACTION_ROUND_DONE -> completeRound()
+
+            LiveRemoteHub.ACTION_SET_DONE -> completeSet()
 
             LiveRemoteHub.ACTION_SKIP -> {
                 if (phase != LivePhase.ACTIVE) return
@@ -1144,31 +1604,168 @@ private class LiveSessionState(
         }
     }
 
-    private fun remoteTitle(): String = when (phase) {
-        LivePhase.DONE -> "Workout complete"
-        // Between sections the result just earned is the headline: a For Time
-        // clock or an AMRAP score must be readable on the band.
-        LivePhase.OVERVIEW -> lastResult?.let { "${it.label} · ${it.value}" } ?: section.title
-        LivePhase.GET_READY -> liveItemNow()?.name ?: section.title
-        LivePhase.ACTIVE -> when {
-            resting -> "Rest"
-            roundWorkDone -> "Round complete"
-            else -> liveItemNow()?.name ?: section.title
+    /** A set is done; an interval set is marked once and its window runs on. */
+    private fun completeSet() {
+        if (phase != LivePhase.ACTIVE || resting || roundWorkDone) return
+        paused = false
+        if (!onLiveItem) resumeLive()
+        if (intervalSet) {
+            if (!itemDone) markItemDone()
+        } else {
+            completeAndAdvance()
         }
     }
 
-    private fun remoteProgress(): String = when {
-        phase == LivePhase.OVERVIEW -> "Next"
-        phase == LivePhase.GET_READY -> liveItemNow()?.position.orEmpty()
-        phase == LivePhase.ACTIVE && resting ->
-            if (currentRound < section.roundCount - 1) {
-                "Round ${currentRound + 2} of ${section.roundCount}"
+    /** Mark the live interval set done, without the screen's undo toggle. */
+    private fun markItemDone() {
+        itemDone = true
+        val current = item ?: return
+        current.metrics.filter { it.kind == MetricKind.CHECK }.forEach { metric ->
+            if (resolvedValue(current, metric) != "1") {
+                setValue(current, metric, "1")
+            }
+        }
+        commitCurrentValues()
+    }
+
+    /**
+     * Mark the whole round done, from any movement in it. An AMRAP counts the
+     * round and starts the next; a round-timed piece ends its work and lets
+     * the round clock run out (then rest); a fixed-round piece moves to the
+     * next round, or finishes the section.
+     */
+    private fun completeRound() {
+        if (phase != LivePhase.ACTIVE || resting || roundWorkDone) return
+        if (!hasRounds) return
+        paused = false
+        if (!onLiveItem) resumeLive()
+        val current = section
+        when {
+            current.isAmrap -> {
+                roundsDone += 1
+                itemIndex = 0
+                liveItemIndex = 0
+                itemDone = false
+                ai.replaceResults(LiveScoring.resetRoundValues(ai.results, current))
+                intervalRemainingMs = (current.intervalSeconds ?: 0) * 1000L
+                lastCueSecond = -1
+                enterItem()
+            }
+
+            current.roundTimed -> {
+                recordSplit()
+                commitCurrentValues()
+                itemDone = true
+                roundWorkDone = true
+            }
+
+            else -> {
+                val round = current.items.getOrNull(liveItemIndex)?.roundIndex ?: currentRound
+                recordSplit()
+                commitCurrentValues()
+                val nextFirst = current.items.indexOfFirst {
+                    (it.roundIndex ?: 0) > round
+                }
+                if (nextFirst >= 0) {
+                    itemIndex = nextFirst
+                    liveItemIndex = nextFirst
+                    intervalRemainingMs = (current.intervalSeconds ?: 0) * 1000L
+                    lastCueSecond = -1
+                    enterItem()
+                } else {
+                    finishSection(completed = true)
+                }
+            }
+        }
+    }
+
+    private fun remoteTitle(): String {
+        if (phase == LivePhase.DONE) return "Workout complete"
+        // Between sections the result just earned is the headline: a For Time
+        // clock or an AMRAP score must be readable on the band.
+        if (phase == LivePhase.OVERVIEW) {
+            return lastResult?.let { "${it.label} · ${it.value}" } ?: section.title
+        }
+        if (resting) return "Rest"
+        if (roundWorkDone) return "Round done"
+        val item = liveItemNow() ?: return section.title
+        return when {
+            section.roundTimed -> "Round ${currentRound + 1} of ${section.roundCount}"
+            section.isAmrap -> "Round ${roundsDone + 1}"
+            section.roundCount > 0 ->
+                "Round ${(item.roundIndex ?: currentRound) + 1} of ${section.roundCount}"
+            item.position.isNotBlank() -> item.position
+            else -> section.title
+        }
+    }
+
+    private fun remoteExercise(): String {
+        if (phase == LivePhase.DONE) return remoteResult().orEmpty()
+        if (phase == LivePhase.OVERVIEW) {
+            return section.items.take(2).joinToString(" · ") { it.name }
+                .ifBlank { section.notes }
+        }
+        if (resting) {
+            return if (currentRound < section.roundCount - 1) {
+                "Next: Round ${currentRound + 2} of ${section.roundCount}"
             } else {
                 "Last round done"
             }
-        phase == LivePhase.ACTIVE && section.isAmrap -> "Round ${roundsDone + 1}"
-        phase == LivePhase.ACTIVE -> liveItemNow()?.position.orEmpty()
-        else -> ""
+        }
+        if (roundWorkDone) {
+            return section.restSeconds?.let { "${formatLiveClock(it * 1000L)} rest" }.orEmpty()
+        }
+        val item = liveItemNow() ?: return section.title
+        // A set is named by the lift and its prescription; a round movement
+        // reads as the work itself ("15 Push-Ups", "200m Run").
+        return if (section.kind == "strength" || section.kind == "accessory") {
+            if (item.target.isBlank()) item.name else "${item.name} · ${item.target}"
+        } else {
+            displayExercise(item)
+        }
+    }
+
+    /** "15 reps" + "Push-Ups" becomes "15 Push-Ups"; "200m" + "Run" stays "200m Run". */
+    private fun displayExercise(item: LiveItem): String {
+        val target = item.target.trim()
+        val name = item.name.trim()
+        if (target.isBlank()) return name
+        val simple = Regex(
+            """^\d{1,3}(?:\s*(?:reps?|m|km|cal|s|sec|secs|min|mins|minutes?))?$""",
+            RegexOption.IGNORE_CASE,
+        )
+        if (simple.matches(target)) {
+            val cleaned = target.replace(Regex("""\s*reps?$""", RegexOption.IGNORE_CASE), "")
+                .trim()
+            return if (cleaned.isBlank()) name else "$cleaned $name"
+        }
+        return if (name.contains(target, ignoreCase = true)) name else "$name · $target"
+    }
+
+    /**
+     * A running timer is drawn by the notification's own chronometer, which
+     * ticks without the app re-posting anything. Paused time is the exception:
+     * it is written into the text, because a chronometer would keep moving.
+     */
+    private fun remoteChronometer(): Pair<Long?, Boolean> {
+        if (paused) return null to false
+        val now = System.currentTimeMillis()
+        return when {
+            phase == LivePhase.GET_READY ->
+                (now + leadInRemainingMs.coerceAtLeast(0L)) to true
+            phase == LivePhase.ACTIVE && resting ->
+                (now + restRemainingMs.coerceAtLeast(0L)) to true
+            phase == LivePhase.ACTIVE && section.roundTimed ->
+                (now + intervalRemainingMs.coerceAtLeast(0L)) to true
+            phase == LivePhase.ACTIVE && intervalSet ->
+                (now + intervalRemainingMs.coerceAtLeast(0L)) to true
+            phase == LivePhase.ACTIVE && section.isAmrap -> section.timeCapSeconds?.let {
+                (now + (it * 1000L - sectionElapsedMs).coerceAtLeast(0L)) to true
+            } ?: (null to false)
+            phase == LivePhase.ACTIVE && section.clocked ->
+                (now - sectionElapsedMs.coerceAtLeast(0L)) to false
+            else -> null to false
+        }
     }
 
     private fun remoteTimer(): String {
@@ -1197,18 +1794,6 @@ private class LiveSessionState(
         }
         if (core.isBlank()) return ""
         return if (paused) "Paused · $core" else core
-    }
-
-    private fun remoteDetail(): String = when {
-        phase == LivePhase.OVERVIEW ->
-            section.items.take(3).joinToString(" · ") { it.name }
-                .ifBlank { section.notes }
-        phase == LivePhase.GET_READY -> liveItemNow()?.target.orEmpty()
-        phase == LivePhase.ACTIVE && !resting && !roundWorkDone ->
-            liveItemNow()?.target.orEmpty()
-        phase == LivePhase.ACTIVE && roundWorkDone ->
-            section.restSeconds?.let { "${formatLiveClock(it * 1000L)} rest" }.orEmpty()
-        else -> ""
     }
 
     private fun remoteResult(): String? = lastResult?.let { "${it.label} · ${it.value}" }
@@ -1257,34 +1842,40 @@ private class LiveSessionState(
 
     fun remoteSnapshot(): LiveRemoteSnapshot {
         val title = remoteTitle()
-        val progress = remoteProgress()
+        val exercise = remoteExercise()
         val timer = remoteTimer()
-        val detail = remoteDetail()
         val result = remoteResult()
         val actions = remoteActions()
-        val textParts = listOf(progress, timer, detail).filter { it.isNotBlank() }
-        val text = if (textParts.isEmpty()) result.orEmpty() else textParts.joinToString(" · ")
-        val mediaArtist = listOfNotNull(progress, timer, result)
-            .filter { it.isNotBlank() }
-            .joinToString(" · ")
+        val (chronometerBase, chronometerDown) = remoteChronometer()
+        // While a timer runs it is the chronometer's job; only a paused timer
+        // (which is not moving) belongs in the text.
+        val staticTimer = timer.takeIf { chronometerBase == null }
+        val subText = when {
+            !staticTimer.isNullOrBlank() -> staticTimer
+            phase == LivePhase.DONE -> ""
+            phase == LivePhase.OVERVIEW && lastResult != null -> ""
+            else -> result.orEmpty()
+        }
         val bigText = buildString {
-            append(live.title)
-            append('\n').append(section.title)
-            if (progress.isNotBlank()) append(" · ").append(progress)
-            if (timer.isNotBlank()) append('\n').append(timer)
-            if (detail.isNotBlank()) append('\n').append(detail)
-            if (result != null) append('\n').append(result)
-            if (phase == LivePhase.ACTIVE && actions.isNotEmpty()) {
-                append("\nBand: play/pause = ").append(actions[0].label)
-                actions.getOrNull(1)?.let { append(" · next = ").append(it.label) }
+            append(title)
+            if (exercise.isNotBlank() && exercise != title) {
+                append('\n').append(exercise)
+            }
+            if (!staticTimer.isNullOrBlank()) append('\n').append(staticTimer)
+            if (result != null && result != title && result != exercise) {
+                append('\n').append(result)
             }
         }
+        val mediaArtist = listOfNotNull(exercise, timer)
+            .filter { it.isNotBlank() }
+            .joinToString(" · ")
+            .ifBlank { result.orEmpty() }
         return LiveRemoteSnapshot(
             date = ai.date,
             typeKey = ai.typeKey,
-            workoutTitle = live.title,
             title = title,
-            text = text,
+            text = exercise.ifBlank { result.orEmpty() },
+            subText = subText,
             bigText = bigText,
             result = result,
             stageKey = remoteStageKey(),
@@ -1292,9 +1883,11 @@ private class LiveSessionState(
             done = phase == LivePhase.DONE,
             mediaTitle = title,
             mediaArtist = mediaArtist,
-            mediaAlbum = live.title,
+            mediaAlbum = "HC Sync",
             mediaDurationMs = remoteMediaDuration(),
             mediaPositionMs = remoteMediaPosition(),
+            chronometerBaseMs = chronometerBase,
+            chronometerCountDown = chronometerDown,
         )
     }
 }
@@ -1364,7 +1957,12 @@ private fun liveSessionSaver(
 // ── Body ────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun LiveWorkoutBody(ai: AiWorkoutState, onBack: () -> Unit, join: Boolean) {
+private fun LiveWorkoutBody(
+    ai: AiWorkoutState,
+    onBack: () -> Unit,
+    join: Boolean,
+    start: LiveStart?,
+) {
     val context = LocalContext.current
     val plan = ai.plan ?: return
     val defaultInterval = remember { Prefs.getLiveSetIntervalSeconds(context) }
@@ -1391,12 +1989,22 @@ private fun LiveWorkoutBody(ai: AiWorkoutState, onBack: () -> Unit, join: Boolea
     val scope = rememberCoroutineScope()
     val session = rememberSaveable(
         live,
+        start,
         saver = remember(live) { liveSessionSaver(live, ai, cues, leadIn) },
     ) {
-        LiveSessionState(live, ai, cues, leadIn)
+        LiveSessionState(live, ai, cues, leadIn, start)
     }
 
     var leaving by remember { mutableStateOf(false) }
+    var prCelebration by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(ai.newRecordRevision) {
+        if (ai.newRecordRevision > 0) {
+            prCelebration = ai.newRecords.map { record ->
+                "${record.reps}RM ${record.exerciseName} · " +
+                    "${RecordLogic.formatWeight(record.weightKg)} kg"
+            }
+        }
+    }
     val leave: () -> Unit = {
         if (!leaving) {
             leaving = true
@@ -1665,6 +2273,15 @@ private fun LiveWorkoutBody(ai: AiWorkoutState, onBack: () -> Unit, join: Boolea
                 }
             }
         }
+        if (prCelebration.isNotEmpty()) {
+            NewPrCelebration(
+                records = prCelebration,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 68.dp, start = 20.dp, end = 20.dp),
+                onFinished = { prCelebration = emptyList() },
+            )
+        }
     }
 }
 
@@ -1886,13 +2503,15 @@ private fun SectionOverview(
             }
             Spacer(Modifier.height(18.dp))
             SectionPreview(section, accent)
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "Your values are saved as you go. You can pause, step back a set, or open the " +
-                    "map at any time.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Slate,
-            )
+            if (!LocalMinimalDesign.current) {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    "Your values are saved as you go. You can pause, step back a set, or open the " +
+                        "map at any time.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Slate,
+                )
+            }
             Spacer(Modifier.height(18.dp))
         }
         Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
@@ -2986,6 +3605,22 @@ private fun StepperField(
                     color = Slate,
                 )
             }
+            Spacer(Modifier.width(5.dp))
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.12f))
+                    .clickable { onDoneEditing() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = "Submit",
+                    tint = accent,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
         }
         if (metric.hint.isNotBlank()) {
             Spacer(Modifier.height(2.dp))
@@ -3637,12 +4272,14 @@ private fun DoneScreen(
             )
         }
         Spacer(Modifier.height(18.dp))
-        Text(
-            "Saved to the journal. Records are updated from the weights you logged.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Slate,
-            textAlign = TextAlign.Center,
-        )
+        if (!LocalMinimalDesign.current) {
+            Text(
+                "Saved to the journal. Records are updated from the weights you logged.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Slate,
+                textAlign = TextAlign.Center,
+            )
+        }
         Spacer(Modifier.height(30.dp))
         PrimaryButton("Back to journal", onClick = onDone, accent = Teal)
         Spacer(Modifier.height(24.dp))

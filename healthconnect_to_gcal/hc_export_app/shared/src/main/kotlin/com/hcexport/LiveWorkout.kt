@@ -331,6 +331,16 @@ object LiveTiming {
      */
     fun roundSeconds(text: String): Int? {
         if (text.isBlank()) return null
+        // "Every 4:00 x 6 (24:00)" — the clock names the window, the count
+        // follows it. A per-set interval ("every 2:00 x 4 sets") is not this.
+        EVERY_ROUND_CLOCK.find(text)?.let { match ->
+            val mins = match.groupValues[1].toIntOrNull() ?: return@let
+            val secs = match.groupValues[2].toIntOrNull() ?: return@let
+            return positive(mins * 60 + secs)
+        }
+        EVERY_ROUND_MINUTES.find(text)?.let { match ->
+            return minutes(match.groupValues[1])
+        }
         ROUND_WINDOW_CLOCK.find(text)?.let { match ->
             val mins = match.groupValues[2].toIntOrNull() ?: return@let
             val secs = match.groupValues[3].toIntOrNull() ?: return@let
@@ -478,6 +488,14 @@ object LiveTiming {
         RegexOption.IGNORE_CASE,
     )
 
+    private val EVERY_ROUND_CLOCK = Regex(
+        """\bevery\s+(\d{1,2}):([0-5]\d)\s*(?:[x×]|for)\s*\d{1,2}\b(?!\s*(?:sets?|reps?)\b)""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val EVERY_ROUND_MINUTES = Regex(
+        """\bevery\s+(\d{1,2}(?:[.,]\d+)?)\s*(?:m|min|mins|minutes?)\s*(?:[x×]|for)\s*\d{1,2}\b(?!\s*(?:sets?|reps?)\b)""",
+        RegexOption.IGNORE_CASE,
+    )
     private val ROUND_WINDOW_CLOCK = Regex(
         """\b(\d{1,2})\s*(?:rounds?\s*(?:of|x|×)|[x×])\s*(\d{1,2}):([0-5]\d)\b""",
         RegexOption.IGNORE_CASE,

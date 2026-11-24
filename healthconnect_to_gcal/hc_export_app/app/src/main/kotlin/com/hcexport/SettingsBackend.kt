@@ -63,11 +63,14 @@ object SettingsBackend {
 
     fun syncStatus(context: Context): SyncStatus {
         val nextPull = Prefs.getNextPullAlarmMs(context) ?: AlarmScheduler.nextPullTimeMs()
+        val fitr = FitrSecretStore.hasCredentials(context)
         return SyncStatus(
             lastSyncMs = Prefs.getLastSyncTime(context),
             lastSyncSummary = Prefs.getLastSyncSummary(context),
-            lastPullSummary = Prefs.getLastWorkoutPullSummary(context),
-            lastPullMs = Prefs.getLastWorkoutPullMs(context),
+            lastPullSummary = if (fitr) Prefs.getFitrLastSummary(context)
+                else Prefs.getLastWorkoutPullSummary(context),
+            lastPullMs = if (fitr) Prefs.getLastFitrPullMs(context)
+                else Prefs.getLastWorkoutPullMs(context),
             nextSyncMs = AlarmScheduler.nextSyncMs(context),
             nextPullMs = nextPull,
             watchPushMs = Prefs.getLastWatchPushMs(context),
@@ -75,13 +78,18 @@ object SettingsBackend {
         )
     }
 
-    fun workoutStatus(context: Context): WorkoutSettingsStatus = WorkoutSettingsStatus(
-        count = WorkoutStore.count(context),
-        latestDate = WorkoutStore.latestDate(context),
-        lastPullMs = Prefs.getLastWorkoutPullMs(context),
-        lastPullSummary = Prefs.getLastWorkoutPullSummary(context),
-        watchPushMs = Prefs.getLastWatchPushMs(context),
-    )
+    fun workoutStatus(context: Context): WorkoutSettingsStatus {
+        val fitr = FitrSecretStore.hasCredentials(context)
+        return WorkoutSettingsStatus(
+            count = WorkoutStore.count(context),
+            latestDate = WorkoutStore.latestDate(context),
+            lastPullMs = if (fitr) Prefs.getLastFitrPullMs(context)
+                else Prefs.getLastWorkoutPullMs(context),
+            lastPullSummary = if (fitr) Prefs.getFitrLastSummary(context)
+                else Prefs.getLastWorkoutPullSummary(context),
+            watchPushMs = Prefs.getLastWatchPushMs(context),
+        )
+    }
 
     fun sourceSummary(sources: List<String>): String =
         if (sources.isEmpty()) "Run a sync first to discover sources."

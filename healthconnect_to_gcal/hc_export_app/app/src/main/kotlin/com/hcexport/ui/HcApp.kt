@@ -2,21 +2,27 @@ package com.hcexport.ui
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.hcexport.DesignStyle
 import com.hcexport.JournalKeys
 import com.hcexport.LiveSessionHub
+import com.hcexport.Prefs
 import com.hcexport.shared.DEVICE_WATCH
 import com.hcexport.ui.records.BenchmarkDetailScreen
 import com.hcexport.ui.records.BenchmarkEditorScreen
@@ -41,7 +47,7 @@ private object Routes {
     const val HISTORY = "history"
     const val WORKOUT = "workout/{date}/{typeKey}"
     const val INTERACTIVE = "interactive/{date}/{typeKey}"
-    const val LIVE = "live/{date}/{typeKey}?join={join}"
+    const val LIVE = "live/{date}/{typeKey}?join={join}&setup={setup}"
     const val RECORDS = "records"
     const val WEIGHTS = "records/weights"
     const val WEIGHT = "records/weights/{exerciseKey}?recordId={recordId}&from={from}"
@@ -54,7 +60,8 @@ private object Routes {
 }
 
 private fun workout(date: String, typeKey: String) = "workout/$date/$typeKey"
-private fun liveWorkout(date: String, typeKey: String) = "live/$date/$typeKey"
+private fun liveWorkout(date: String, typeKey: String, setup: Boolean = false) =
+    "live/$date/$typeKey?setup=$setup"
 private fun interactive(date: String, typeKey: String) = "interactive/$date/$typeKey"
 
 /**
@@ -151,6 +158,17 @@ fun HcApp(
         nav.navigate("live/${session.date}/${session.typeKey}?join=true")
     }
 
+    val context = LocalContext.current
+    var designTick by remember { mutableIntStateOf(0) }
+    LifecycleResumeEffect(Unit) {
+        designTick += 1
+        onPauseOrDispose { }
+    }
+    val minimal = remember(designTick) {
+        Prefs.getDesignStyle(context) == DesignStyle.MINIMAL
+    }
+
+    CompositionLocalProvider(LocalMinimalDesign provides minimal) {
     NavHost(navController = nav, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(
@@ -174,7 +192,9 @@ fun HcApp(
                 },
                 onSync = onSync,
                 onCreateAi = { date, typeKey -> nav.navigate(interactive(date, typeKey)) },
-                onStartLive = { date, typeKey -> nav.navigate(liveWorkout(date, typeKey)) },
+                onStartLive = { date, typeKey ->
+                    nav.navigate(liveWorkout(date, typeKey, setup = true))
+                },
             )
         }
 
@@ -194,7 +214,9 @@ fun HcApp(
                 onOpenAiSettings = onOpenAiSettings,
                 onAddWeight = { d, t -> nav.navigate(weightNew(date = d, typeKey = t)) },
                 onAddBenchmark = { d, t -> nav.navigate(benchmarkNew(date = d, typeKey = t)) },
-                onStartLive = { d, t -> nav.navigate(liveWorkout(d, t)) },
+                onStartLive = { d, t ->
+                    nav.navigate(liveWorkout(d, t, setup = true))
+                },
                 onOpenWeightRecord = { key, id -> nav.navigate(weightDetail(key, id, "journal")) },
                 onOpenBenchmarkRecord = { key, id -> nav.navigate(benchmarkDetail(key, id, "journal")) },
             )
@@ -267,6 +289,7 @@ fun HcApp(
                 navArgument("date") { type = NavType.StringType },
                 navArgument("typeKey") { type = NavType.StringType },
                 navArgument("join") { type = NavType.BoolType; defaultValue = false },
+                navArgument("setup") { type = NavType.BoolType; defaultValue = false },
             ),
         ) { entry ->
             LiveWorkoutScreen(
@@ -274,6 +297,7 @@ fun HcApp(
                 typeKey = entry.arguments?.getString("typeKey").orEmpty(),
                 onBack = { nav.popBackStack() },
                 join = entry.arguments?.getBoolean("join") ?: false,
+                setup = entry.arguments?.getBoolean("setup") ?: false,
             )
         }
 
@@ -422,5 +446,6 @@ fun HcApp(
                 onSaved = { nav.popBackStack() },
             )
         }
+    }
     }
 }

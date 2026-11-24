@@ -27,6 +27,7 @@ object SyncEngine {
 
     data class Report(
         val pull: WorkoutPull.Result?,
+        val fitr: FitrPull.Result?,
         val bridge: BridgePull.Result?,
         val calendar: HealthConnectToCalendar.Result?,
         val wodFilled: Int,
@@ -44,9 +45,28 @@ object SyncEngine {
     ): Report = withContext(Dispatchers.IO) {
         val errors = mutableListOf<String>()
 
-        // 1. Workouts -> DB
+        // 1. Workouts -> DB. Fitr is the source whenever it is connected; the
+        //    website scraper only runs for installs that have not connected it.
+        val fitrConnected = FitrSecretStore.hasCredentials(ctx)
+        val fitr = if (!fitrConnected) {
+            FitrPull.Result(ok = true, skipped = true)
+        } else {
+            val lastFitr = Prefs.getLastFitrPullMs(ctx)
+            val fitrFresh = !pullOnly && !forceCalendar && !forceJournal && lastFitr != null &&
+                System.currentTimeMillis() - lastFitr < FRESH_PULL_MS
+            if (fitrFresh) {
+                FitrPull.Result(ok = true)
+            } else {
+                runCatching { FitrPull.refresh(ctx) }
+                    .getOrElse { FitrPull.Result(ok = false, error = it.message ?: "failed") }
+            }
+        }
+        if (!fitr.ok) errors += "fitr: ${fitr.error}"
+
         val lastPull = Prefs.getLastWorkoutPullMs(ctx)
-        val pull = if (!pullOnly && !forceCalendar && !forceJournal && lastPull != null &&
+        val pull = if (fitrConnected) {
+            WorkoutPull.Result(ok = true, notModified = true)
+        } else if (!pullOnly && !forceCalendar && !forceJournal && lastPull != null &&
             System.currentTimeMillis() - lastPull < FRESH_PULL_MS
         ) {
             WorkoutPull.Result(ok = true, notModified = true)
@@ -64,9 +84,9 @@ object SyncEngine {
             val watchOk = WearSnapshotPublisher.publish(ctx)
             if (!watchOk) errors += "watch push failed"
             return@withContext Report(
-                pull = pull, bridge = bridge, calendar = null, wodFilled = 0, journal = null,
-                watchOk = watchOk, errors = errors,
-                summary = pullSummary(pull, bridge, errors),
+                pull = pull, fitr = fitr, bridge = bridge, calendar = null, wodFilled = 0,
+                journal = null, watchOk = watchOk, errors = errors,
+                summary = pullSummary(pull, fitr, bridge, errors),
             )
         }
 
@@ -105,6 +125,9 @@ object SyncEngine {
                 append("\nWODs filled: $wodFilled")
                 append("\nJournal: ${journal.created} new, ${journal.updated} updated")
                 append("\nWorkouts: ${WorkoutStore.count(ctx)} in database")
+                if (!fitr.skipped) {
+                    append("\nFitr: ${fitr.created} new, ${fitr.updated} updated")
+                }
                 if (!bridge.skipped) {
                     append("\nBridgeAthletic: ${bridge.created} new, ${bridge.updated} updated")
                 }
@@ -125,6 +148,7 @@ object SyncEngine {
 
         Report(
             pull = pull,
+            fitr = fitr,
             bridge = bridge,
             calendar = calendar,
             wodFilled = wodFilled,
@@ -137,6 +161,7 @@ object SyncEngine {
 
     private fun pullSummary(
         pull: WorkoutPull.Result,
+        fitr: FitrPull.Result,
         bridge: BridgePull.Result,
         errors: List<String>,
     ): String = buildString {
@@ -144,6 +169,9 @@ object SyncEngine {
             if (pull.notModified) "Workouts unchanged"
             else "Workouts: ${pull.created} new, ${pull.updated} updated"
         )
+        if (!fitr.skipped) {
+            append("\nFitr: ${fitr.created} new, ${fitr.updated} updated")
+        }
         if (!bridge.skipped) {
             append("\nBridgeAthletic: ${bridge.created} new, ${bridge.updated} updated")
         }

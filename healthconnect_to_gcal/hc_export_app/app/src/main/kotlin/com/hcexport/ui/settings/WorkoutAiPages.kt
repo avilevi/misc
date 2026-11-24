@@ -51,6 +51,8 @@ import com.hcexport.AiClient
 import com.hcexport.AiKeyStore
 import com.hcexport.BridgePull
 import com.hcexport.BridgeSecretStore
+import com.hcexport.FitrPull
+import com.hcexport.FitrSecretStore
 import com.hcexport.InteractiveStore
 import com.hcexport.Prefs
 import com.hcexport.R
@@ -78,6 +80,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Date
 import java.util.Locale
@@ -97,6 +100,15 @@ fun WorkoutSettingsPage() {
     var bridgeError by remember { mutableStateOf<String?>(null) }
     val bridge by produceState<BridgePull.Status?>(null, refreshKey) {
         value = withContext(Dispatchers.IO) { BridgePull.status(context) }
+    }
+    var fitrEmail by remember { mutableStateOf(FitrSecretStore.getEmail(context).orEmpty()) }
+    var fitrPassword by remember { mutableStateOf("") }
+    var fitrReveal by remember { mutableStateOf(false) }
+    var fitrBusy by remember { mutableStateOf(false) }
+    var fitrError by remember { mutableStateOf<String?>(null) }
+    var fitrBackfillBusy by remember { mutableStateOf(false) }
+    val fitr by produceState<FitrPull.Status?>(null, refreshKey) {
+        value = withContext(Dispatchers.IO) { FitrPull.status(context) }
     }
     val status by produceState<WorkoutSettingsStatus?>(null, refreshKey) {
         value = withContext(Dispatchers.IO) { SettingsBackend.workoutStatus(context) }
@@ -211,6 +223,148 @@ fun WorkoutSettingsPage() {
                 SettingsSecondaryAction("Push snapshot to watch", Periwinkle) {
                     WearPushWorker.enqueue(context)
                     Toast.makeText(context, "Sending snapshot to the watch…", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        item { SettingsSectionHeader("Fitr (HYPR workouts)") }
+        item {
+            val current = fitr
+            when {
+                current == null -> com.hcexport.ui.LoadingLine("Reading Fitr status…", Teal)
+                !current.connected -> SettingsCard(contentPadding = PaddingValues(16.dp)) {
+                    Text(
+                        "Pull the WOD, HYROX, Pump and Weightlifting workouts straight from Fitr, " +
+                            "where the HYPR programming is written. While Fitr is connected the " +
+                            "HYPR workout page is no longer used. The login is kept encrypted on " +
+                            "this phone and is only used to read your workouts.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Slate,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    SettingsTextField(
+                        value = fitrEmail,
+                        onValueChange = {
+                            fitrEmail = it
+                            fitrError = null
+                        },
+                        label = "Fitr email",
+                        accent = Teal,
+                        keyboardType = KeyboardType.Email,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    SettingsTextField(
+                        value = fitrPassword,
+                        onValueChange = {
+                            fitrPassword = it
+                            fitrError = null
+                        },
+                        label = "Password",
+                        accent = Teal,
+                        keyboardType = KeyboardType.Password,
+                        visualTransformation = if (fitrReveal) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+                        trailingIcon = {
+                            Text(
+                                if (fitrReveal) "HIDE" else "SHOW",
+                                modifier = Modifier
+                                    .clickable { fitrReveal = !fitrReveal }
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Teal,
+                            )
+                        },
+                    )
+                    fitrError?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = Danger)
+                    }
+                }
+                else -> SettingsCard {
+                    SettingsRow(
+                        title = "Account",
+                        subtitle = current.profileName ?: current.email,
+                        value = null,
+                    )
+                    SettingsDivider()
+                    SettingsRow(
+                        title = "Last pull",
+                        subtitle = current.lastSummary,
+                        value = formatSettingsTime(current.lastPullMs) ?: "Never",
+                    )
+                    current.lastError?.let {
+                        SettingsDivider()
+                        SettingsRow(title = "Last error", subtitle = it)
+                    }
+                }
+            }
+        }
+        item {
+            val connected = fitr?.connected == true
+            Column(Modifier.padding(top = 10.dp)) {
+                if (!connected) {
+                    SettingsPrimaryAction(
+                        if (fitrBusy) "Connecting…" else "Connect Fitr",
+                        Teal,
+                    ) {
+                        if (fitrBusy) return@SettingsPrimaryAction
+                        if (fitrEmail.isBlank() || fitrPassword.isBlank()) {
+                            fitrError = "Enter your Fitr email and password"
+                            return@SettingsPrimaryAction
+                        }
+                        fitrBusy = true
+                        fitrError = null
+                        scope.launch {
+                            val error = FitrPull.connect(context, fitrEmail, fitrPassword)
+                            fitrBusy = false
+                            if (error == null) {
+                                fitrPassword = ""
+                                Toast.makeText(
+                                    context,
+                                    "Connected to Fitr",
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                                WorkoutFetchWorker.enqueue(context)
+                                refreshKey += 1
+                            } else {
+                                fitrError = error
+                            }
+                        }
+                    }
+                } else {
+                    SettingsPrimaryAction("Pull Fitr now", Teal) {
+                        WorkoutFetchWorker.enqueue(context)
+                        Toast.makeText(context, "Pulling Fitr…", Toast.LENGTH_SHORT).show()
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    SettingsSecondaryAction(
+                        if (fitrBackfillBusy) "Backfilling…" else "Backfill history since 2024",
+                        Teal,
+                    ) {
+                        if (fitrBackfillBusy) return@SettingsSecondaryAction
+                        fitrBackfillBusy = true
+                        scope.launch {
+                            val result = FitrPull.backfill(context, LocalDate.of(2024, 1, 1))
+                            fitrBackfillBusy = false
+                            val text = if (result.ok) {
+                                "Fitr backfill: ${result.workouts} workouts"
+                            } else {
+                                "Backfill stopped: ${result.error}"
+                            }
+                            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+                            refreshKey += 1
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    SettingsSecondaryAction("Disconnect Fitr", Teal) {
+                        FitrSecretStore.clearCredentials(context)
+                        fitrPassword = ""
+                        Toast.makeText(context, "Fitr disconnected", Toast.LENGTH_SHORT).show()
+                        refreshKey += 1
+                    }
                 }
             }
         }

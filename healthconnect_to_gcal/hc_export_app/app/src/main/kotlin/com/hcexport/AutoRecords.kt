@@ -130,6 +130,17 @@ object AutoRecords {
         }
     }
 
+    /**
+     * The rows to add: candidates that beat the standing record and that this
+     * workout has not already recorded. Past records are never rewritten.
+     */
+    fun newRows(
+        candidates: List<Candidate>,
+        existing: List<WeightRecord>,
+        alreadyRecorded: Set<Pair<String, Int>>,
+    ): List<Candidate> = beating(candidates, existing)
+        .filter { candidate -> (candidate.exerciseKey to candidate.reps) !in alreadyRecorded }
+
     private fun reps(
         scope: String,
         results: Map<String, Map<String, String>>,

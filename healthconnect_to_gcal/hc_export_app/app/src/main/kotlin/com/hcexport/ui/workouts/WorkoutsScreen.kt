@@ -71,6 +71,7 @@ import com.hcexport.ui.EmptyState
 import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.IconAction
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
@@ -1097,25 +1098,29 @@ private fun AiWorkoutCard(hasPlan: Boolean, onClick: () -> Unit) {
                         style = MaterialTheme.typography.headlineSmall,
                         color = Snow,
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Tag(
-                        if (hasPlan) "READY" else "AI",
-                        if (hasPlan) com.hcexport.ui.theme.Success else Teal,
+                    if (!LocalMinimalDesign.current) {
+                        Spacer(Modifier.width(8.dp))
+                        Tag(
+                            if (hasPlan) "READY" else "AI",
+                            if (hasPlan) com.hcexport.ui.theme.Success else Teal,
+                        )
+                    }
+                }
+                if (!LocalMinimalDesign.current) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        if (hasPlan) "See the structured plan"
+                        else "Preview the sets the AI reads from it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Mist,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "Your AI provider · sets, reps, time & load",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Slate,
                     )
                 }
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    if (hasPlan) "See the structured plan"
-                    else "Preview the sets the AI reads from it",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Mist,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    "Your AI provider · sets, reps, time & load",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Slate,
-                )
             }
             Icon(
                 Icons.AutoMirrored.Outlined.KeyboardArrowRight,
@@ -1149,8 +1154,10 @@ private fun HeroCard(label: String, date: String, accent: Color) {
             modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp).size(150.dp),
         )
         Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-            Tag("WORKOUT", accent)
-            Spacer(Modifier.height(10.dp))
+            if (!LocalMinimalDesign.current) {
+                Tag("WORKOUT", accent)
+                Spacer(Modifier.height(10.dp))
+            }
             Text(
                 label,
                 style = MaterialTheme.typography.displaySmall,

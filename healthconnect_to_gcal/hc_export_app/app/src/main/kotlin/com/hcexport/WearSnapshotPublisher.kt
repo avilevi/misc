@@ -43,7 +43,9 @@ import java.util.Locale
 object WearSnapshotPublisher {
 
     private const val TAG = "WearSnapshotPublisher"
-    private const val DAYS_BACK = 120L
+
+    // How far back the watch keeps the journal is the same lookback the journal
+    // itself uses (Settings -> Sync & reliability -> Journal & watch history).
     private const val DAYS_AHEAD = 21L
     private const val MAX_NARRATIVE = 3_500
     private const val MAX_CONTENT = 4_000
@@ -118,7 +120,8 @@ object WearSnapshotPublisher {
     }
 
     fun build(ctx: Context, today: LocalDate = LocalDate.now()): Snapshot {
-        val from = today.minusDays(DAYS_BACK)
+        val daysBack = Prefs.getJournalSyncDaysBack(ctx)
+        val from = today.minusDays(daysBack)
         val to = today.plusDays(DAYS_AHEAD)
         val fromIso = from.toString()
         val toIso = to.toString()

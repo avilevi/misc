@@ -23,7 +23,8 @@ class WorkoutFetchWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
 
     override suspend fun doWork(): Result {
         val report = SyncEngine.run(applicationContext, pullOnly = true)
-        return if (report.pull?.ok == true) {
+        val ok = report.pull?.ok != false && report.fitr?.ok != false
+        return if (ok) {
             Result.success()
         } else if (runAttemptCount < 2) {
             Result.retry()

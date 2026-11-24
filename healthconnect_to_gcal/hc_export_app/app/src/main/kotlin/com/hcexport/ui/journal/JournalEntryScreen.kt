@@ -2,6 +2,7 @@ package com.hcexport.ui.journal
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,9 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -44,6 +49,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.hcexport.AutoRecords
 import com.hcexport.CalendarHelper
 import com.hcexport.CalendarWorkoutEvent
+import com.hcexport.DesignStyle
 import com.hcexport.InteractiveStore
 import com.hcexport.JournalAiPlan
 import com.hcexport.JournalDeleter
@@ -59,6 +65,7 @@ import com.hcexport.RecordStore
 import com.hcexport.ScheduledSessionStore
 import com.hcexport.Workout
 import com.hcexport.WorkoutStore
+import com.hcexport.WorkoutVideo
 import com.hcexport.ui.AiWorkoutPanel
 import com.hcexport.ui.ConfirmDialog
 import com.hcexport.ui.DataRefresh
@@ -67,16 +74,20 @@ import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.HighlightOnArrival
 import com.hcexport.ui.LoadingLine
+import com.hcexport.ui.NewPrBadge
+import com.hcexport.ui.NewPrCelebration
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.ScreenPadding
 import com.hcexport.ui.SecondaryButton
 import com.hcexport.ui.rememberAiWorkoutState
 import com.hcexport.ui.theme.Amber
+import com.hcexport.ui.theme.Abyss
 import com.hcexport.ui.theme.Danger
 import com.hcexport.ui.theme.Mist
 import com.hcexport.ui.theme.Periwinkle
 import com.hcexport.ui.theme.Slate
 import com.hcexport.ui.theme.Snow
+import com.hcexport.ui.theme.Success
 import com.hcexport.ui.theme.Teal
 import com.hcexport.ui.theme.workoutAccent
 import kotlinx.coroutines.Dispatchers
@@ -110,6 +121,9 @@ fun JournalEntryScreen(
     LifecycleResumeEffect(Unit) {
         resumeTick += 1
         onPauseOrDispose { }
+    }
+    val minimal = remember(resumeTick) {
+        Prefs.getDesignStyle(context) == DesignStyle.MINIMAL
     }
 
     val load by produceState(JournalEntryLoad(), date, entryKey, refresh, resumeTick) {
@@ -168,21 +182,65 @@ fun JournalEntryScreen(
     val livePlan: JournalAiPlan? = workoutItem?.let { item ->
         aiState?.plan?.let { JournalFeed.aiPlan(it, aiState.results) } ?: item.plan
     }
+    // Movement demos Fitr attaches to this workout's section(s).
+    val videos by produceState(
+        emptyList<WorkoutVideo>(),
+        date, workoutItem?.typeKey, refresh, resumeTick,
+    ) {
+        val typeKey = workoutItem?.typeKey
+        value = if (typeKey == null) emptyList() else withContext(Dispatchers.IO) {
+            WorkoutStore.getVideos(context, date, typeKey)
+        }
+    }
+    // The live session needs real work to run; notes-only sections do not count.
+    val hasLiveContent = aiState?.plan?.sections?.any {
+        it.exercises.isNotEmpty() || it.rounds.isNotEmpty() || it.metrics.isNotEmpty()
+    } == true
     // Records are set from the session they were achieved in, so this entry owns
     // both the list and the two add actions.
-    val workoutRecords by produceState(
-        RecordStore.WorkoutRecords(emptyList(), emptyList()),
+    val recordsState by produceState(
+        RecordStore.WorkoutRecords(emptyList(), emptyList()) to false,
         workoutItem?.typeKey, refresh, resumeTick, aiState?.recordsRevision,
     ) {
         val typeKey = workoutItem?.typeKey
         value = if (typeKey == null) {
-            RecordStore.WorkoutRecords(emptyList(), emptyList())
+            RecordStore.WorkoutRecords(emptyList(), emptyList()) to true
         } else {
-            withContext(Dispatchers.IO) { RecordStore.recordsForWorkout(context, date, typeKey) }
+            withContext(Dispatchers.IO) {
+                RecordStore.recordsForWorkout(context, date, typeKey)
+            } to true
         }
     }
+    val workoutRecords = recordsState.first
+    val recordsLoaded = recordsState.second
     var note by remember(entryKey, journalItem?.note) {
         mutableStateOf(journalItem?.note.orEmpty())
+    }
+    var seenRecordIds by remember { mutableStateOf<Set<String>?>(null) }
+    var prCelebration by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(workoutRecords, recordsLoaded) {
+        if (!recordsLoaded) return@LaunchedEffect
+        val ids = workoutRecords.weights.map { "w:${it.id}" }.toSet() +
+            workoutRecords.benchmarks.map { "b:${it.id}" }.toSet()
+        val previous = seenRecordIds
+        seenRecordIds = ids
+        if (previous == null) return@LaunchedEffect
+        val added = buildList {
+            workoutRecords.weights.forEach { record ->
+                if ("w:${record.id}" !in previous) {
+                    add(
+                        "${record.reps}RM ${record.exerciseName} · " +
+                            "${RecordLogic.formatWeight(record.weightKg)} kg"
+                    )
+                }
+            }
+            workoutRecords.benchmarks.forEach { record ->
+                if ("b:${record.id}" !in previous) {
+                    add("${record.benchmarkName} · ${RecordLogic.formatScore(record)}")
+                }
+            }
+        }
+        if (added.isNotEmpty()) prCelebration = added
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -263,7 +321,8 @@ fun JournalEntryScreen(
                     message = "This entry is no longer part of the journal. Sync to pull it back from your health data.",
                     accent = accent,
                 )
-                else -> LazyColumn(
+                else -> Box(Modifier.fillMaxSize()) {
+                LazyColumn(
                     Modifier.fillMaxSize().imePadding(),
                     contentPadding = PaddingValues(
                         start = ScreenPadding,
@@ -273,8 +332,16 @@ fun JournalEntryScreen(
                     ),
                 ) {
                     item {
-                        EntryHero(journalItem, planned, livePlan)
-                        Spacer(Modifier.height(24.dp))
+                        EntryHero(journalItem, planned, livePlan, minimal)
+                        if (minimal && journalItem is JournalItem.Workout && hasLiveContent) {
+                            Spacer(Modifier.height(16.dp))
+                            LiveWorkoutCircle {
+                                onStartLive(date, journalItem.typeKey)
+                            }
+                            Spacer(Modifier.height(22.dp))
+                        } else {
+                            Spacer(Modifier.height(24.dp))
+                        }
                     }
 
                     when (journalItem) {
@@ -285,8 +352,9 @@ fun JournalEntryScreen(
                                     AiWorkoutPanel(
                                         state = panel,
                                         onOpenAiSettings = onOpenAiSettings,
-                                        onStartLive = {
-                                            onStartLive(date, journalItem.typeKey)
+                                        minimal = minimal,
+                                        onStartLive = if (minimal) null else {
+                                            { onStartLive(date, journalItem.typeKey) }
                                         },
                                         focusScope = focusScope,
                                         original = {
@@ -302,6 +370,13 @@ fun JournalEntryScreen(
                                         workoutAccentFor(journalItem),
                                     )
                                 }
+                                if (videos.isNotEmpty()) {
+                                    Spacer(Modifier.height(20.dp))
+                                    WorkoutVideoStrip(
+                                        videos = videos,
+                                        accent = workoutAccentFor(journalItem),
+                                    )
+                                }
                                 Spacer(Modifier.height(26.dp))
                             }
                             // A record can only be set in a workout that was done, so a
@@ -311,24 +386,26 @@ fun JournalEntryScreen(
                                     JournalSectionHeader(
                                         title = "Records",
                                         accent = Amber,
-                                        subtitle = "Lift PRs and benchmark results set in this session.",
+                                        subtitle = if (minimal) null
+                                        else "Lift PRs and benchmark results set in this session.",
                                     )
                                     Spacer(Modifier.height(12.dp))
-                                    HcCard(
-                                        contentPadding = PaddingValues(
-                                            horizontal = 16.dp,
-                                            vertical = 8.dp,
-                                        ),
-                                    ) {
-                                        if (workoutRecords.isEmpty) {
-                                            Text(
-                                                "No records set in this workout yet.",
-                                                modifier = Modifier.padding(vertical = 6.dp),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = Slate,
-                                            )
-                                        }
-                                        workoutRecords.weights.forEach { record ->
+                                    if (!minimal || !workoutRecords.isEmpty) {
+                                        HcCard(
+                                            contentPadding = PaddingValues(
+                                                horizontal = 16.dp,
+                                                vertical = 8.dp,
+                                            ),
+                                        ) {
+                                            if (workoutRecords.isEmpty && !minimal) {
+                                                Text(
+                                                    "No records set in this workout yet.",
+                                                    modifier = Modifier.padding(vertical = 6.dp),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = Slate,
+                                                )
+                                            }
+                                            workoutRecords.weights.forEach { record ->
                                             HighlightOnArrival(
                                                 active = focusRecord?.id == record.id &&
                                                     focusScope == null &&
@@ -339,6 +416,7 @@ fun JournalEntryScreen(
                                                     title = "${record.reps}RM · ${record.exerciseName}",
                                                     value = "${RecordLogic.formatWeight(record.weightKg)} kg",
                                                     accent = Amber,
+                                                    pr = true,
                                                     onClick = {
                                                         onOpenWeightRecord(
                                                             record.exerciseKey,
@@ -357,6 +435,7 @@ fun JournalEntryScreen(
                                                     title = record.benchmarkName,
                                                     value = RecordLogic.formatScore(record),
                                                     accent = Teal,
+                                                    pr = true,
                                                     onClick = {
                                                         onOpenBenchmarkRecord(
                                                             record.benchmarkKey,
@@ -364,6 +443,7 @@ fun JournalEntryScreen(
                                                         )
                                                     },
                                                 )
+                                            }
                                             }
                                         }
                                     }
@@ -386,11 +466,12 @@ fun JournalEntryScreen(
                                 JournalSectionHeader(
                                     title = "Watch data",
                                     accent = Teal,
-                                    subtitle = "Recorded by your watch or strap and merged into this entry.",
+                                    subtitle = if (minimal) null
+                                    else "Recorded by your watch or strap and merged into this entry.",
                                 )
                                 Spacer(Modifier.height(12.dp))
                                 if (journalItem.biometrics.isEmpty()) {
-                                    EmptyWatchDataCard(planned)
+                                    EmptyWatchDataCard(planned, minimal)
                                 } else {
                                     journalItem.biometrics.forEachIndexed { index, bio ->
                                         if (index > 0) Spacer(Modifier.height(10.dp))
@@ -406,7 +487,8 @@ fun JournalEntryScreen(
                                 JournalSectionHeader(
                                     title = "Watch data",
                                     accent = Teal,
-                                    subtitle = "Recorded by your watch or strap.",
+                                    subtitle = if (minimal) null
+                                    else "Recorded by your watch or strap.",
                                 )
                                 Spacer(Modifier.height(12.dp))
                                 WatchDataCard(journalItem.biometrics)
@@ -419,7 +501,8 @@ fun JournalEntryScreen(
                                 JournalSectionHeader(
                                     title = "Sleep",
                                     accent = Periwinkle,
-                                    subtitle = "Stages as recorded by your watch or strap.",
+                                    subtitle = if (minimal) null
+                                    else "Stages as recorded by your watch or strap.",
                                 )
                                 Spacer(Modifier.height(12.dp))
                                 SleepDetailCard(journalItem, Periwinkle)
@@ -429,30 +512,42 @@ fun JournalEntryScreen(
                     }
 
                     item {
-                        JournalSectionHeader(
-                            title = "Comments",
-                            accent = Amber,
-                            subtitle = "Anything you want to remember about this entry.",
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        JournalCommentCard(
-                            value = note,
-                            onValueChange = { note = it },
-                            placeholder = commentPlaceholder(journalItem),
-                            accent = Amber,
-                        )
+                        if (minimal) {
+                            JournalCommentCard(
+                                value = note,
+                                onValueChange = { note = it },
+                                placeholder = commentPlaceholder(journalItem),
+                                accent = Amber,
+                                minimal = true,
+                            )
+                        } else {
+                            JournalSectionHeader(
+                                title = "Comments",
+                                accent = Amber,
+                                subtitle = "Anything you want to remember about this entry.",
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            JournalCommentCard(
+                                value = note,
+                                onValueChange = { note = it },
+                                placeholder = commentPlaceholder(journalItem),
+                                accent = Amber,
+                            )
+                        }
                         Spacer(Modifier.height(22.dp))
                     }
 
                     item {
-                        Text(
-                            "The journal merges your workout archive with Health Connect on every sync.",
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Slate,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(Modifier.height(18.dp))
+                        if (!minimal) {
+                            Text(
+                                "The journal merges your workout archive with Health Connect on every sync.",
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Slate,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(Modifier.height(18.dp))
+                        }
                         SecondaryButton(
                             text = "Delete this entry",
                             onClick = { showDeleteConfirm = true },
@@ -460,6 +555,16 @@ fun JournalEntryScreen(
                         )
                         Spacer(Modifier.height(6.dp))
                     }
+                }
+                if (prCelebration.isNotEmpty()) {
+                    NewPrCelebration(
+                        records = prCelebration,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = ScreenPadding, vertical = 8.dp),
+                        onFinished = { prCelebration = emptyList() },
+                    )
+                }
                 }
             }
         }
@@ -492,7 +597,12 @@ fun JournalEntryScreen(
 private fun workoutAccentFor(item: JournalItem.Workout) = workoutAccent(item.typeKey)
 
 @Composable
-private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPlan?) {
+private fun EntryHero(
+    item: JournalItem,
+    planned: Boolean,
+    livePlan: JournalAiPlan?,
+    minimal: Boolean,
+) {
     when (item) {
         is JournalItem.Workout -> {
             val accent = workoutAccentFor(item)
@@ -501,6 +611,30 @@ private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPl
             val timeRange = if (item.startMs != null && item.endMs != null) {
                 " · ${clockTime(item.startMs)} – ${clockTime(item.endMs)}"
             } else ""
+            val typeLabel = com.hcexport.WorkoutText.displayType(item.typeLabel)
+            if (minimal) {
+                val future = planned ||
+                    (item.scheduled && (item.endMs ?: 0L) > System.currentTimeMillis())
+                val stats = buildList {
+                    item.durationMin?.let {
+                        add(HeroStat(JournalFeed.formatDuration(it), "DURATION"))
+                    }
+                    bio?.avgHrBpm?.let { add(HeroStat(it.toInt().toString(), "AVG BPM")) }
+                }
+                JournalHero(
+                    title = plan?.title?.takeIf { it.isNotBlank() } ?: typeLabel,
+                    subtitle = RecordLogic.formatDate(item.date) + timeRange,
+                    accent = accent,
+                    iconRes = R.drawable.ic_flame,
+                    tags = listOf(
+                        (if (future) "FUTURE" else "COMPLETED") to
+                            (if (future) Amber else Success)
+                    ),
+                    stats = stats,
+                    compact = true,
+                )
+                return
+            }
             val stats = buildList {
                 item.durationMin?.let { add(HeroStat(JournalFeed.formatDuration(it), "DURATION")) }
                 plan?.let { ai ->
@@ -519,7 +653,7 @@ private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPl
                 bio?.avgHrBpm?.let { add(HeroStat(it.toInt().toString(), "AVG BPM")) }
             }
             JournalHero(
-                title = com.hcexport.WorkoutText.displayType(item.typeLabel),
+                title = typeLabel,
                 subtitle = RecordLogic.formatDate(item.date) + timeRange,
                 accent = accent,
                 iconRes = R.drawable.ic_flame,
@@ -549,11 +683,16 @@ private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPl
                     "${clockTime(bio.startMs)} – ${clockTime(bio.endMs)}",
                 accent = Teal,
                 iconRes = R.drawable.ic_stopwatch,
-                tags = listOf(
-                    "ACTIVITY" to Teal,
-                    typeLabel.uppercase() to Slate,
-                ),
+                tags = if (minimal) {
+                    listOf(typeLabel.uppercase() to Slate)
+                } else {
+                    listOf(
+                        "ACTIVITY" to Teal,
+                        typeLabel.uppercase() to Slate,
+                    )
+                },
                 stats = stats,
+                compact = minimal,
             )
         }
 
@@ -574,9 +713,43 @@ private fun EntryHero(item: JournalItem, planned: Boolean, livePlan: JournalAiPl
                     "${clockTime(item.startMs)} – ${clockTime(item.endMs)}",
                 accent = Periwinkle,
                 iconRes = R.drawable.ic_moon,
-                tags = listOf("SLEEP" to Periwinkle),
+                tags = if (minimal) emptyList() else listOf("SLEEP" to Periwinkle),
                 stats = stats,
+                compact = minimal,
             )
+        }
+    }
+}
+
+/**
+ * Minimal design: the way into the live session is one big circle under the
+ * workout card, with no explanatory copy.
+ */
+@Composable
+private fun LiveWorkoutCircle(onClick: () -> Unit) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .size(122.dp)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Teal, Periwinkle)))
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    tint = Abyss,
+                    modifier = Modifier.size(34.dp),
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "Live workout",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Abyss,
+                )
+            }
         }
     }
 }
@@ -595,28 +768,53 @@ private fun JournalRecordLine(
     title: String,
     value: String,
     accent: Color,
+    pr: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
+    val shape = RoundedCornerShape(10.dp)
     Row(
         Modifier
             .fillMaxWidth()
+            .clip(shape)
+            .then(
+                if (pr) {
+                    Modifier
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Amber.copy(alpha = 0.15f), Color.Transparent),
+                            )
+                        )
+                        .border(1.dp, Amber.copy(alpha = 0.32f), shape)
+                } else {
+                    Modifier
+                }
+            )
             .then(
                 if (onClick != null) Modifier
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(shape)
                     .clickable(onClick = onClick)
                 else Modifier
             )
             .padding(vertical = 6.dp, horizontal = if (onClick != null) 6.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
+        Box(Modifier.size(6.dp).clip(CircleShape).background(if (pr) Amber else accent))
         Spacer(Modifier.width(10.dp))
-        Text(
-            title,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Mist,
-        )
+        Row(
+            Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Mist,
+            )
+            if (pr) {
+                Spacer(Modifier.width(6.dp))
+                NewPrBadge()
+            }
+        }
         Text(
             value,
             style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),

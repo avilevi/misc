@@ -13,6 +13,19 @@ data class Workout(
     val lastSeenMs: Long = 0L,
 )
 
+/**
+ * A movement demo attached to a workout section in Fitr. YouTube attachments
+ * carry a video id; uploaded videos carry a direct URL.
+ */
+data class WorkoutVideo(
+    val title: String,
+    val videoId: String?,
+    val url: String?,
+    val thumbUrl: String?,
+    val kind: String,
+    val position: Int = 0,
+)
+
 object WorkoutTypes {
 
     /** Stable key used for uniqueness and for picking the calendar WOD. */

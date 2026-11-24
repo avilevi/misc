@@ -253,14 +253,16 @@ fun HubCard(
                     style = MaterialTheme.typography.headlineSmall,
                     color = Snow,
                 )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Mist,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (!LocalMinimalDesign.current) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Mist,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 if (!meta.isNullOrBlank()) {
                     Spacer(Modifier.height(7.dp))
                     Tag(meta, accent)
@@ -464,13 +466,15 @@ fun EmptyState(
         }
         Spacer(Modifier.height(16.dp))
         Text(title, style = MaterialTheme.typography.headlineSmall, color = Snow)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Slate,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
+        if (!LocalMinimalDesign.current) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Slate,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
         if (actionText != null && onAction != null) {
             Spacer(Modifier.height(20.dp))
             Box(

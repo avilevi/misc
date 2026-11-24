@@ -63,6 +63,7 @@ import com.hcexport.ui.HcBackground
 import com.hcexport.ui.HcCard
 import com.hcexport.ui.HighlightOnArrival
 import com.hcexport.ui.IconAction
+import com.hcexport.ui.LocalMinimalDesign
 import com.hcexport.ui.NumberText
 import com.hcexport.ui.PageHeader
 import com.hcexport.ui.PrimaryButton
@@ -136,13 +137,17 @@ fun WeightsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = ScreenPadding)
             ) {
-                Text(
-                    "Best successful attempt for each rep max.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Slate,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
-                Spacer(Modifier.height(16.dp))
+                if (!LocalMinimalDesign.current) {
+                    Text(
+                        "Best successful attempt for each rep max.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Slate,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                    Spacer(Modifier.height(16.dp))
+                } else {
+                    Spacer(Modifier.height(6.dp))
+                }
 
                 if (!load.loaded) {
                     com.hcexport.ui.LoadingLine("Loading your lifts…", Amber)
@@ -169,13 +174,15 @@ fun WeightsScreen(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        "All weights in kilograms. Tap a lift for dates and source workouts.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Slate,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
-                    Spacer(Modifier.height(22.dp))
+                    if (!LocalMinimalDesign.current) {
+                        Text(
+                            "All weights in kilograms. Tap a lift for dates and source workouts.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Slate,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                        Spacer(Modifier.height(22.dp))
+                    }
                     PrimaryButton("Add a lift", onClick = onAdd, accent = Amber)
                 }
                 Spacer(Modifier.height(28.dp))

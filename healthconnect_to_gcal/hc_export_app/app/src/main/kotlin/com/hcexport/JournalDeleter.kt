@@ -50,7 +50,8 @@ object JournalDeleter {
         is JournalItem.Workout ->
             "This removes the entry, its AI plan and values, and any schedule this app " +
                 "created — including the calendar event it added. Calendar events created " +
-                "elsewhere are left alone, and this workout stays hidden from the journal."
+                "elsewhere are left alone, and this workout stays hidden from the journal. " +
+                "Records you set from it stay in Records until you delete them there."
 
         is JournalItem.Activity ->
             "This removes the entry and its comment from the journal. The recorded " +

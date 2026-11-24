@@ -148,6 +148,21 @@ class AutoRecordsTest {
     }
 
     @Test
+    fun `a record already written by this workout is never rewritten`() {
+        val plan = plan(section("strength", exercise("Bench Press", listOf("1 rep"))))
+        val values = results(set(0, 0, 0, "weight", "110"))
+        val existing = listOf(record(reps = 1, weightKg = 100.0))
+
+        val rows = AutoRecords.newRows(
+            AutoRecords.candidates(plan, values),
+            existing,
+            setOf("bench_press" to 1),
+        )
+
+        assertTrue(rows.isEmpty())
+    }
+
+    @Test
     fun `pounds are converted before they are compared`() {
         val pounds = MetricDef("weight", "Weight", MetricKind.WEIGHT, "lbs")
         val plan = plan(
